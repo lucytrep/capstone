@@ -1,0 +1,30 @@
+Keyword,Category Boost,Priority,Notes
+app,UI,high,Strong signal for interface generation
+screen,UI,high,Usually maps to UI concept requests
+dashboard,UI,high,Route toward analytics or admin layouts
+landing page,UI,high,Route toward web marketing layouts
+mobile,UI,high,Prioritize phone-first interface outputs
+palette,Color,high,Strong route to color generation
+color,Color,high,Core color routing term
+brand colors,Color,high,Color system with identity framing
+moodboard,Photo,high,Strong image-curation routing term
+photos,Photo,high,Direct image curation signal
+images,Photo,high,Direct image curation signal
+imagery,Photo,high,Direct image curation signal
+reference,Photo,medium,Supports photo routing when paired with visual nouns
+editorial,Photo,medium,Stylistic modifier for curated image outputs
+fashion,Photo,medium,Helpful image and art-direction signal
+wellness,Photo + UI,medium,Can affect both moodboard and app styling
+fitness,UI + Photo,medium,Domain token for app and imagery
+travel,Photo + UI,medium,Domain token for trips exploration and moodboards
+luxury,UI + Brand,medium,Elevates tone and styling
+minimal,UI + Color,medium,Helpful for layout and palette moderation
+clean,UI + Color,medium,Usually means reduced noise and neutral tone
+futuristic,UI + Photo,high,Strong stylistic routing token
+cyber,UI + Photo,medium,Pushes toward dark high-contrast tech styling
+calm,Color + UI,high,Strong tonal modifier
+dark,Color + UI,medium,Needs balancing with sentiment qualifiers
+girly,Color + Brand,medium,Useful but should be refined into balanced femininity
+editorial serif,Typography,medium,Typography-focused route
+animation,Motion,high,Strong motion route
+brand,Brand,high,Strong identity-system route

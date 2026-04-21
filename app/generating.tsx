@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, SafeAreaView } from 'react-native';
+import { Alert, StyleSheet, View, Text, SafeAreaView } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -98,6 +98,9 @@ export default function GeneratingScreen() {
       } catch (err) {
         if (cancelled) return;
         console.error('Generation error:', err);
+        const message =
+          err instanceof Error ? err.message : 'Something went wrong while generating.';
+        Alert.alert('Generation failed', message);
         router.replace('/(tabs)');
       }
     };
@@ -122,7 +125,7 @@ export default function GeneratingScreen() {
 
         <View style={styles.textArea}>
           <Text style={styles.label}>Generating your artifact</Text>
-          <Text style={styles.sublabel}>Thinking about your idea…</Text>
+          <Text style={styles.sublabel}>This could take a couple minutes…</Text>
         </View>
       </View>
     </SafeAreaView>

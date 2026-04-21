@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
   Platform,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { WebView } from 'react-native-webview';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SessionStore } from '@/store/session';
@@ -24,61 +25,1078 @@ const C = {
   savedGreen: '#7EC8A8',
 };
 
-const ARTIFACTS_KEY = 'thought_catcher_artifacts';
-
-type Artifact = {
-  id: string;
-  transcript: string;
-  html: string;
-  createdAt: string;
+type PaletteSwatch = {
+  name: string;
+  hex: string;
 };
 
-export default function OutputScreen() {
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
+type PaletteOption = {
+  id: string;
+  swatches: PaletteSwatch[];
+};
 
-  const html = SessionStore.getArtifact();
-  const transcript = SessionStore.getTranscript();
+type PhotoItem = {
+  id: string;
+  imageUrl: string;
+  thumbUrl: string;
+  alt: string;
+  source: 'pexels' | 'unsplash' | 'gemini';
+  author: string;
+  detailUrl: string;
+};
 
-  const handleSave = async () => {
-    if (saving || saved) return;
-    setSaving(true);
+type PhotoOption = {
+  id: string;
+  source: 'pexels' | 'unsplash' | 'gemini' | 'mixed';
+  photos: PhotoItem[];
+};
 
-    try {
-      const artifact: Artifact = {
-        id: `artifact_${Date.now()}`,
-        transcript,
-        html,
-        createdAt: new Date().toISOString(),
-      };
+type UiOption = {
+  id: string;
+  direction: 'editorial' | 'minimal' | 'bold';
+  label: string;
+  productName: string;
+  headline: string;
+  supportingText: string;
+  primaryCta: string;
+  secondaryCta: string;
+  accent: string;
+  background: string;
+  surface: string;
+  mutedSurface: string;
+  text: string;
+  mutedText: string;
+};
 
-      const raw = await AsyncStorage.getItem(ARTIFACTS_KEY);
-      const existing: Artifact[] = raw ? JSON.parse(raw) : [];
-      existing.unshift(artifact);
-      await AsyncStorage.setItem(ARTIFACTS_KEY, JSON.stringify(existing));
+type EmbeddedPaletteOptions = {
+  kind?: string;
+  options?: Array<{
+    id?: string;
+    swatches?: PaletteSwatch[];
+  }>;
+};
 
-      setSaved(true);
-    } catch (err) {
-      console.error('Save failed:', err);
-      Alert.alert('Save failed', 'Could not save the artifact. Please try again.');
-    } finally {
-      setSaving(false);
+type EmbeddedPhotoOptions = {
+  kind?: string;
+  options?: Array<{
+    id?: string;
+    source?: 'pexels' | 'unsplash' | 'mixed';
+    photos?: PhotoItem[];
+  }>;
+};
+
+type EmbeddedUiOptions = {
+  kind?: string;
+  options?: UiOption[];
+};
+
+const WEBVIEW_BASE_STYLE = `
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111111;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
     }
+
+    * {
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    img, svg, canvas, video {
+      height: auto;
+      max-width: 100%;
+    }
+  </style>
+`;
+
+function normalizeArtifactHtml(html: string) {
+  const trimmed = html
+    .trim()
+    .replace(
+      /<div[^>]*>\s*(?:<button[^>]*>.*?<\/button>\s*)?<span[^>]*>\s*Artifact\s*<\/span>[\s\S]*?<\/div>/i,
+      ''
+    );
+
+  if (/<head[\s>]/i.test(trimmed)) {
+    return trimmed.replace(/<head(\s[^>]*)?>/i, (match) => `${match}${WEBVIEW_BASE_STYLE}`);
+  }
+
+  if (/<html[\s>]/i.test(trimmed)) {
+    return trimmed.replace(/<html(\s[^>]*)?>/i, (match) => `${match}<head>${WEBVIEW_BASE_STYLE}</head>`);
+  }
+
+  return `<!DOCTYPE html><html><head>${WEBVIEW_BASE_STYLE}</head><body>${trimmed}</body></html>`;
+}
+
+function getWebViewInjectionScript(isPaletteArtifact: boolean) {
+  if (!isPaletteArtifact) {
+    return `
+      (function () {
+        var artifactNode = Array.from(document.querySelectorAll('*')).find(function (node) {
+          var text = (node.textContent || '').trim();
+          return text === 'Artifact';
+        });
+
+        if (artifactNode) {
+          var parent = artifactNode.parentElement;
+          if (parent && parent instanceof HTMLElement) {
+            parent.style.display = 'none';
+          }
+        }
+
+        var track = Array.from(document.querySelectorAll('*')).find(function (node) {
+          if (!(node instanceof HTMLElement)) {
+            return false;
+          }
+
+          var hasOptionChildren = node.querySelector('[data-ui-option="1"]') && node.querySelector('[data-ui-option="2"]') && node.querySelector('[data-ui-option="3"]');
+          var style = window.getComputedStyle(node);
+          return Boolean(hasOptionChildren) && (style.overflowX === 'auto' || style.overflowX === 'scroll');
+        });
+
+        if (track instanceof HTMLElement) {
+          var dots = Array.from(document.querySelectorAll('*')).filter(function (node) {
+            if (!(node instanceof HTMLElement)) {
+              return false;
+            }
+
+            var style = window.getComputedStyle(node);
+            var width = parseFloat(style.width || '0');
+            var height = parseFloat(style.height || '0');
+            var radius = parseFloat(style.borderRadius || '0');
+            return width >= 8 && width <= 24 && height >= 8 && height <= 12 && radius >= 4;
+          }).slice(-3);
+
+          var setActiveDot = function () {
+            var pageWidth = track.clientWidth || window.innerWidth || 1;
+            var index = Math.max(0, Math.min(2, Math.round(track.scrollLeft / pageWidth)));
+
+            dots.forEach(function (dot, dotIndex) {
+              if (!(dot instanceof HTMLElement)) {
+                return;
+              }
+
+              dot.style.transition = 'all 160ms ease';
+              dot.style.width = dotIndex === index ? '22px' : '10px';
+              dot.style.opacity = dotIndex === index ? '1' : '0.5';
+            });
+          };
+
+          setActiveDot();
+          track.addEventListener('scroll', setActiveDot, { passive: true });
+        }
+
+        return true;
+      })();
+    `;
+  }
+
+  return `
+    (function () {
+      var html = document.documentElement;
+      var body = document.body;
+      var root = body && body.firstElementChild;
+
+      var artifactNode = Array.from(document.querySelectorAll('*')).find(function (node) {
+        var text = (node.textContent || '').trim();
+        return text === 'Artifact';
+      });
+
+      if (artifactNode) {
+        var parent = artifactNode.parentElement;
+        if (parent && parent instanceof HTMLElement) {
+          parent.style.display = 'none';
+        }
+      }
+
+      var separators = Array.from(document.querySelectorAll('hr, [style*="border-bottom"], [style*="borderTop"], [style*="border-top"]'));
+      separators.forEach(function (node) {
+        if (node instanceof HTMLElement) {
+          node.style.border = '0';
+          node.style.borderBottom = '0';
+          node.style.borderTop = '0';
+        }
+      });
+
+      if (!body || !root) {
+        return true;
+      }
+
+      html.style.height = '100%';
+      body.style.height = '100%';
+      body.style.minHeight = '100vh';
+      body.style.overflowX = 'hidden';
+
+      root.style.minHeight = '100vh';
+      root.style.width = '100%';
+      root.style.display = 'flex';
+      root.style.flexDirection = 'column';
+      root.style.justifyContent = 'space-between';
+      root.style.paddingBottom = '120px';
+
+      var children = Array.prototype.slice.call(root.children || []);
+      children.forEach(function (child, index) {
+        if (!(child instanceof HTMLElement)) {
+          return;
+        }
+
+        child.style.width = child.style.width || '100%';
+
+        if (index > 0) {
+          child.style.flexShrink = '0';
+        }
+      });
+
+      return true;
+    })();
+  `;
+}
+
+function parsePaletteSwatches(html: string): PaletteSwatch[] {
+  const text = html
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, '\n')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const swatches: PaletteSwatch[] = [];
+
+  for (let i = 0; i < text.length - 1; i += 1) {
+    const name = text[i];
+    const maybeHex = text[i + 1]?.toUpperCase();
+
+    if (!/^#[0-9A-F]{6}$/.test(maybeHex)) {
+      continue;
+    }
+
+    if (/^draft$/i.test(name) || /^color palette$/i.test(name)) {
+      continue;
+    }
+
+    swatches.push({ name, hex: maybeHex });
+
+    if (swatches.length === 8) {
+      break;
+    }
+  }
+
+  return swatches;
+}
+
+function parseEmbeddedPaletteOptions(html: string): PaletteOption[] {
+  const match = html.match(
+    /<script id="draft-palette-options" type="application\/json">([\s\S]*?)<\/script>/i
+  );
+
+  if (!match?.[1]) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(match[1]) as EmbeddedPaletteOptions;
+
+    if (parsed.kind !== 'palette-options' || !Array.isArray(parsed.options)) {
+      return [];
+    }
+
+    return parsed.options
+      .map((option, index) => ({
+        id: option.id || `palette-${index + 1}`,
+        swatches: (option.swatches ?? []).filter(
+          (swatch): swatch is PaletteSwatch =>
+            Boolean(swatch?.name) && /^#[0-9A-Fa-f]{6}$/.test(swatch?.hex ?? '')
+        ),
+      }))
+      .filter((option) => option.swatches.length >= 8);
+  } catch (error) {
+    console.error('Could not parse embedded palette options', error);
+    return [];
+  }
+}
+
+function parseEmbeddedPhotoOptions(html: string): PhotoOption[] {
+  const match = html.match(
+    /<script id="draft-photo-options" type="application\/json">([\s\S]*?)<\/script>/i
+  );
+
+  if (!match?.[1]) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(match[1]) as EmbeddedPhotoOptions;
+
+    if (parsed.kind !== 'photo-options' || !Array.isArray(parsed.options)) {
+      return [];
+    }
+
+    return parsed.options
+      .map((option, index) => ({
+        id: option.id || `photos-${index + 1}`,
+        source: option.source || 'mixed',
+        photos: (option.photos ?? []).filter(
+          (photo): photo is PhotoItem =>
+            Boolean(photo?.id) &&
+            Boolean(photo?.imageUrl) &&
+            Boolean(photo?.thumbUrl) &&
+            Boolean(photo?.alt)
+        ),
+      }))
+      .filter((option) => option.photos.length >= 5);
+  } catch (error) {
+    console.error('Could not parse embedded photo options', error);
+    return [];
+  }
+}
+
+function parseEmbeddedUiOptions(html: string): UiOption[] {
+  const match = html.match(
+    /<script id="draft-ui-options" type="application\/json">([\s\S]*?)<\/script>/i
+  );
+
+  if (!match?.[1]) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(match[1]) as EmbeddedUiOptions;
+
+    if (parsed.kind !== 'ui-options' || !Array.isArray(parsed.options)) {
+      return [];
+    }
+
+    return parsed.options.filter(
+      (option): option is UiOption =>
+        Boolean(option?.id) &&
+        Boolean(option?.label) &&
+        Boolean(option?.headline) &&
+        Boolean(option?.supportingText) &&
+        Boolean(option?.accent) &&
+        Boolean(option?.background)
+    );
+  } catch (error) {
+    console.error('Could not parse embedded UI options', error);
+    return [];
+  }
+}
+
+function getContrastColor(hex: string) {
+  const normalized = hex.replace('#', '');
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.62 ? '#111111' : '#F5F0E8';
+}
+
+function hexToRgb(hex: string) {
+  const normalized = hex.replace('#', '');
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
   };
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  return `#${[r, g, b]
+    .map((value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()}`;
+}
+
+function rgbToHsl(r: number, g: number, b: number) {
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case red:
+        h = (green - blue) / d + (green < blue ? 6 : 0);
+        break;
+      case green:
+        h = (blue - red) / d + 2;
+        break;
+      default:
+        h = (red - green) / d + 4;
+        break;
+    }
+
+    h /= 6;
+  }
+
+  return { h, s, l };
+}
+
+function hueToRgb(p: number, q: number, t: number) {
+  let temp = t;
+  if (temp < 0) temp += 1;
+  if (temp > 1) temp -= 1;
+  if (temp < 1 / 6) return p + (q - p) * 6 * temp;
+  if (temp < 1 / 2) return q;
+  if (temp < 2 / 3) return p + (q - p) * (2 / 3 - temp) * 6;
+  return p;
+}
+
+function hslToRgb(h: number, s: number, l: number) {
+  if (s === 0) {
+    const gray = l * 255;
+    return { r: gray, g: gray, b: gray };
+  }
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+
+  return {
+    r: hueToRgb(p, q, h + 1 / 3) * 255,
+    g: hueToRgb(p, q, h) * 255,
+    b: hueToRgb(p, q, h - 1 / 3) * 255,
+  };
+}
+
+function shiftColor(hex: string, hueShift: number, saturationShift: number, lightnessShift: number) {
+  const { r, g, b } = hexToRgb(hex);
+  const { h, s, l } = rgbToHsl(r, g, b);
+  const shiftedHue = (h + hueShift + 1) % 1;
+  const shiftedSaturation = Math.max(0, Math.min(1, s + saturationShift));
+  const shiftedLightness = Math.max(0.08, Math.min(0.9, l + lightnessShift));
+  const shifted = hslToRgb(shiftedHue, shiftedSaturation, shiftedLightness);
+  return rgbToHex(shifted.r, shifted.g, shifted.b);
+}
+
+function buildPaletteOptions(swatches: PaletteSwatch[]): PaletteOption[] {
+  if (swatches.length < 8) {
+    return [];
+  }
+
+  const base = swatches.slice(0, 8);
+  const editable = base.slice(0, 6);
+  const fixed = base.slice(6);
+
+  const warm = editable.map((swatch, index) => ({
+    ...swatch,
+    hex: shiftColor(
+      swatch.hex,
+      0.06 + index * 0.005,
+      0.08,
+      index === 0 ? -0.02 : 0.03
+    ),
+  }));
+
+  const fresh = editable.map((swatch, index) => ({
+    ...swatch,
+    hex: shiftColor(
+      swatch.hex,
+      -0.11 + index * 0.004,
+      -0.02,
+      index % 2 === 0 ? 0.09 : 0.04
+    ),
+  }));
+
+  return [
+    { id: 'palette-1', swatches: [...base] },
+    { id: 'palette-2', swatches: [...warm, ...fixed] },
+    { id: 'palette-3', swatches: [...fresh, ...fixed] },
+  ];
+}
+
+function PaletteSwatchCard({
+  swatch,
+  width,
+  height,
+}: {
+  swatch: PaletteSwatch;
+  width: number;
+  height: number;
+}) {
+  const textColor = getContrastColor(swatch.hex);
+
+  return (
+    <View
+      style={[
+        styles.paletteSwatch,
+        {
+          width,
+          height,
+          backgroundColor: swatch.hex,
+        },
+      ]}
+    >
+      <View style={styles.paletteSwatchTextWrap}>
+        <Text style={[styles.paletteSwatchName, { color: textColor }]} numberOfLines={2}>
+          {swatch.name}
+        </Text>
+        <Text style={[styles.paletteSwatchHex, { color: textColor }]}>{swatch.hex}</Text>
+      </View>
+    </View>
+  );
+}
+
+function PhotoTile({
+  photo,
+  width,
+  height,
+  highlighted = false,
+}: {
+  photo: PhotoItem;
+  width: number;
+  height: number;
+  highlighted?: boolean;
+}) {
+  return (
+    <View style={[styles.photoTile, highlighted && styles.photoTileHighlighted, { width, height }]}>
+      <ExpoImage
+        source={photo.imageUrl}
+        style={styles.photoImage}
+        contentFit="cover"
+        transition={150}
+      />
+      <View style={styles.photoOverlay} />
+      <View style={styles.photoMeta}>
+        <Text style={styles.photoAuthor} numberOfLines={2}>
+          {getPhotoLabel(photo)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function getPhotoLabel(photo: PhotoItem) {
+  const raw = (photo.alt || photo.author || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!raw) {
+    return 'Inspiration';
+  }
+
+  const genericPhrases = [
+    'pexels inspiration image',
+    'unsplash inspiration image',
+    'gemini generated inspiration image',
+  ];
+  const lowered = raw.toLowerCase();
+
+  if (genericPhrases.includes(lowered)) {
+    return 'Inspiration';
+  }
+
+  const cleaned = raw
+    .replace(/\b(photo|image|editorial|moodboard|generated|inspiration)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const words = (cleaned || raw).split(' ').filter(Boolean).slice(0, 2);
+  return words.length > 0
+    ? words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    : 'Inspiration';
+}
+
+function BottomNavPill({ onMicPress }: { onMicPress: () => void }) {
+  return (
+    <View style={styles.photoNavWrap}>
+      <View style={styles.photoNavPill}>
+        <TouchableOpacity
+          onPress={onMicPress}
+          style={styles.photoNavIcon}
+          activeOpacity={0.8}
+          hitSlop={10}
+        >
+          <Feather name="mic" size={22} color={C.cream} />
+        </TouchableOpacity>
+        <View style={styles.photoNavIcon}>
+          <Feather name="bar-chart-2" size={22} color={C.cream} />
+        </View>
+        <View style={styles.photoNavIcon}>
+          <Feather name="user" size={22} color={C.cream} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function NativeUiOptionCard({ option }: { option: UiOption }) {
+  return (
+    <View
+      style={[
+        styles.nativeUiCard,
+        {
+          backgroundColor: option.background,
+          borderColor: option.direction === 'bold' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+        },
+      ]}
+    >
+      <View style={styles.nativeUiCardHeader}>
+        <View>
+          <Text style={[styles.nativeUiDirection, { color: option.mutedText }]}>{option.label}</Text>
+          <Text style={[styles.nativeUiProduct, { color: option.text }]}>{option.productName}</Text>
+        </View>
+        <View style={[styles.nativeUiStatusChip, { backgroundColor: option.mutedSurface }]}>
+          <Text style={[styles.nativeUiStatusText, { color: option.text }]}>Concept</Text>
+        </View>
+      </View>
+
+      {option.direction === 'editorial' ? (
+        <>
+          <View style={[styles.nativeUiHeroSplit, { backgroundColor: option.surface }]}>
+            <View style={styles.nativeUiSplitCopy}>
+              <Text style={[styles.nativeUiHeadline, { color: option.text }]}>{option.headline}</Text>
+              <Text style={[styles.nativeUiSupport, { color: option.mutedText }]}>
+                {option.supportingText}
+              </Text>
+            </View>
+            <View style={[styles.nativeUiPreviewTall, { backgroundColor: option.accent }]} />
+          </View>
+          <View style={styles.nativeUiDualRow}>
+            <View style={[styles.nativeUiSmallCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPill, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiMiniBlock, { backgroundColor: option.accent }]} />
+            </View>
+            <View style={[styles.nativeUiSmallCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPillWide, { backgroundColor: option.mutedSurface }]} />
+              <View style={styles.nativeUiMiniRow}>
+                <View style={[styles.nativeUiMiniTile, { backgroundColor: option.mutedSurface }]} />
+                <View style={[styles.nativeUiMiniTile, { backgroundColor: option.mutedSurface, opacity: 0.72 }]} />
+              </View>
+            </View>
+          </View>
+          <View style={[styles.nativeUiFooterCard, { backgroundColor: option.surface }]}>
+            <Text style={[styles.nativeUiFooterHeadline, { color: option.text }]}>{option.primaryCta}</Text>
+            <View style={styles.nativeUiFooterRow}>
+              <View style={[styles.nativeUiFooterTile, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiFooterTile, { backgroundColor: option.mutedSurface, opacity: 0.82 }]} />
+              <View style={[styles.nativeUiFooterTile, { backgroundColor: option.accent, opacity: 0.92 }]} />
+            </View>
+          </View>
+        </>
+      ) : option.direction === 'minimal' ? (
+        <>
+          <View style={[styles.nativeUiCenteredHero, { backgroundColor: option.surface }]}>
+            <Text style={[styles.nativeUiHeadlineCenter, { color: option.text }]}>{option.headline}</Text>
+            <Text style={[styles.nativeUiSupportCenter, { color: option.mutedText }]}>
+              {option.supportingText}
+            </Text>
+            <View style={styles.nativeUiCtaRow}>
+              <View style={[styles.nativeUiPrimaryCta, { backgroundColor: option.accent }]}>
+                <Text style={styles.nativeUiPrimaryCtaText}>{option.primaryCta}</Text>
+              </View>
+              <View style={[styles.nativeUiSecondaryCta, { borderColor: option.mutedSurface }]}>
+                <Text style={[styles.nativeUiSecondaryCtaText, { color: option.text }]}>
+                  {option.secondaryCta}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.nativeUiTripleRow}>
+            <View style={[styles.nativeUiColumnCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPill, { backgroundColor: option.accent, opacity: 0.22 }]} />
+              <View style={[styles.nativeUiColumnBlock, { backgroundColor: option.mutedSurface }]} />
+            </View>
+            <View style={[styles.nativeUiColumnCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPill, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiColumnBlock, { backgroundColor: option.accent, opacity: 0.9 }]} />
+            </View>
+            <View style={[styles.nativeUiColumnCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPill, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiColumnBlock, { backgroundColor: option.mutedSurface, opacity: 0.78 }]} />
+            </View>
+          </View>
+          <View style={[styles.nativeUiFooterCard, { backgroundColor: option.surface }]}>
+            <View style={styles.nativeUiFooterRow}>
+              <View style={[styles.nativeUiFooterWide, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiFooterShort, { backgroundColor: option.accent, opacity: 0.18 }]} />
+            </View>
+            <View style={[styles.nativeUiLine, { backgroundColor: option.mutedSurface }]} />
+            <View style={[styles.nativeUiLineShort, { backgroundColor: option.mutedSurface, opacity: 0.72 }]} />
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.nativeUiBoldTopRow}>
+            <View style={[styles.nativeUiBoldPanelLarge, { backgroundColor: option.surface }]}>
+              <Text style={[styles.nativeUiHeadline, { color: option.text }]}>{option.headline}</Text>
+              <View style={[styles.nativeUiAccentPill, { backgroundColor: option.accent }]} />
+            </View>
+            <View style={[styles.nativeUiBoldPanelTall, { backgroundColor: option.accent }]}>
+              <View style={[styles.nativeUiMiniDot, { backgroundColor: option.surface }]} />
+            </View>
+          </View>
+          <View style={[styles.nativeUiBoldBanner, { backgroundColor: option.surface }]}>
+            <Text style={[styles.nativeUiSupport, { color: option.mutedText }]}>{option.supportingText}</Text>
+            <View style={styles.nativeUiMiniRow}>
+              <View style={[styles.nativeUiMiniTile, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiMiniTile, { backgroundColor: option.mutedSurface, opacity: 0.75 }]} />
+              <View style={[styles.nativeUiMiniTile, { backgroundColor: option.mutedSurface, opacity: 0.58 }]} />
+            </View>
+          </View>
+          <View style={styles.nativeUiDualRow}>
+            <View style={[styles.nativeUiSmallCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPillWide, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiColumnBlock, { backgroundColor: option.accent, opacity: 0.92 }]} />
+            </View>
+            <View style={[styles.nativeUiSmallCard, { backgroundColor: option.surface }]}>
+              <View style={[styles.nativeUiMiniPill, { backgroundColor: option.mutedSurface }]} />
+              <View style={[styles.nativeUiColumnBlock, { backgroundColor: option.mutedSurface }]} />
+            </View>
+          </View>
+          <View style={styles.nativeUiCtaRow}>
+            <View style={[styles.nativeUiPrimaryCta, { backgroundColor: option.accent }]}>
+              <Text style={styles.nativeUiPrimaryCtaText}>{option.primaryCta}</Text>
+            </View>
+            <View style={[styles.nativeUiSecondaryCta, { borderColor: option.mutedSurface }]}>
+              <Text style={[styles.nativeUiSecondaryCtaText, { color: option.text }]}>{option.secondaryCta}</Text>
+            </View>
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+export default function OutputScreen() {
+  const [activePaletteIndex, setActivePaletteIndex] = useState(0);
+  const { width, height } = useWindowDimensions();
+
+  const artifactHtml = SessionStore.getArtifact();
+  const transcript = SessionStore.getTranscript(); // retained for save metadata only
+  const renderedHtml = normalizeArtifactHtml(artifactHtml);
+  const uiOptions = useMemo(() => parseEmbeddedUiOptions(artifactHtml), [artifactHtml]);
+  const canRenderNativeUi = uiOptions.length === 3;
+  const isPaletteArtifact =
+    !canRenderNativeUi &&
+    (/color palette/i.test(artifactHtml) || /\bpalette\b/i.test(transcript));
+  const isPhotoArtifact =
+    !canRenderNativeUi &&
+    (/<script id="draft-photo-options"/i.test(artifactHtml) ||
+      /(photos|imagery|art direction|moodboard|reference images?)/i.test(transcript));
+  const injectedJavaScript = getWebViewInjectionScript(isPaletteArtifact);
+  const paletteSwatches = useMemo(() => parsePaletteSwatches(artifactHtml), [artifactHtml]);
+  const embeddedPaletteOptions = useMemo(
+    () => parseEmbeddedPaletteOptions(artifactHtml),
+    [artifactHtml]
+  );
+  const photoOptions = useMemo(() => parseEmbeddedPhotoOptions(artifactHtml), [artifactHtml]);
+  const paletteOptions = useMemo(
+    () =>
+      embeddedPaletteOptions.length > 0
+        ? embeddedPaletteOptions
+        : buildPaletteOptions(paletteSwatches),
+    [embeddedPaletteOptions, paletteSwatches]
+  );
+  const canRenderNativePalette = isPaletteArtifact && paletteOptions.length === 3;
+  const canRenderNativePhotos = isPhotoArtifact && photoOptions.length === 3;
+
+  console.log('[OutputScreen] artifactHtml length:', artifactHtml?.length ?? 0);
+  console.log('[OutputScreen] artifactHtml preview:', artifactHtml?.slice(0, 200));
 
   const handleNew = () => {
     SessionStore.clear();
     router.replace('/(tabs)');
   };
 
-  if (!html) {
+  if (!artifactHtml || artifactHtml.trim().length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>Nothing to show.</Text>
+          <Text style={styles.emptyText}>No artifact to display.</Text>
+          <Text style={styles.emptySubtext}>The response may have been empty or malformed.</Text>
           <TouchableOpacity onPress={handleNew} style={styles.newButtonSmall}>
-            <Text style={styles.newButtonSmallText}>Go back</Text>
+            <Text style={styles.newButtonSmallText}>Try again</Text>
           </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (canRenderNativePalette) {
+    const gutter = 16;
+    const gap = 8;
+    const contentWidth = width - gutter * 2;
+    const largeWidth = contentWidth;
+    const leftMediumWidth = Math.floor((contentWidth - gap) * 0.66);
+    const rightMediumWidth = contentWidth - gap - leftMediumWidth;
+    const smallWidth = Math.floor((contentWidth - gap * 2) / 3);
+    const bottomWidth = Math.floor((contentWidth - gap) / 2);
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.nativePaletteScreen}>
+          <View style={styles.nativePaletteTopBar}>
+            <TouchableOpacity onPress={handleNew} style={styles.backButton} hitSlop={12}>
+              <Feather name="arrow-left" size={18} color={C.cream} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.nativePaletteContent}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={width}
+              snapToAlignment="start"
+              disableIntervalMomentum
+              directionalLockEnabled
+              bounces={false}
+              onScroll={(event) => {
+                const nextIndex = Math.round(
+                  event.nativeEvent.contentOffset.x / Math.max(width, 1)
+                );
+                setActivePaletteIndex(nextIndex);
+              }}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.palettePagerContent}
+            >
+              {paletteOptions.map((option) => (
+                <View key={option.id} style={[styles.palettePage, { width }]}>
+                  <View style={styles.paletteHeading}>
+                    <Text style={styles.paletteTitle}>Draft</Text>
+                    <Text style={styles.paletteSubtitle}>Color Palette</Text>
+                  </View>
+
+                  <View style={styles.paletteRows}>
+                    <PaletteSwatchCard swatch={option.swatches[0]} width={largeWidth} height={146} />
+
+                    <View style={styles.paletteRow}>
+                      <PaletteSwatchCard
+                        swatch={option.swatches[1]}
+                        width={leftMediumWidth}
+                        height={138}
+                      />
+                      <PaletteSwatchCard
+                        swatch={option.swatches[2]}
+                        width={rightMediumWidth}
+                        height={138}
+                      />
+                    </View>
+
+                    <View style={styles.paletteRow}>
+                      <PaletteSwatchCard
+                        swatch={option.swatches[3]}
+                        width={smallWidth}
+                        height={106}
+                      />
+                      <PaletteSwatchCard
+                        swatch={option.swatches[4]}
+                        width={smallWidth}
+                        height={106}
+                      />
+                      <PaletteSwatchCard
+                        swatch={option.swatches[5]}
+                        width={smallWidth}
+                        height={106}
+                      />
+                    </View>
+
+                    <View style={styles.paletteRow}>
+                      <PaletteSwatchCard
+                        swatch={option.swatches[6]}
+                        width={bottomWidth}
+                        height={132}
+                      />
+                      <PaletteSwatchCard
+                        swatch={option.swatches[7]}
+                        width={bottomWidth}
+                        height={132}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.paginationDots}>
+              {paletteOptions.map((option, index) => (
+                <View
+                  key={option.id}
+                  style={[
+                    styles.paginationDot,
+                    index === activePaletteIndex && styles.paginationDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+
+          <BottomNavPill onMicPress={handleNew} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (canRenderNativeUi) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.nativePhotoScreen}>
+          <View style={styles.nativePhotoTopBar}>
+            <View style={styles.photoHeadingWrap}>
+              <Text style={styles.photoScreenTitle}>Draft</Text>
+              <Text style={styles.photoScreenSubtitle}>UI</Text>
+            </View>
+
+            <View style={styles.photoActions}>
+              <TouchableOpacity onPress={handleNew} style={styles.photoActionButton} hitSlop={12}>
+                <Feather name="x" size={18} color={C.cream} />
+              </TouchableOpacity>
+              <View style={styles.photoActionButton}>
+                <Feather name="check" size={18} color={C.cream} />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.nativePhotoContent}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={width}
+              snapToAlignment="start"
+              disableIntervalMomentum
+              directionalLockEnabled
+              bounces={false}
+              onScroll={(event) => {
+                const nextIndex = Math.round(
+                  event.nativeEvent.contentOffset.x / Math.max(width, 1)
+                );
+                setActivePaletteIndex(nextIndex);
+              }}
+              scrollEventThrottle={16}
+            >
+              {uiOptions.map((option) => (
+                <View key={option.id} style={[styles.photoPage, { width }]}>
+                  <NativeUiOptionCard option={option} />
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.photoPaginationDots}>
+              {uiOptions.map((option, index) => (
+                <View
+                  key={option.id}
+                  style={[
+                    styles.photoPaginationDot,
+                    index === activePaletteIndex && styles.photoPaginationDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+
+          <BottomNavPill onMicPress={handleNew} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (canRenderNativePhotos) {
+    const gutter = 18;
+    const gap = 10;
+    const contentWidth = width - gutter * 2;
+    const heroWidth = contentWidth;
+    const smallWidth = Math.floor((contentWidth - gap) / 2);
+    const availablePhotoHeight = Math.max(520, height - 250);
+    const heroHeight = Math.min(300, Math.max(236, availablePhotoHeight * 0.38));
+    const smallHeight = Math.min(172, Math.max(136, availablePhotoHeight * 0.24));
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.nativePhotoScreen}>
+          <View style={styles.nativePhotoTopBar}>
+            <View style={styles.photoHeadingWrap}>
+              <Text style={styles.photoScreenTitle}>Draft</Text>
+              <Text style={styles.photoScreenSubtitle}>Photos</Text>
+            </View>
+
+            <View style={styles.photoActions}>
+              <TouchableOpacity onPress={handleNew} style={styles.photoActionButton} hitSlop={12}>
+                <Feather name="x" size={18} color={C.cream} />
+              </TouchableOpacity>
+              <View style={styles.photoActionButton}>
+                <Feather name="check" size={18} color={C.cream} />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.nativePhotoContent}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={width}
+              snapToAlignment="start"
+              disableIntervalMomentum
+              directionalLockEnabled
+              bounces={false}
+              onScroll={(event) => {
+                const nextIndex = Math.round(
+                  event.nativeEvent.contentOffset.x / Math.max(width, 1)
+                );
+                setActivePaletteIndex(nextIndex);
+              }}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.photoPagerContent}
+            >
+              {photoOptions.map((option, optionIndex) => (
+                <View key={option.id} style={[styles.photoPage, { width }]}>
+                  <View style={styles.photoRows}>
+                    <PhotoTile photo={option.photos[0]} width={heroWidth} height={heroHeight} />
+
+                    <View style={styles.photoRow}>
+                      <PhotoTile photo={option.photos[1]} width={smallWidth} height={smallHeight} />
+                      <PhotoTile photo={option.photos[2]} width={smallWidth} height={smallHeight} />
+                    </View>
+
+                    <View style={styles.photoRow}>
+                      <PhotoTile
+                        photo={option.photos[3]}
+                        width={smallWidth}
+                        height={smallHeight}
+                        highlighted={optionIndex === 0}
+                      />
+                      <PhotoTile photo={option.photos[4]} width={smallWidth} height={smallHeight} />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.photoPaginationDots}>
+              {photoOptions.map((option, index) => (
+                <View
+                  key={option.id}
+                  style={[
+                    styles.photoPaginationDot,
+                    index === activePaletteIndex && styles.photoPaginationDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+
+          <BottomNavPill onMicPress={handleNew} />
         </View>
       </SafeAreaView>
     );
@@ -86,58 +1104,22 @@ export default function OutputScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleNew} style={styles.headerButton} hitSlop={12}>
-          <Feather name="arrow-left" size={20} color={C.muted} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Artifact</Text>
-        <View style={styles.headerButton} />
+      <View style={styles.fullscreenWebView}>
+        <WebView
+          style={styles.embeddedWebView}
+          source={{ html: renderedHtml, baseUrl: '' }}
+          originWhitelist={['*']}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          scrollEnabled
+          bounces={false}
+          injectedJavaScript={injectedJavaScript}
+          onError={(e) => console.error('[WebView error]', e.nativeEvent)}
+          onHttpError={(e) => console.error('[WebView HTTP error]', e.nativeEvent)}
+        />
       </View>
 
-      {/* Transcript pill */}
-      {transcript ? (
-        <View style={styles.transcriptBar}>
-          <Feather name="mic" size={11} color={C.muted} />
-          <Text style={styles.transcriptText} numberOfLines={1}>
-            {transcript}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* WebView */}
-      <WebView
-        style={styles.webview}
-        source={{ html, baseUrl: '' }}
-        originWhitelist={['*']}
-        scrollEnabled
-        backgroundColor="#ffffff"
-        onError={(e) => console.error('[WebView error]', e.nativeEvent)}
-        onHttpError={(e) => console.error('[WebView HTTP error]', e.nativeEvent)}
-      />
-
-      {/* Save button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            saved && styles.saveButtonSaved,
-            saving && styles.saveButtonSaving,
-          ]}
-          onPress={handleSave}
-          disabled={saved || saving}
-          activeOpacity={0.8}
-        >
-          <Feather
-            name={saved ? 'check' : 'bookmark'}
-            size={16}
-            color={saved ? C.savedGreen : C.bg}
-          />
-          <Text style={[styles.saveButtonText, saved && styles.saveButtonTextSaved]}>
-            {saving ? 'Saving…' : saved ? 'Saved' : 'Save to Library'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNavPill onMicPress={handleNew} />
     </SafeAreaView>
   );
 }
@@ -147,75 +1129,481 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+  fullscreenWebView: {
+    flex: 1,
+    backgroundColor: C.bg,
   },
-  headerButton: {
+  embeddedWebView: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  nativePaletteScreen: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  nativePaletteTopBar: {
+    paddingTop: Platform.OS === 'ios' ? 8 : 16,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
+  },
+  backButton: {
     width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: C.cream,
-    letterSpacing: 0.2,
-  },
-  transcriptBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
-  },
-  transcriptText: {
+  nativePaletteContent: {
     flex: 1,
-    fontSize: 12,
-    color: C.muted,
-    fontStyle: 'italic',
+    justifyContent: 'flex-start',
   },
-  webview: {
-    flex: 1,
-    backgroundColor: '#ffffff',
+  paletteHeading: {
+    marginBottom: 16,
   },
-  footer: {
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 12 : 20,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
+  palettePagerContent: {
+    alignItems: 'stretch',
   },
-  saveButton: {
+  palettePage: {
+    paddingHorizontal: 16,
+  },
+  paletteTitle: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '700',
+    lineHeight: 31,
+  },
+  paletteSubtitle: {
+    color: '#7A7A7A',
+    fontSize: 16,
+    marginTop: 2,
+  },
+  paletteRows: {
+    gap: 8,
+  },
+  paginationDots: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: C.amber,
-    borderRadius: 14,
-    paddingVertical: 16,
+    paddingTop: 14,
   },
-  saveButtonSaved: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: C.savedGreen,
+  paginationDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
-  saveButtonSaving: {
-    opacity: 0.6,
+  paginationDotActive: {
+    width: 22,
+    backgroundColor: 'rgba(255,255,255,0.62)',
   },
-  saveButtonText: {
-    fontSize: 16,
+  paletteRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  paletteSwatch: {
+    borderRadius: 25,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    padding: 14,
+  },
+  paletteSwatchTextWrap: {
+    gap: 2,
+  },
+  paletteSwatchName: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  paletteSwatchHex: {
+    fontSize: 12,
     fontWeight: '600',
-    color: C.bg,
-    letterSpacing: 0.2,
+    lineHeight: 15,
   },
-  saveButtonTextSaved: {
-    color: C.savedGreen,
+  photoTile: {
+    borderRadius: 21,
+    overflow: 'hidden',
+    backgroundColor: '#1C1C1C',
+  },
+  photoTileHighlighted: {
+    borderWidth: 2,
+    borderColor: '#7C4DFF',
+  },
+  photoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.24)',
+  },
+  photoMeta: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    gap: 2,
+  },
+  photoSourceLabel: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  photoAuthor: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  nativePhotoScreen: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  nativePhotoTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingTop: Platform.OS === 'ios' ? 2 : 12,
+    paddingHorizontal: 18,
+    paddingBottom: 8,
+  },
+  photoHeadingWrap: {
+    gap: 0,
+  },
+  photoScreenTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 32,
+  },
+  photoScreenSubtitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '300',
+    lineHeight: 28,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingTop: 8,
+  },
+  photoActionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  nativePhotoContent: {
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  photoPagerContent: {
+    alignItems: 'stretch',
+  },
+  photoPage: {
+    paddingHorizontal: 18,
+    justifyContent: 'flex-start',
+  },
+  photoRows: {
+    gap: 10,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  nativeUiCard: {
+    height: 590,
+    borderRadius: 34,
+    padding: 18,
+    borderWidth: 1,
+    gap: 12,
+    overflow: 'hidden',
+  },
+  nativeUiCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  nativeUiDirection: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  nativeUiProduct: {
+    marginTop: 6,
+    fontSize: 27,
+    lineHeight: 31,
+    fontWeight: '700',
+    maxWidth: '78%',
+  },
+  nativeUiStatusChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  nativeUiStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  nativeUiHeroSplit: {
+    flexDirection: 'row',
+    gap: 12,
+    borderRadius: 28,
+    padding: 18,
+    minHeight: 190,
+  },
+  nativeUiSplitCopy: {
+    flex: 1.2,
+    justifyContent: 'space-between',
+  },
+  nativeUiPreviewTall: {
+    width: 96,
+    borderRadius: 24,
+  },
+  nativeUiHeadline: {
+    fontSize: 28,
+    lineHeight: 30,
+    fontWeight: '700',
+  },
+  nativeUiSupport: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  nativeUiDualRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  nativeUiSmallCard: {
+    flex: 1,
+    minHeight: 116,
+    borderRadius: 24,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  nativeUiMiniPill: {
+    width: 34,
+    height: 12,
+    borderRadius: 999,
+  },
+  nativeUiMiniPillWide: {
+    width: 58,
+    height: 10,
+    borderRadius: 999,
+  },
+  nativeUiMiniBlock: {
+    height: 52,
+    borderRadius: 18,
+  },
+  nativeUiMiniRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  nativeUiMiniTile: {
+    flex: 1,
+    height: 44,
+    borderRadius: 16,
+  },
+  nativeUiFooterCard: {
+    flex: 1,
+    borderRadius: 28,
+    padding: 18,
+    justifyContent: 'space-between',
+  },
+  nativeUiFooterHeadline: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
+  nativeUiFooterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  nativeUiFooterTile: {
+    flex: 1,
+    height: 76,
+    borderRadius: 18,
+  },
+  nativeUiCenteredHero: {
+    borderRadius: 28,
+    padding: 24,
+    minHeight: 224,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nativeUiHeadlineCenter: {
+    fontSize: 30,
+    lineHeight: 33,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  nativeUiSupportCenter: {
+    marginTop: 12,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    textAlign: 'center',
+    maxWidth: '90%',
+  },
+  nativeUiCtaRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  nativeUiPrimaryCta: {
+    height: 42,
+    borderRadius: 21,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nativeUiPrimaryCtaText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  nativeUiSecondaryCta: {
+    height: 42,
+    borderRadius: 21,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  nativeUiSecondaryCtaText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  nativeUiTripleRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  nativeUiColumnCard: {
+    flex: 1,
+    height: 146,
+    borderRadius: 22,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  nativeUiColumnBlock: {
+    height: 82,
+    borderRadius: 18,
+  },
+  nativeUiFooterWide: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+  },
+  nativeUiFooterShort: {
+    width: 86,
+    height: 34,
+    borderRadius: 999,
+  },
+  nativeUiLine: {
+    width: '82%',
+    height: 12,
+    borderRadius: 999,
+  },
+  nativeUiLineShort: {
+    width: '56%',
+    height: 12,
+    borderRadius: 999,
+  },
+  nativeUiBoldTopRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  nativeUiBoldPanelLarge: {
+    flex: 1.2,
+    minHeight: 188,
+    borderRadius: 28,
+    padding: 18,
+    justifyContent: 'space-between',
+  },
+  nativeUiBoldPanelTall: {
+    width: 96,
+    minHeight: 188,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 16,
+  },
+  nativeUiAccentPill: {
+    width: 74,
+    height: 14,
+    borderRadius: 999,
+  },
+  nativeUiMiniDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  nativeUiBoldBanner: {
+    borderRadius: 24,
+    padding: 18,
+    gap: 12,
+  },
+  photoPaginationDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
+  photoPaginationDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  photoPaginationDotActive: {
+    width: 22,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+  },
+  photoNavWrap: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 16,
+    alignItems: 'center',
+  },
+  photoNavPill: {
+    width: '100%',
+    maxWidth: 246,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    shadowColor: '#000000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  photoNavIcon: {
+    width: 52,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySubtext: {
+    color: C.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
   empty: {
     flex: 1,

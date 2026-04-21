@@ -11,8 +11,17 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Allow Thought Catcher to transcribe your voice ideas."
-      }
+        "NSSpeechRecognitionUsageDescription": "Allow Thought Catcher to transcribe your voice ideas.",
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "colormind.io": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
+      },
+      "bundleIdentifier": "com.lucytrepanier.capstone"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +31,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "output": "static",
