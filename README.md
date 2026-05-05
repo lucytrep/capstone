@@ -1,50 +1,45 @@
-# Welcome to your Expo app 👋
+# Capstone
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Active app target
 
-## Get started
+The native Swift rewrite now lives in [swift-app](./swift-app).
 
-1. Install dependencies
+If you are continuing product work, feature work, bug fixes, or UI updates for the iOS app, start in:
 
-   ```bash
-   npm install
-   ```
+- `/Users/lucytrepanier/Code/capstone/swift-app`
 
-2. Start the app
+## Important note for future updates
 
-   ```bash
-   npx expo start
-   ```
+The old Expo / React Native app is still present in this repo for reference and migration only.
 
-In the output, you'll find options to open the app in a
+Unless you are explicitly porting something from the legacy app, treat these folders as reference material:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- `/Users/lucytrepanier/Code/capstone/app`
+- `/Users/lucytrepanier/Code/capstone/components`
+- `/Users/lucytrepanier/Code/capstone/services`
+- `/Users/lucytrepanier/Code/capstone/data`
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Current native workflow
 
-## Get a fresh project
+1. Open `/Users/lucytrepanier/Code/capstone/swift-app/DraftNative.xcodeproj`
+2. Build and run the `DraftNative` scheme
+3. Implement new native work inside `swift-app`
+4. Only read the Expo app when porting behavior or content into Swift
 
-When you're ready, run:
+## Migration status
 
-```bash
-npm run reset-project
-```
+Already rebuilt in Swift:
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- app shell and tab structure
+- voice-first home flow scaffold
+- generation loading flow
+- HTML artifact rendering via `WKWebView`
+- session persistence
+- native library shell
 
-## Learn more
+Still to port:
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- real generation/backend pipeline
+- the richer output controls from the Expo app
+- remaining saved-library interactions and polish
+- settings/preferences behavior
