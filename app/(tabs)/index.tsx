@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +21,7 @@ import Voice, {
   SpeechResultsEvent,
   SpeechStartEvent,
 } from '@react-native-voice/voice';
+import { AppBottomNav } from '@/components/app-bottom-nav';
 import { SessionStore } from '@/store/session';
 
 const C = {
@@ -28,10 +29,13 @@ const C = {
   cardActive: '#B74989',
   white: '#FFF8FC',
   softWhite: 'rgba(255, 248, 252, 0.74)',
+  softWhiteStrong: 'rgba(255, 248, 252, 0.9)',
   nav: 'rgba(255, 240, 248, 0.22)',
   navBorder: 'rgba(255, 240, 248, 0.32)',
   ring: 'rgba(255, 248, 252, 0.22)',
 };
+
+const ONBOARDING_KEY = 'draft.onboarding.seen';
 
 export default function HomeScreen() {
   const [text, setText] = useState('');
@@ -40,9 +44,14 @@ export default function HomeScreen() {
   const [voiceAvailable, setVoiceAvailable] = useState<boolean | null>(null);
   const [voiceStatus, setVoiceStatus] = useState('Speak clearly and pause when finished');
   const [voiceError, setVoiceError] = useState('');
+  const [showTypedFallback, setShowTypedFallback] = useState(false);
+  const [onboardingReady, setOnboardingReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
   const pulse = useRef(new Animated.Value(1)).current;
   const isNavigatingRef = useRef(false);
   const transcriptRef = useRef('');
+  const inputRef = useRef<TextInput | null>(null);
   const insets = useSafeAreaInsets();
 
   const triggerGenerate = useCallback((value: string) => {
@@ -95,6 +104,7 @@ export default function HomeScreen() {
       setIsListening(false);
       setVoiceError(message);
       setVoiceStatus('Voice capture failed. Try again.');
+      setShowTypedFallback(true);
     };
   }, [triggerGenerate]);
 
@@ -102,8 +112,14 @@ export default function HomeScreen() {
     try {
       const available = await Voice.isAvailable();
       setVoiceAvailable(Boolean(available));
+      if (!available) {
+        setShowTypedFallback(true);
+        setVoiceStatus('Voice is unavailable here. Type a prompt to test instead.');
+      }
     } catch {
       setVoiceAvailable(false);
+      setShowTypedFallback(true);
+      setVoiceStatus('Voice is unavailable here. Type a prompt to test instead.');
     }
   }, []);
 
@@ -148,6 +164,16 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((value) => {
+        setShowOnboarding(value !== 'true');
+      })
+      .finally(() => {
+        setOnboardingReady(true);
+      });
+  }, []);
+
+  useEffect(() => {
     resetVoiceEngine().catch((error) => {
       console.error('Initial voice reset failed:', error);
     });
@@ -186,8 +212,14 @@ export default function HomeScreen() {
   }, [isListening, pulse]);
 
   const handleMicPress = async () => {
+    if (showOnboarding) {
+      return;
+    }
+
     if (voiceAvailable === false) {
-      Alert.alert('Voice unavailable', 'Speech recognition is not available on this device yet.');
+      setShowTypedFallback(true);
+      setVoiceStatus('Voice is unavailable here. Type a prompt to test instead.');
+      inputRef.current?.focus();
       return;
     }
 
@@ -209,7 +241,27 @@ export default function HomeScreen() {
       setIsListening(false);
       setVoiceError('Could not start voice recognition.');
       setVoiceStatus('Voice capture failed. Try again.');
+      setShowTypedFallback(true);
+      inputRef.current?.focus();
     }
+  };
+
+  const completeOnboarding = async () => {
+    setShowOnboarding(false);
+    try {
+      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    } catch (error) {
+      console.error('Failed to persist onboarding state:', error);
+    }
+  };
+
+  const advanceOnboarding = () => {
+    if (onboardingStep === 0) {
+      setOnboardingStep(1);
+      return;
+    }
+
+    completeOnboarding().catch(() => undefined);
   };
 
   const promptText =
@@ -237,61 +289,106 @@ export default function HomeScreen() {
                 isListening && styles.cardListening,
                 {
                   paddingTop: Math.max(insets.top, 18) + 14,
-                  paddingBottom: Math.max(insets.bottom, 12) + 12,
+                  paddingBottom: 128 + Math.max(insets.bottom, 10),
                 },
               ]}
             >
               <Text style={styles.brand}>Draft</Text>
 
-          <View style={styles.promptArea}>
-            <Text style={[styles.promptText, !text.trim() && styles.promptPlaceholder]}>
-              {promptText}
-            </Text>
-            <Text style={styles.statusText}>{voiceStatus}</Text>
-            {voiceError ? <Text style={styles.errorText}>{voiceError}</Text> : null}
-          </View>
+              <View style={styles.promptArea}>
+                <Text style={[styles.promptText, !text.trim() && styles.promptPlaceholder]}>
+                  {promptText}
+                </Text>
+                <Text style={styles.statusText}>{voiceStatus}</Text>
+                {voiceError ? <Text style={styles.errorText}>{voiceError}</Text> : null}
+              </View>
 
-          <TextInput
-            style={styles.hiddenInput}
-            value={text}
-            onChangeText={setText}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder="Tap to dictate"
-            placeholderTextColor="transparent"
-            multiline
-            autoCorrect
-            autoCapitalize="sentences"
-          />
+              <TextInput
+                ref={inputRef}
+                style={showTypedFallback ? styles.fallbackInput : styles.hiddenInput}
+                value={text}
+                onChangeText={setText}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder={showTypedFallback ? 'Type a prompt to test in Simulator' : 'Tap to dictate'}
+                placeholderTextColor={showTypedFallback ? 'rgba(255, 248, 252, 0.56)' : 'transparent'}
+                multiline
+                autoCorrect
+                autoCapitalize="sentences"
+              />
 
-          <View style={styles.micArea}>
-            <Animated.View style={[styles.micRing, { transform: [{ scale: pulse }] }]}>
-              <TouchableOpacity
-                style={[styles.micButton, isListening && styles.micButtonActive]}
-                onPress={handleMicPress}
-                activeOpacity={0.85}
-              >
-                <Feather name="mic" size={30} color={C.white} />
-              </TouchableOpacity>
-            </Animated.View>
-            <Text style={styles.recordingText}>
-              {isListening ? 'Tap the mic again to stop' : 'Tap the mic to begin'}
-            </Text>
-          </View>
+              {showTypedFallback ? (
+                <View style={styles.fallbackComposer}>
+                  <TouchableOpacity
+                    onPress={() => triggerGenerate(text)}
+                    style={[styles.fallbackGenerateButton, !text.trim() && styles.fallbackGenerateButtonDisabled]}
+                    disabled={!text.trim()}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.fallbackGenerateButtonText}>Generate from text</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
 
-          <View style={styles.bottomNav}>
-            <TouchableOpacity style={styles.navIcon}>
-              <Feather name="mic" size={22} color={C.white} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navIcon}>
-              <Feather name="bar-chart-2" size={22} color={C.white} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navIcon}>
-              <Feather name="user" size={22} color={C.white} />
-            </TouchableOpacity>
-          </View>
+              <View style={styles.micArea}>
+                <Animated.View style={[styles.micRing, { transform: [{ scale: pulse }] }]}>
+                  <TouchableOpacity
+                    style={[styles.micButton, isListening && styles.micButtonActive]}
+                    onPress={handleMicPress}
+                    activeOpacity={0.85}
+                  >
+                    <Feather name="mic" size={30} color={C.white} />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Text style={styles.recordingText}>
+                  {isListening ? 'Tap the mic again to stop' : 'Tap the mic to begin'}
+                </Text>
+              </View>
             </View>
           </KeyboardAvoidingView>
+          <AppBottomNav variant="home" />
+          {onboardingReady && showOnboarding ? (
+            <View style={styles.onboardingOverlay}>
+              <View style={styles.onboardingCard}>
+                <Text style={styles.onboardingEyebrow}>
+                  {onboardingStep === 0 ? 'Welcome to Draft' : 'How it works'}
+                </Text>
+                <Text style={styles.onboardingTitle}>
+                  {onboardingStep === 0
+                    ? 'Speak the direction you want to explore'
+                    : 'We turn your prompt into visual directions you can compare'}
+                </Text>
+                <Text style={styles.onboardingBody}>
+                  {onboardingStep === 0
+                    ? 'Describe a moodboard, palette, UI direction, or photo concept, then tap the mic to start generating.'
+                    : 'Use the library to review boards, open details, and compare multiple routes before choosing what to keep.'}
+                </Text>
+
+                <View style={styles.onboardingDots}>
+                  {[0, 1].map((index) => (
+                    <View
+                      key={`onboarding-dot-${index}`}
+                      style={[
+                        styles.onboardingDot,
+                        onboardingStep === index && styles.onboardingDotActive,
+                      ]}
+                    />
+                  ))}
+                </View>
+
+                <View style={styles.onboardingActions}>
+                  <TouchableOpacity onPress={() => completeOnboarding()} style={styles.onboardingSecondary}>
+                    <Text style={styles.onboardingSecondaryText}>Skip</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={advanceOnboarding} style={styles.onboardingPrimary}>
+                    <Text style={styles.onboardingPrimaryText}>
+                      {onboardingStep === 0 ? 'Next' : 'Got it'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ) : null}
         </SafeAreaView>
       </ImageBackground>
     </View>
@@ -332,7 +429,7 @@ const styles = StyleSheet.create({
     color: C.white,
   },
   promptArea: {
-    paddingTop: 102,
+    paddingTop: 32,
     paddingBottom: 18,
     minHeight: 190,
     alignItems: 'center',
@@ -368,6 +465,39 @@ const styles = StyleSheet.create({
     width: 1,
     height: 1,
   },
+  fallbackInput: {
+    minHeight: 120,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    backgroundColor: 'rgba(255, 248, 252, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 248, 252, 0.16)',
+    color: C.white,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlignVertical: 'top',
+  },
+  fallbackComposer: {
+    alignItems: 'center',
+    paddingTop: 16,
+  },
+  fallbackGenerateButton: {
+    borderRadius: 18,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+    minWidth: 168,
+    alignItems: 'center',
+    backgroundColor: C.white,
+  },
+  fallbackGenerateButtonDisabled: {
+    opacity: 0.45,
+  },
+  fallbackGenerateButtonText: {
+    color: '#8A2960',
+    fontSize: 15,
+    fontWeight: '700',
+  },
   micArea: {
     alignItems: 'center',
     paddingTop: 34,
@@ -398,21 +528,80 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: C.softWhite,
   },
-  bottomNav: {
-    marginTop: 'auto',
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: C.nav,
-    borderWidth: 1,
-    borderColor: C.navBorder,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  navIcon: {
-    width: 52,
-    height: 44,
+  onboardingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(28, 6, 21, 0.42)',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  onboardingCard: {
+    width: '100%',
+    borderRadius: 28,
+    paddingHorizontal: 22,
+    paddingVertical: 24,
+    backgroundColor: 'rgba(131, 54, 95, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 248, 252, 0.16)',
+    gap: 12,
+  },
+  onboardingEyebrow: {
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: '600',
+    color: C.softWhiteStrong,
+  },
+  onboardingTitle: {
+    fontSize: 24,
+    lineHeight: 29,
+    fontWeight: '700',
+    color: C.white,
+  },
+  onboardingBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: C.softWhiteStrong,
+  },
+  onboardingDots: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 4,
+  },
+  onboardingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 248, 252, 0.32)',
+  },
+  onboardingDotActive: {
+    width: 18,
+    backgroundColor: C.white,
+  },
+  onboardingActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 8,
+  },
+  onboardingSecondary: {
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  onboardingSecondaryText: {
+    color: C.softWhiteStrong,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  onboardingPrimary: {
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    backgroundColor: C.white,
+  },
+  onboardingPrimaryText: {
+    color: '#7E2255',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

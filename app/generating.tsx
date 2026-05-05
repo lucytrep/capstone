@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Alert, StyleSheet, View, Text, SafeAreaView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -55,6 +55,7 @@ function BreathingDot({ delay = 0 }: { delay?: number }) {
 export default function GeneratingScreen() {
   const glowScale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.12);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     glowScale.value = withRepeat(
@@ -80,53 +81,92 @@ export default function GeneratingScreen() {
     opacity: glowOpacity.value,
   }));
 
-  useEffect(() => {
-    const transcript = SessionStore.getTranscript();
-    if (!transcript) {
-      router.replace('/(tabs)');
-      return;
-    }
+  const handleBackHome = useCallback(() => {
+    router.replace('/(tabs)');
+  }, []);
 
-    let cancelled = false;
+    const runGeneration = useCallback(async (cancelledRef: { current: boolean }) => {
+      setErrorMessage('');
+      await SessionStore.hydrate();
+      if (cancelledRef.current) return;
 
-    const run = async () => {
+      const transcript = SessionStore.getTranscript();
+      if (!transcript) {
+        router.replace('/(tabs)');
+        return;
+      }
+
       try {
         const html = await generateArtifact(transcript);
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         SessionStore.setArtifact(html);
         router.replace('/output');
       } catch (err) {
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         console.error('Generation error:', err);
-        const message =
-          err instanceof Error ? err.message : 'Something went wrong while generating.';
-        Alert.alert('Generation failed', message);
-        router.replace('/(tabs)');
+        setErrorMessage(
+          err instanceof Error ? err.message : 'Something went wrong while generating.'
+        );
+      } finally {
+        if (cancelledRef.current) return;
       }
-    };
+    }, []);
 
-    run();
+  useEffect(() => {
+    const cancelledRef = { current: false };
+
+    runGeneration(cancelledRef);
+
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
     };
-  }, []);
+  }, [runGeneration]);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.body}>
         <View style={styles.animationArea}>
           <Animated.View style={[styles.glow, glowStyle]} />
-          <View style={styles.dotsRow}>
-            <BreathingDot delay={0} />
-            <BreathingDot delay={200} />
-            <BreathingDot delay={400} />
-          </View>
+          {errorMessage ? (
+            <View style={styles.errorBadge}>
+              <Text style={styles.errorBadgeText}>!</Text>
+            </View>
+          ) : (
+            <View style={styles.dotsRow}>
+              <BreathingDot delay={0} />
+              <BreathingDot delay={200} />
+              <BreathingDot delay={400} />
+            </View>
+          )}
         </View>
 
         <View style={styles.textArea}>
-          <Text style={styles.label}>Generating your artifact</Text>
-          <Text style={styles.sublabel}>This could take a couple minutes…</Text>
+          <Text style={styles.label}>{errorMessage ? 'Generation failed' : 'Generating your artifact'}</Text>
+          <Text style={styles.sublabel}>
+            {errorMessage
+              ? errorMessage
+              : 'This could take a couple minutes…'}
+          </Text>
         </View>
+
+        {errorMessage ? (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              onPress={() => runGeneration({ current: false })}
+              style={styles.primaryButton}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Try again</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBackHome}
+              style={styles.secondaryButton}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.secondaryButtonText}>Back home</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -156,6 +196,22 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: C.amber,
   },
+  errorBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(232, 168, 124, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(232, 168, 124, 0.32)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorBadgeText: {
+    color: C.amber,
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '700',
+  },
   dotsRow: {
     flexDirection: 'row',
     gap: 10,
@@ -180,5 +236,41 @@ const styles = StyleSheet.create({
   sublabel: {
     fontSize: 14,
     color: C.muted,
+    textAlign: 'center',
+    paddingHorizontal: 28,
+  },
+  actions: {
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    paddingHorizontal: 28,
+  },
+  primaryButton: {
+    minWidth: 164,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    backgroundColor: C.amber,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#1C1815',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    minWidth: 164,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 240, 232, 0.16)',
+    backgroundColor: 'rgba(245, 240, 232, 0.05)',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: C.cream,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

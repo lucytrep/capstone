@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -70,19 +70,19 @@ type UiOption = {
 
 type EmbeddedPaletteOptions = {
   kind?: string;
-  options?: Array<{
+  options?: {
     id?: string;
     swatches?: PaletteSwatch[];
-  }>;
+  }[];
 };
 
 type EmbeddedPhotoOptions = {
   kind?: string;
-  options?: Array<{
+  options?: {
     id?: string;
     source?: 'pexels' | 'unsplash' | 'mixed';
     photos?: PhotoItem[];
-  }>;
+  }[];
 };
 
 type EmbeddedUiOptions = {
@@ -628,9 +628,6 @@ function BottomNavPill({ onMicPress }: { onMicPress: () => void }) {
         <View style={styles.photoNavIcon}>
           <Feather name="bar-chart-2" size={22} color={C.cream} />
         </View>
-        <View style={styles.photoNavIcon}>
-          <Feather name="user" size={22} color={C.cream} />
-        </View>
       </View>
     </View>
   );
@@ -776,10 +773,25 @@ function NativeUiOptionCard({ option }: { option: UiOption }) {
 
 export default function OutputScreen() {
   const [activePaletteIndex, setActivePaletteIndex] = useState(0);
+  const [sessionReady, setSessionReady] = useState(false);
   const { width, height } = useWindowDimensions();
 
-  const artifactHtml = SessionStore.getArtifact();
-  const transcript = SessionStore.getTranscript(); // retained for save metadata only
+  useEffect(() => {
+    let cancelled = false;
+
+    SessionStore.hydrate().finally(() => {
+      if (!cancelled) {
+        setSessionReady(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const artifactHtml = sessionReady ? SessionStore.getArtifact() : '';
+  const transcript = sessionReady ? SessionStore.getTranscript() : '';
   const renderedHtml = normalizeArtifactHtml(artifactHtml);
   const uiOptions = useMemo(() => parseEmbeddedUiOptions(artifactHtml), [artifactHtml]);
   const canRenderNativeUi = uiOptions.length === 3;
@@ -805,7 +817,7 @@ export default function OutputScreen() {
     [embeddedPaletteOptions, paletteSwatches]
   );
   const canRenderNativePalette = isPaletteArtifact && paletteOptions.length === 3;
-  const canRenderNativePhotos = isPhotoArtifact && photoOptions.length === 3;
+  const canRenderNativePhotos = isPhotoArtifact && photoOptions.length > 0;
 
   console.log('[OutputScreen] artifactHtml length:', artifactHtml?.length ?? 0);
   console.log('[OutputScreen] artifactHtml preview:', artifactHtml?.slice(0, 200));
@@ -814,6 +826,22 @@ export default function OutputScreen() {
     SessionStore.clear();
     router.replace('/(tabs)');
   };
+
+  const handleApprove = () => {
+    SessionStore.clear();
+    router.replace('/(tabs)');
+  };
+
+  if (!sessionReady) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>Restoring your draft...</Text>
+          <Text style={styles.emptySubtext}>Hang tight while we recover the latest session.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!artifactHtml || artifactHtml.trim().length === 0) {
     return (
@@ -959,9 +987,9 @@ export default function OutputScreen() {
               <TouchableOpacity onPress={handleNew} style={styles.photoActionButton} hitSlop={12}>
                 <Feather name="x" size={18} color={C.cream} />
               </TouchableOpacity>
-              <View style={styles.photoActionButton}>
+              <TouchableOpacity onPress={handleApprove} style={styles.photoActionButton} hitSlop={12}>
                 <Feather name="check" size={18} color={C.cream} />
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1033,9 +1061,9 @@ export default function OutputScreen() {
               <TouchableOpacity onPress={handleNew} style={styles.photoActionButton} hitSlop={12}>
                 <Feather name="x" size={18} color={C.cream} />
               </TouchableOpacity>
-              <View style={styles.photoActionButton}>
+              <TouchableOpacity onPress={handleApprove} style={styles.photoActionButton} hitSlop={12}>
                 <Feather name="check" size={18} color={C.cream} />
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1578,7 +1606,7 @@ const styles = StyleSheet.create({
   },
   photoNavPill: {
     width: '100%',
-    maxWidth: 246,
+    maxWidth: 168,
     height: 54,
     borderRadius: 27,
     backgroundColor: '#111111',
@@ -1586,7 +1614,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
     shadowColor: '#000000',
     shadowOpacity: 0.3,
     shadowRadius: 12,

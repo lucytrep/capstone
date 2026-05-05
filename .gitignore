@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -42,5 +43,5 @@ app-example
 /ios
 /android
 
-# API keys — never commit
-config/keys.ts
+# editor swap files
+*.swp

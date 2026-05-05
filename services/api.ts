@@ -129,7 +129,8 @@ type GeminiImagenResponse = {
   }>;
 };
 
-type SemanticCategory = 'Color' | 'UI' | 'Photo' | 'Motion' | 'Typography' | 'Brand';
+type SemanticCategory = 'Color' | 'UI' | 'Photo';
+type BoardType = 'color' | 'photos' | 'ui';
 
 const PHOTO_DIRECTIONS = [
   {
@@ -262,7 +263,7 @@ function rankPhotosForDirection(
   });
 }
 
-const SYSTEM_PROMPT = `You are a design artifact generator. The user will describe a design idea. You must ALWAYS respond with only valid HTML and CSS - never text, never questions, never explanations. Generate the appropriate artifact type based on what they describe: UI screens, branding/color palettes, user journey maps, deck layouts, notes, code snippets, or animations. Always return a complete, beautiful, self-contained HTML document with embedded CSS. Never ask for clarification. Just build it. Start your response directly with <!DOCTYPE html> and nothing else.
+const SYSTEM_PROMPT = `You are a design artifact generator. The user will describe a design idea. You must ALWAYS respond with only valid HTML and CSS - never text, never questions, never explanations. This app supports exactly 3 board types: UI boards, photo boards, and color boards. Always return a complete, beautiful, self-contained HTML document with embedded CSS. Never ask for clarification. Just build it. Start your response directly with <!DOCTYPE html> and nothing else.
 
 When the user asks for a UI, app screen, interface, product concept, or visual design mock, you MUST follow this exact product-shell pattern:
 
@@ -472,9 +473,19 @@ function isPhotoPrompt(transcript: string) {
     return false;
   }
 
-  return /(curate|put together|bring together|generate|show me|give me|find me)/i.test(
-    transcript
-  );
+  return false;
+}
+
+function resolveBoardType(transcript: string): BoardType {
+  if (isPalettePrompt(transcript)) {
+    return 'color';
+  }
+
+  if (isPhotoPrompt(transcript)) {
+    return 'photos';
+  }
+
+  return 'ui';
 }
 
 function hashString(input: string) {
@@ -1449,11 +1460,13 @@ function validateUiArtifact(html: string) {
  * Send a text transcript to Claude and get back a self-contained HTML design artifact.
  */
 export async function generateArtifact(transcript: string): Promise<string> {
-  if (isPalettePrompt(transcript)) {
+  const boardType = resolveBoardType(transcript);
+
+  if (boardType === 'color') {
     return generateColorPaletteArtifact(transcript);
   }
 
-  if (isPhotoPrompt(transcript)) {
+  if (boardType === 'photos') {
     const photoArtifact = await generatePhotoArtifact(transcript);
     if (photoArtifact) {
       return photoArtifact;
@@ -1465,11 +1478,11 @@ export async function generateArtifact(transcript: string): Promise<string> {
     }
   }
 
-  if (isUiPrompt(transcript)) {
+  if (boardType === 'ui' && isUiPrompt(transcript)) {
     return buildUiArtifactHtml(buildUiOptions(transcript));
   }
 
-  const semanticCategory: SemanticCategory = isUiPrompt(transcript) ? 'UI' : 'Brand';
+  const semanticCategory: SemanticCategory = 'UI';
   const semanticTranscript = buildSemanticPromptAugmentation(transcript, semanticCategory);
   const uiInstructions = [
     'Return exactly 3 swipeable UI options.',
