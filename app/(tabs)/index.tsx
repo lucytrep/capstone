@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import {
   Animated,
   KeyboardAvoidingView,
-  Platform,
   SafeAreaView,
+  Platform,
   StyleSheet,
-  Text,
-  TextInput,
+  type TextInput as RNTextInput,
   TouchableOpacity,
   View,
-  ImageBackground,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -21,7 +21,9 @@ import Voice, {
   SpeechResultsEvent,
   SpeechStartEvent,
 } from '@react-native-voice/voice';
+import { AppText as Text, AppTextInput as TextInput } from '@/components/app-typography';
 import { AppBottomNav } from '@/components/app-bottom-nav';
+import { SoundwaveBackground } from '@/components/soundwave-background';
 import { SessionStore } from '@/store/session';
 
 const C = {
@@ -36,6 +38,12 @@ const C = {
 };
 
 const ONBOARDING_KEY = 'draft.onboarding.seen';
+const HOME_GRADIENTS = [
+  ['#2A0620', '#6B0132', '#DD2B77', '#CE68A4'],
+  ['#E08A6D', '#9A5B77', '#4C425C'],
+  ['#8E6BC7', '#6A567F', '#383E58'],
+  ['#69A6B0', '#5E688D', '#3D3F59'],
+] as const;
 
 export default function HomeScreen() {
   const [text, setText] = useState('');
@@ -48,11 +56,14 @@ export default function HomeScreen() {
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [gradientIndex, setGradientIndex] = useState(0);
   const pulse = useRef(new Animated.Value(1)).current;
   const isNavigatingRef = useRef(false);
+  const hasFocusedOnceRef = useRef(false);
   const transcriptRef = useRef('');
-  const inputRef = useRef<TextInput | null>(null);
+  const inputRef = useRef<RNTextInput | null>(null);
   const insets = useSafeAreaInsets();
+  const activeGradient = HOME_GRADIENTS[gradientIndex];
 
   const triggerGenerate = useCallback((value: string) => {
     const cleaned = value.trim();
@@ -143,6 +154,12 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (hasFocusedOnceRef.current) {
+        setGradientIndex((current) => (current + 1) % HOME_GRADIENTS.length);
+      } else {
+        hasFocusedOnceRef.current = true;
+      }
+
       isNavigatingRef.current = false;
       transcriptRef.current = '';
       setText('');
@@ -212,6 +229,7 @@ export default function HomeScreen() {
   }, [isListening, pulse]);
 
   const handleMicPress = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (showOnboarding) {
       return;
     }
@@ -272,12 +290,16 @@ export default function HomeScreen() {
         : 'Tap to dictate';
 
   return (
-    <View style={styles.container}>
-      <ImageBackground
-        source={require('../../assets/images/home-bg.jpg')}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+    <View style={[styles.container, { backgroundColor: activeGradient[activeGradient.length - 1] }]}>
+      <LinearGradient
+        colors={activeGradient}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.backgroundGradient}
       >
+        <SoundwaveBackground active={isListening} />
+        <View style={styles.atmosphereGlowTop} pointerEvents="none" />
+        <View style={styles.atmosphereGlowBottom} pointerEvents="none" />
         <SafeAreaView style={styles.safeArea}>
           <KeyboardAvoidingView
             style={styles.inner}
@@ -320,7 +342,7 @@ export default function HomeScreen() {
               {showTypedFallback ? (
                 <View style={styles.fallbackComposer}>
                   <TouchableOpacity
-                    onPress={() => triggerGenerate(text)}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); triggerGenerate(text); }}
                     style={[styles.fallbackGenerateButton, !text.trim() && styles.fallbackGenerateButtonDisabled]}
                     disabled={!text.trim()}
                     activeOpacity={0.85}
@@ -377,10 +399,10 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.onboardingActions}>
-                  <TouchableOpacity onPress={() => completeOnboarding()} style={styles.onboardingSecondary}>
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); completeOnboarding(); }} style={styles.onboardingSecondary}>
                     <Text style={styles.onboardingSecondaryText}>Skip</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={advanceOnboarding} style={styles.onboardingPrimary}>
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); advanceOnboarding(); }} style={styles.onboardingPrimary}>
                     <Text style={styles.onboardingPrimaryText}>
                       {onboardingStep === 0 ? 'Next' : 'Got it'}
                     </Text>
@@ -390,7 +412,7 @@ export default function HomeScreen() {
             </View>
           ) : null}
         </SafeAreaView>
-      </ImageBackground>
+      </LinearGradient>
     </View>
   );
 }
@@ -398,10 +420,28 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4B2D6',
+    backgroundColor: '#454050',
   },
-  backgroundImage: {
+  backgroundGradient: {
     flex: 1,
+  },
+  atmosphereGlowTop: {
+    position: 'absolute',
+    top: -120,
+    left: -40,
+    right: -40,
+    height: 280,
+    borderRadius: 180,
+    backgroundColor: 'rgba(255, 243, 246, 0.08)',
+  },
+  atmosphereGlowBottom: {
+    position: 'absolute',
+    left: -80,
+    right: -80,
+    bottom: -120,
+    height: 360,
+    borderRadius: 220,
+    backgroundColor: 'rgba(79, 11, 45, 0.16)',
   },
   safeArea: {
     flex: 1,
@@ -420,7 +460,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardListening: {
-    backgroundColor: 'rgba(126, 34, 88, 0.14)',
+    backgroundColor: 'rgba(126, 34, 88, 0.12)',
   },
   brand: {
     fontSize: 28,
@@ -470,9 +510,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingVertical: 16,
-    backgroundColor: 'rgba(255, 248, 252, 0.08)',
+    backgroundColor: 'rgba(255, 248, 252, 0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 248, 252, 0.16)',
+    borderColor: 'rgba(255, 248, 252, 0.18)',
     color: C.white,
     fontSize: 16,
     lineHeight: 22,

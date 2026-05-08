@@ -30,10 +30,27 @@ struct LibraryCollectionDetailView: View {
                     .foregroundStyle(.white.opacity(0.68))
 
                 if collection.id == "individual" {
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(individualItems) { item in
-                            LibraryTile(item: item, width: nil, height: 186)
-                                .frame(maxWidth: .infinity)
+                    if let hero = individualItems.first {
+                        LibraryTile(item: hero, width: nil, height: 280, cornerRadius: 22)
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    if individualItems.count > 1 {
+                        HStack(spacing: 12) {
+                            ForEach(Array(individualItems.dropFirst().prefix(2))) { item in
+                                LibraryTile(item: item, width: nil, height: 190, cornerRadius: 18)
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
+                    }
+
+                    let remaining = Array(individualItems.dropFirst(3))
+                    if !remaining.isEmpty {
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(remaining) { item in
+                                LibraryTile(item: item, width: nil, height: 186)
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
                     }
                 } else {

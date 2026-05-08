@@ -2,6 +2,7 @@ import {
   ANTHROPIC_API_KEY,
   GEMINI_API_KEY,
   PEXELS_API_KEY,
+  PINTEREST_SERVICE_URL,
   UNSPLASH_ACCESS_KEY,
 } from '@/config/keys';
 import { getMatchingImageSearchTerms } from '@/constants/image-search-taxonomy';
@@ -47,14 +48,17 @@ type PhotoItem = {
   imageUrl: string;
   thumbUrl: string;
   alt: string;
-  source: 'pexels' | 'unsplash' | 'gemini';
+  source: 'pexels' | 'unsplash' | 'gemini' | 'pinterest';
   author: string;
   detailUrl: string;
 };
 
+type PhotoDisplayMode = 'image' | 'moodboard';
+
 type PhotoOption = {
   id: string;
-  source: 'pexels' | 'unsplash' | 'gemini' | 'mixed';
+  displayMode: PhotoDisplayMode;
+  source: 'pexels' | 'unsplash' | 'gemini' | 'pinterest' | 'mixed';
   direction?: 'editorial' | 'clean' | 'experimental';
   photos: PhotoItem[];
 };
@@ -79,6 +83,7 @@ type UiOption = {
 type PexelsPhotoItem = PhotoItem & { source: 'pexels' };
 type UnsplashPhotoItem = PhotoItem & { source: 'unsplash' };
 type GeminiPhotoItem = PhotoItem & { source: 'gemini' };
+type PinterestPhotoItem = PhotoItem & { source: 'pinterest' };
 
 type PexelsSearchResponse = {
   photos?: Array<{
@@ -451,6 +456,10 @@ function isPalettePrompt(transcript: string) {
   return /(color palette|palette|color scheme|brand colors?)/i.test(transcript);
 }
 
+function isMoodboardPrompt(transcript: string) {
+  return /(mood\s*board|moodboard)/i.test(transcript);
+}
+
 function isUiPrompt(transcript: string) {
   return /(ui|app screen|interface|product concept|visual design mock|dashboard|landing page|mobile app|screen design|app design|build a screen|generate a screen|home screen|design an app|design a mobile app|design a dashboard|design a landing page|website|web page|webpage|site|header|hero|hero section|section design|design ideas?|creative direction|layout concept|brand direction)/i.test(
     transcript
@@ -458,6 +467,10 @@ function isUiPrompt(transcript: string) {
 }
 
 function isPhotoPrompt(transcript: string) {
+  if (isMoodboardPrompt(transcript)) {
+    return true;
+  }
+
   if (
     /(photo|photos|imagery|images|art direction|moodboard|inspiration|reference images?)/i.test(
       transcript
@@ -477,6 +490,10 @@ function isPhotoPrompt(transcript: string) {
 }
 
 function resolveBoardType(transcript: string): BoardType {
+  if (isMoodboardPrompt(transcript)) {
+    return 'photos';
+  }
+
   if (isPalettePrompt(transcript)) {
     return 'color';
   }
@@ -486,6 +503,10 @@ function resolveBoardType(transcript: string): BoardType {
   }
 
   return 'ui';
+}
+
+function resolvePhotoDisplayMode(transcript: string): PhotoDisplayMode {
+  return isMoodboardPrompt(transcript) ? 'moodboard' : 'image';
 }
 
 function hashString(input: string) {
@@ -668,13 +689,13 @@ function buildLocalPaletteOptions(seedHex: string): PaletteOption[] {
 
 function extractCoreImagePrompt(transcript: string) {
   return transcript
-    .toLowerCase()
     .replace(
       /\b(can you|could you|would you|i want|i need|help me|show me|give me|find me|make me|please|curate|put together|bring together|draft)\b/gi,
       ' '
     )
+    .replace(/\b(some|a set of|set of|collection of)\b/gi, ' ')
     .replace(
-      /\b(some|a set of|set of|collection of|images?|photos?|imagery|art direction|moodboard|reference)\b/gi,
+      /\b(reference images?|reference photos?|image references?|photo references?|images?|photos?|imagery|art direction|moodboard)\b/gi,
       ' '
     )
     .replace(/\b(for me|for us|for this|based on|that feel like|that feels like)\b/gi, ' ')
@@ -825,13 +846,54 @@ async function getUnsplashPhotos(query: string, seed: number): Promise<PhotoItem
     .filter((photo): photo is UnsplashPhotoItem => photo !== null);
 }
 
+type PinterestServiceResponse = {
+  photos?: Array<{
+    id?: string;
+    imageUrl?: string;
+    thumbUrl?: string;
+    alt?: string;
+    author?: string;
+    detailUrl?: string;
+  }>;
+  error?: string;
+};
+
+async function getPinterestPhotos(query: string): Promise<PhotoItem[]> {
+  if (!PINTEREST_SERVICE_URL.trim()) {
+    return [];
+  }
+
+  const url = `${PINTEREST_SERVICE_URL}/search?q=${encodeURIComponent(query)}&max=10`;
+  const data = await fetchJson<PinterestServiceResponse>(url);
+
+  return (data.photos ?? [])
+    .map((photo) => {
+      if (!photo.id || !photo.imageUrl || !photo.thumbUrl) {
+        return null;
+      }
+
+      const item: PinterestPhotoItem = {
+        id: photo.id,
+        imageUrl: photo.imageUrl,
+        thumbUrl: photo.thumbUrl,
+        alt: photo.alt?.trim() || 'Pinterest inspiration',
+        source: 'pinterest',
+        author: photo.author?.trim() || 'Pinterest',
+        detailUrl: photo.detailUrl || '',
+      };
+
+      return item;
+    })
+    .filter((photo): photo is PinterestPhotoItem => photo !== null);
+}
+
 function buildGeminiImagePrompt(
   transcript: string,
   seed: number,
-  directionPrompt?: string
+  directionPrompt?: string,
+  displayMode: PhotoDisplayMode = 'image'
 ) {
-  const semanticTranscript = buildSemanticPromptAugmentation(transcript, 'Photo');
-  const corePrompt = extractCoreImagePrompt(semanticTranscript);
+  const corePrompt = extractCoreImagePrompt(transcript);
   const matchedTerms = getMatchingImageSearchTerms(corePrompt, 4);
   const keywordLine = matchedTerms.length > 0 ? ` Keywords: ${matchedTerms.join(', ')}.` : '';
   const directionPrompts = [
@@ -842,11 +904,13 @@ function buildGeminiImagePrompt(
   const directionLine = directionPrompt || directionPrompts[seed % directionPrompts.length];
 
   return [
-    'Create a high-quality vertical editorial photo set for design inspiration.',
-    `Subject: ${corePrompt || transcript}.`,
+    `Create a high-quality vertical set of ${displayMode === 'moodboard' ? 'moodboard imagery' : 'editorial imagery'} for design inspiration.`,
+    "Honor the user's dictation closely and keep the exact subject, styling cues, materials, mood words, era references, and composition notes from the request.",
+    `User request: ${corePrompt || transcript}.`,
     keywordLine,
     directionLine,
     'Generate distinct compositions with varied crops, strong lighting, and polished photography.',
+    'Avoid color chips, palette cards, flat swatches, UI mockups, abstract gradients, and text overlays unless the user explicitly asked for them.',
     'Images should feel suitable for a premium mobile moodboard.',
   ]
     .filter(Boolean)
@@ -857,7 +921,8 @@ async function getGeminiPhotos(
   transcript: string,
   seed: number,
   directionPrompt?: string,
-  directionKey?: 'editorial' | 'clean' | 'experimental'
+  directionKey?: 'editorial' | 'clean' | 'experimental',
+  displayMode: PhotoDisplayMode = 'image'
 ): Promise<PhotoItem[]> {
   if (!GEMINI_API_KEY.trim()) {
     return [];
@@ -872,7 +937,7 @@ async function getGeminiPhotos(
     body: JSON.stringify({
       instances: [
         {
-          prompt: buildGeminiImagePrompt(transcript, seed, directionPrompt),
+          prompt: buildGeminiImagePrompt(transcript, seed, directionPrompt, displayMode),
         },
       ],
       parameters: {
@@ -987,7 +1052,8 @@ function buildPhotoOptions(
   unsplashPhotos: PhotoItem[],
   geminiPhotosByDirection: Record<'editorial' | 'clean' | 'experimental', PhotoItem[]>,
   seedInput: string,
-  transcript: string
+  transcript: string,
+  displayMode: PhotoDisplayMode
 ) {
   const seed = hashSeed(seedInput);
   const filteredPexels = filterPhotosForFocus(dedupePhotos(pexelsPhotos), transcript);
@@ -1077,9 +1143,11 @@ function buildPhotoOptions(
     }
 
     const primarySource = curated[0]?.source ?? 'mixed';
+    const knownSources = ['gemini', 'pexels', 'unsplash', 'pinterest'] as const;
     addOption({
       id: `photos-${direction.id}`,
-      source: primarySource === 'gemini' || primarySource === 'pexels' || primarySource === 'unsplash' ? primarySource : 'mixed',
+      displayMode,
+      source: (knownSources as readonly string[]).includes(primarySource) ? primarySource as typeof knownSources[number] : 'mixed',
       direction: direction.id,
       photos: curated,
     });
@@ -1097,6 +1165,7 @@ function buildPhotoOptions(
 
     addOption({
       id: `photos-mixed-alt-${index}`,
+      displayMode,
       source: 'mixed',
       photos: curated,
     });
@@ -1110,6 +1179,7 @@ function buildPhotoOptions(
 
 function buildPhotoArtifactHtml(options: PhotoOption[]) {
   const json = JSON.stringify({ kind: 'photo-options', options });
+  const displayMode = options[0]?.displayMode ?? 'image';
   return `<!DOCTYPE html>
 <html>
   <head>
@@ -1119,7 +1189,7 @@ function buildPhotoArtifactHtml(options: PhotoOption[]) {
   <body style="margin:0;background:#000;color:#fff;font-family:-apple-system,'SF Pro',sans-serif;">
     <div style="padding:20px;min-height:100vh;background:#000;">
       <div style="font-size:28px;font-weight:700;line-height:1.1;">Draft</div>
-      <div style="font-size:16px;color:#8A8A8A;margin-bottom:16px;">Photos</div>
+      <div style="font-size:16px;color:#8A8A8A;margin-bottom:16px;">${displayMode === 'moodboard' ? 'Moodboard' : 'Image Gathering'}</div>
       <div style="font-size:14px;color:#A0A0A0;">Swipeable inspiration options ready.</div>
     </div>
   </body>
@@ -1250,7 +1320,8 @@ function hasPhotoProviderKeys() {
   return (
     Boolean(PEXELS_API_KEY.trim()) ||
     Boolean(UNSPLASH_ACCESS_KEY.trim()) ||
-    Boolean(GEMINI_API_KEY.trim())
+    Boolean(GEMINI_API_KEY.trim()) ||
+    Boolean(PINTEREST_SERVICE_URL.trim())
   );
 }
 
@@ -1275,9 +1346,9 @@ async function generateClaudePhotoArtifact(transcript: string): Promise<string> 
 }
 
 async function generatePhotoArtifact(transcript: string): Promise<string> {
-  const semanticTranscript = buildSemanticPromptAugmentation(transcript, 'Photo');
-  const corePrompt = extractCoreImagePrompt(semanticTranscript);
-  const query = buildSearchQuery(semanticTranscript) || corePrompt || transcript;
+  const displayMode = resolvePhotoDisplayMode(transcript);
+  const corePrompt = extractCoreImagePrompt(transcript);
+  const query = buildSearchQuery(transcript) || corePrompt || transcript;
   const requestSeed = `${transcript}::${Date.now()}`;
   const providerSeed = hashSeed(requestSeed);
 
@@ -1289,38 +1360,43 @@ async function generatePhotoArtifact(transcript: string): Promise<string> {
     const [
       pexelsResult,
       unsplashResult,
+      pinterestResult,
       geminiEditorialResult,
       geminiCleanResult,
       geminiExperimentalResult,
     ] = await Promise.allSettled([
       withTimeout(getPexelsPhotos(query, providerSeed + 1), 2500, 'Pexels'),
       withTimeout(getUnsplashPhotos(query, providerSeed + 2), 2500, 'Unsplash'),
+      withTimeout(getPinterestPhotos(query), 30000, 'Pinterest'),
       withTimeout(
         getGeminiPhotos(
-          semanticTranscript,
+          transcript,
           providerSeed + 3,
           PHOTO_DIRECTIONS[0].geminiPrompt,
-          'editorial'
+          'editorial',
+          displayMode
         ),
         4500,
         'Gemini editorial'
       ),
       withTimeout(
         getGeminiPhotos(
-          semanticTranscript,
+          transcript,
           providerSeed + 4,
           PHOTO_DIRECTIONS[1].geminiPrompt,
-          'clean'
+          'clean',
+          displayMode
         ),
         4500,
         'Gemini clean'
       ),
       withTimeout(
         getGeminiPhotos(
-          semanticTranscript,
+          transcript,
           providerSeed + 5,
           PHOTO_DIRECTIONS[2].geminiPrompt,
-          'experimental'
+          'experimental',
+          displayMode
         ),
         4500,
         'Gemini experimental'
@@ -1329,6 +1405,7 @@ async function generatePhotoArtifact(transcript: string): Promise<string> {
 
     const pexelsPhotos = pexelsResult.status === 'fulfilled' ? pexelsResult.value : [];
     const unsplashPhotos = unsplashResult.status === 'fulfilled' ? unsplashResult.value : [];
+    const pinterestPhotos = pinterestResult.status === 'fulfilled' ? pinterestResult.value : [];
     const geminiPhotosByDirection = {
       editorial:
         geminiEditorialResult.status === 'fulfilled' ? geminiEditorialResult.value : [],
@@ -1345,6 +1422,9 @@ async function generatePhotoArtifact(transcript: string): Promise<string> {
     if (unsplashResult.status === 'rejected') {
       console.warn('Unsplash photo fetch skipped:', unsplashResult.reason);
     }
+    if (pinterestResult.status === 'rejected') {
+      console.warn('Pinterest photo fetch skipped:', pinterestResult.reason);
+    }
     if (geminiEditorialResult.status === 'rejected') {
       console.warn('Gemini editorial photo fetch skipped:', geminiEditorialResult.reason);
     }
@@ -1356,11 +1436,12 @@ async function generatePhotoArtifact(transcript: string): Promise<string> {
     }
 
     const options = buildPhotoOptions(
-      pexelsPhotos,
+      [...pexelsPhotos, ...pinterestPhotos],
       unsplashPhotos,
       geminiPhotosByDirection,
       requestSeed,
-      semanticTranscript
+      transcript,
+      displayMode
     );
 
     if (options.length === 0) {

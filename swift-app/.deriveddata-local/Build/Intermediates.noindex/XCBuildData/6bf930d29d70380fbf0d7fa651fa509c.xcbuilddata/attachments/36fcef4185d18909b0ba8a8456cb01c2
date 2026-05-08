@@ -1,0 +1,209 @@
+{
+  "" : {
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNative-primary.dia",
+    "emit-module-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNative-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNative-primary-emit-module.dia",
+    "pch" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNative-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNative-primary.swiftdeps"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/App/AppModel.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppModel~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/App/DraftNativeApp.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/DraftNativeApp~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Models/ArtifactPayload.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactPayload~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Models/LibraryModels.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryModels~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Services/ArtifactGenerating.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/ArtifactGenerating~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Services/MockArtifactGenerator.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/MockArtifactGenerator~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Services/SpeechRecognizer.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SpeechRecognizer~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Storage/SessionStore.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SessionStore~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/AppBottomNav.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/AppBottomNav~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/GeneratingView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GeneratingView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/GenerationFlowView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/GenerationFlowView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/HomeView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/HomeView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryBoardDetailView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryBoardDetailView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryCollectionDetailView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryCollectionDetailView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/LibraryView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/OutputView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/OutputView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/RootTabView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/RootTabView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/SettingsView.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/SettingsView~partial.swiftmodule"
+  },
+  "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/Styles.swift" : {
+    "const-values" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.swiftconstvalues",
+    "dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.d",
+    "diagnostics" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.dia",
+    "index-unit-output-path" : "/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.o",
+    "llvm-bc" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.bc",
+    "object" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.o",
+    "swift-dependencies" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles.swiftdeps",
+    "swiftmodule" : "/Users/lucytrepanier/Code/capstone/swift-app/.deriveddata-local/Build/Intermediates.noindex/DraftNative.build/Debug-iphonesimulator/DraftNative.build/Objects-normal/arm64/Styles~partial.swiftmodule"
+  }
+}

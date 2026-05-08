@@ -8,7 +8,9 @@ enum LibraryItemKind: String, Hashable {
 enum LibrarySource: String, Hashable {
     case pexels
     case unsplash
-    case gemini
+    case pinterest
+    case arena
+    case google
 }
 
 struct LibraryItem: Identifiable, Hashable {
@@ -20,6 +22,7 @@ struct LibraryItem: Identifiable, Hashable {
     let generationID: String
     let imageURL: URL?
     let thumbnailURL: URL?
+    let bundleImageName: String?
     let alt: String?
     let source: LibrarySource?
     let author: String?
@@ -33,6 +36,7 @@ struct LibraryItem: Identifiable, Hashable {
         generationID: String,
         imageURL: String? = nil,
         thumbnailURL: String? = nil,
+        bundleImageName: String? = nil,
         alt: String? = nil,
         source: LibrarySource? = nil,
         author: String? = nil
@@ -45,6 +49,7 @@ struct LibraryItem: Identifiable, Hashable {
         self.generationID = generationID
         self.imageURL = imageURL.flatMap(URL.init(string:))
         self.thumbnailURL = thumbnailURL.flatMap(URL.init(string:))
+        self.bundleImageName = bundleImageName
         self.alt = alt
         self.source = source
         self.author = author
@@ -103,10 +108,10 @@ enum LibrarySeedData {
             updatedAtLabel: "Saved today",
             generationID: "gen-soft-spatial-ui",
             items: [
-                .init(id: "ui-controls-1", kind: .image, label: "Avatar cluster", previewColorHex: 0xF3E9D9, secondaryColorHex: 0xF39B2C, generationID: "gen-soft-spatial-ui", alt: "Avatar cluster with tooltip and soft floating profile circles", source: .gemini, author: "Draft"),
-                .init(id: "ui-controls-2", kind: .image, label: "Floating cards", previewColorHex: 0xF8F3EA, secondaryColorHex: 0xFF8B26, generationID: "gen-soft-spatial-ui", alt: "Editorial UI composition with floating marketplace cards around centered copy", source: .gemini, author: "Draft"),
-                .init(id: "ui-controls-3", kind: .image, label: "Interest picker", previewColorHex: 0xF7F3EB, secondaryColorHex: 0xB62D1F, generationID: "gen-soft-spatial-ui", alt: "Soft spatial onboarding screen with floating rounded image cards and a central selection tray", source: .gemini, author: "Draft"),
-                .init(id: "ui-controls-4", kind: .image, label: "Selection states", previewColorHex: 0xF5F2E9, secondaryColorHex: 0xCAA968, generationID: "gen-soft-spatial-ui", alt: "Minimal onboarding card with selected and empty states in a floating spatial layout", source: .gemini, author: "Draft"),
+                .init(id: "ui-controls-1", kind: .image, label: "Avatar cluster", previewColorHex: 0xF3E9D9, secondaryColorHex: 0xF39B2C, generationID: "gen-soft-spatial-ui", alt: "Avatar cluster with tooltip and soft floating profile circles", source: nil, author: "Draft"),
+                .init(id: "ui-controls-2", kind: .image, label: "Floating cards", previewColorHex: 0xF8F3EA, secondaryColorHex: 0xFF8B26, generationID: "gen-soft-spatial-ui", alt: "Editorial UI composition with floating marketplace cards around centered copy", source: nil, author: "Draft"),
+                .init(id: "ui-controls-3", kind: .image, label: "Interest picker", previewColorHex: 0xF7F3EB, secondaryColorHex: 0xB62D1F, generationID: "gen-soft-spatial-ui", alt: "Soft spatial onboarding screen with floating rounded image cards and a central selection tray", source: nil, author: "Draft"),
+                .init(id: "ui-controls-4", kind: .image, label: "Selection states", previewColorHex: 0xF5F2E9, secondaryColorHex: 0xCAA968, generationID: "gen-soft-spatial-ui", alt: "Minimal onboarding card with selected and empty states in a floating spatial layout", source: nil, author: "Draft"),
             ]
         ),
         LibraryBoard(
@@ -131,25 +136,27 @@ enum LibrarySeedData {
             updatedAtLabel: "Saved today",
             generationID: "gen-desert-dreams",
             items: [
-                .init(id: "desert-1", kind: .image, label: "Sandstone portal", previewColorHex: 0xBA7A47, secondaryColorHex: 0xE5A16A, generationID: "gen-desert-dreams", alt: "Warm desert interior framing a sunset landscape", source: .gemini, author: "Direction 1"),
-                .init(id: "desert-2", kind: .image, label: "Mirage runway", previewColorHex: 0xD8875E, secondaryColorHex: 0xF3B27E, generationID: "gen-desert-dreams", alt: "Figure walking through a minimal desert scene at sunset", source: .gemini, author: "Direction 1"),
-                .init(id: "desert-3", kind: .image, label: "Ochre chamber", previewColorHex: 0xB55E2F, secondaryColorHex: 0xE3894A, generationID: "gen-desert-dreams", alt: "Immersive installation glowing with orange desert light", source: .gemini, author: "Direction 1"),
-                .init(id: "desert-4", kind: .image, label: "Solar gesture", previewColorHex: 0xC65A1B, secondaryColorHex: 0xFFB14C, generationID: "gen-desert-dreams", alt: "Silhouetted hands against a radiant amber background", source: .gemini, author: "Direction 1"),
-                .init(id: "desert-5", kind: .image, label: "Quiet horizon", previewColorHex: 0xD3A184, secondaryColorHex: 0xF0D1C1, generationID: "gen-desert-dreams", alt: "Solitary figure overlooking a pastel desert expanse", source: .gemini, author: "Direction 1"),
+                .init(id: "desert-1", kind: .image, label: "Sandstone portal", previewColorHex: 0xBA7A47, secondaryColorHex: 0xE5A16A, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-1", alt: "Warm desert interior framing a sunset landscape", source: nil, author: "Direction 1"),
+                .init(id: "desert-2", kind: .image, label: "Mirage runway", previewColorHex: 0xD8875E, secondaryColorHex: 0xF3B27E, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-2", alt: "Figure walking through a minimal desert scene at sunset", source: nil, author: "Direction 1"),
+                .init(id: "desert-3", kind: .image, label: "Ochre chamber", previewColorHex: 0xB55E2F, secondaryColorHex: 0xE3894A, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-3", alt: "Immersive installation glowing with orange desert light", source: nil, author: "Direction 1"),
+                .init(id: "desert-4", kind: .image, label: "Solar gesture", previewColorHex: 0xC65A1B, secondaryColorHex: 0xFFB14C, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-4", alt: "Silhouetted hands against a radiant amber background", source: nil, author: "Direction 1"),
+                .init(id: "desert-5", kind: .image, label: "Quiet horizon", previewColorHex: 0xD3A184, secondaryColorHex: 0xF0D1C1, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-5", alt: "Solitary figure overlooking a pastel desert expanse", source: nil, author: "Direction 1"),
             ]
         ),
         LibraryBoard(
             id: "calm-bedroom-board",
             promptTitle: "Open Court Energy",
-            itemCount: 5,
+            itemCount: 7,
             updatedAtLabel: "Saved today",
             generationID: "gen-open-court-energy",
             items: [
-                .init(id: "open-court-1", kind: .image, label: "Sky sole", previewColorHex: 0x5DB7EA, secondaryColorHex: 0x97D8F6, generationID: "gen-open-court-energy", alt: "Low-angle fashion image with oversized shoes against a bright sky", source: .gemini, author: "Direction 2"),
-                .init(id: "open-court-2", kind: .image, label: "Parking lot chrome", previewColorHex: 0x88B8D7, secondaryColorHex: 0xCFDFEA, generationID: "gen-open-court-energy", alt: "Sporty outdoor portrait with metallic sneakers and a parking lot backdrop", source: .gemini, author: "Direction 2"),
-                .init(id: "open-court-3", kind: .image, label: "Baseline chic", previewColorHex: 0x2A5E9A, secondaryColorHex: 0x75B4FF, generationID: "gen-open-court-energy", alt: "Editorial tennis fashion on a bright blue court", source: .gemini, author: "Direction 2"),
-                .init(id: "open-court-4", kind: .image, label: "Sun visor serve", previewColorHex: 0x8EB53F, secondaryColorHex: 0xD6E86C, generationID: "gen-open-court-energy", alt: "Outdoor tennis scene with lime court tones and sunlit styling", source: .gemini, author: "Direction 2"),
-                .init(id: "open-court-5", kind: .image, label: "Club colors", previewColorHex: 0xE0D58B, secondaryColorHex: 0xF7F0B7, generationID: "gen-open-court-energy", alt: "Group portrait featuring colorful football-inspired streetwear", source: .gemini, author: "Direction 2"),
+                .init(id: "open-court-1", kind: .image, label: "Sky sole", previewColorHex: 0x5DB7EA, secondaryColorHex: 0x97D8F6, generationID: "gen-open-court-energy", bundleImageName: "open-court-1", alt: "Low-angle fashion image with oversized shoes against a bright sky", source: nil, author: "Direction 2"),
+                .init(id: "open-court-2", kind: .image, label: "Parking lot chrome", previewColorHex: 0x88B8D7, secondaryColorHex: 0xCFDFEA, generationID: "gen-open-court-energy", bundleImageName: "open-court-2", alt: "Sporty outdoor portrait with metallic sneakers and a parking lot backdrop", source: nil, author: "Direction 2"),
+                .init(id: "open-court-3", kind: .image, label: "Baseline chic", previewColorHex: 0x2A5E9A, secondaryColorHex: 0x75B4FF, generationID: "gen-open-court-energy", bundleImageName: "open-court-3", alt: "Editorial tennis fashion on a bright blue court", source: nil, author: "Direction 2"),
+                .init(id: "open-court-4", kind: .image, label: "Sun visor serve", previewColorHex: 0x8EB53F, secondaryColorHex: 0xD6E86C, generationID: "gen-open-court-energy", bundleImageName: "open-court-4", alt: "Outdoor tennis scene with lime court tones and sunlit styling", source: nil, author: "Direction 2"),
+                .init(id: "open-court-5", kind: .image, label: "Club colors", previewColorHex: 0xE0D58B, secondaryColorHex: 0xF7F0B7, generationID: "gen-open-court-energy", bundleImageName: "open-court-5", alt: "Group portrait featuring colorful football-inspired streetwear", source: nil, author: "Direction 2"),
+                .init(id: "open-court-6", kind: .image, label: "Court edge", previewColorHex: 0x3A6EA8, secondaryColorHex: 0x6FA8DC, generationID: "gen-open-court-energy", bundleImageName: "open-court-6", alt: "Outdoor court fashion editorial", source: nil, author: "Direction 2"),
+                .init(id: "open-court-7", kind: .image, label: "Drop serve", previewColorHex: 0x5A8CC2, secondaryColorHex: 0x9DC0E8, generationID: "gen-open-court-energy", bundleImageName: "open-court-7", alt: "Dynamic sportswear editorial", source: nil, author: "Direction 2"),
             ]
         ),
         LibraryBoard(
@@ -159,10 +166,24 @@ enum LibrarySeedData {
             updatedAtLabel: "Saved today",
             generationID: "gen-recipe-app-concept",
             items: [
-                .init(id: "recipe-app-concept-1", kind: .image, label: "Gem grin", previewColorHex: 0xFF5C8A, secondaryColorHex: 0xFFC145, generationID: "gen-recipe-app-concept", alt: "Close-up beauty image with colorful gems and playful styling", source: .gemini, author: "Direction 4"),
-                .init(id: "recipe-app-concept-2", kind: .image, label: "Pop orbit", previewColorHex: 0xFF7A1A, secondaryColorHex: 0xA86DFF, generationID: "gen-recipe-app-concept", alt: "Playful campaign collage with objects orbiting around bold copy", source: .gemini, author: "Direction 4"),
-                .init(id: "recipe-app-concept-3", kind: .image, label: "Tree scene", previewColorHex: 0x7BBE4E, secondaryColorHex: 0xB8D97D, generationID: "gen-recipe-app-concept", alt: "Stylized outdoor tableau with figures perched in a tree", source: .gemini, author: "Direction 4"),
-                .init(id: "recipe-app-concept-4", kind: .image, label: "Air motion", previewColorHex: 0x7198FF, secondaryColorHex: 0xF49AE1, generationID: "gen-recipe-app-concept", alt: "Dynamic fashion figures suspended mid-air against a gradient sky", source: .gemini, author: "Direction 4"),
+                .init(id: "recipe-app-concept-1", kind: .image, label: "Gem grin", previewColorHex: 0xFF5C8A, secondaryColorHex: 0xFFC145, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-1", alt: "Close-up beauty image with colorful gems and playful styling", source: nil, author: "Direction 4"),
+                .init(id: "recipe-app-concept-2", kind: .image, label: "Pop orbit", previewColorHex: 0xFF7A1A, secondaryColorHex: 0xA86DFF, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-2", alt: "Playful campaign collage with objects orbiting around bold copy", source: nil, author: "Direction 4"),
+                .init(id: "recipe-app-concept-3", kind: .image, label: "Tree scene", previewColorHex: 0x7BBE4E, secondaryColorHex: 0xB8D97D, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-3", alt: "Stylized outdoor tableau with figures perched in a tree", source: nil, author: "Direction 4"),
+                .init(id: "recipe-app-concept-4", kind: .image, label: "Air motion", previewColorHex: 0x7198FF, secondaryColorHex: 0xF49AE1, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-4", alt: "Dynamic fashion figures suspended mid-air against a gradient sky", source: nil, author: "Direction 4"),
+            ]
+        ),
+        LibraryBoard(
+            id: "nike-editorial-board",
+            promptTitle: "Nike Editorial",
+            itemCount: 5,
+            updatedAtLabel: "Saved today",
+            generationID: "gen-nike-editorial",
+            items: [
+                .init(id: "nike-editorial-1", kind: .image, label: "Nike portrait", previewColorHex: 0xF3D11E, secondaryColorHex: 0xA83B25, generationID: "gen-nike-editorial", bundleImageName: "nike-editorial-1", alt: "Profile portrait with oversized Nike wordmark and bright cyan hair against a red background", source: nil, author: "Direction 5"),
+                .init(id: "nike-editorial-2", kind: .image, label: "City tote", previewColorHex: 0xF3D11E, secondaryColorHex: 0x7CB6F7, generationID: "gen-nike-editorial", bundleImageName: "nike-editorial-2", alt: "Low-angle street fashion image with a sculptural yellow bag in Times Square", source: nil, author: "Direction 5"),
+                .init(id: "nike-editorial-3", kind: .image, label: "Lime motion", previewColorHex: 0xE4D01D, secondaryColorHex: 0xACB4C1, generationID: "gen-nike-editorial", bundleImageName: "nike-editorial-3", alt: "Dynamic low-angle fashion shot with a neon yellow garment against a pale sky", source: nil, author: "Direction 5"),
+                .init(id: "nike-editorial-4", kind: .image, label: "Typographic lockup", previewColorHex: 0xF0CE18, secondaryColorHex: 0x111111, generationID: "gen-nike-editorial", bundleImageName: "nike-editorial-4", alt: "Bold black typographic lockup on a bright yellow field", source: nil, author: "Direction 5"),
+                .init(id: "nike-editorial-5", kind: .image, label: "Get Into It", previewColorHex: 0xD9DA8A, secondaryColorHex: 0xD85A23, generationID: "gen-nike-editorial", bundleImageName: "nike-editorial-5", alt: "Poster-style campaign image with GET INTO IT typography and a model in yellow activewear", source: nil, author: "Direction 5"),
             ]
         ),
     ]

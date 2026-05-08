@@ -1,5 +1,6 @@
 import React from 'react';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import {
@@ -7,9 +8,9 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import { AppText as Text } from '@/components/app-typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBoardById, getCollectionById } from '@/data/library';
 
@@ -25,7 +26,10 @@ export default function CollectionDetailScreen() {
   const insets = useSafeAreaInsets();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const collection = slug ? getCollectionById(slug) : undefined;
-  const boards = collection?.boardIds.map((boardId) => getBoardById(boardId)).filter(Boolean) ?? [];
+  const boards =
+    collection?.boardIds
+      .map((boardId) => getBoardById(boardId))
+      .filter((board): board is NonNullable<typeof board> => Boolean(board)) ?? [];
   const individualItems = boards.flatMap((board) =>
     board.items
       .filter((item) => item.kind === 'image' && item.imageUrl)
@@ -39,7 +43,7 @@ export default function CollectionDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.shell}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable style={styles.backButton} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
           <Feather name="arrow-left" size={18} color={C.text} />
           <Text style={styles.backLabel}>Back</Text>
         </Pressable>
@@ -64,24 +68,59 @@ export default function CollectionDetailScreen() {
             <Text style={styles.subtitle}>{collection.description}</Text>
 
             {isIndividualCollection ? (
-              <View style={styles.albumGrid}>
-                {individualItems.map((item, index) => (
+              <View>
+                {individualItems.length > 0 ? (
                   <Pressable
-                    key={item.id}
-                    style={[
-                      styles.albumTile,
-                      index % 5 === 0 && styles.albumTileTall,
-                    ]}
-                    onPress={() => router.push(`/library/${item.boardId}` as never)}
+                    style={styles.heroTile}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/library/${individualItems[0].boardId}` as never); }}
                   >
                     <ExpoImage
-                      source={item.thumbUrl || item.imageUrl}
+                      source={individualItems[0].thumbUrl || individualItems[0].imageUrl}
                       style={styles.albumImage}
                       contentFit="cover"
                       transition={120}
                     />
                   </Pressable>
-                ))}
+                ) : null}
+
+                {individualItems.length > 1 ? (
+                  <View style={styles.heroRowTwo}>
+                    {individualItems.slice(1, 3).map((item) => (
+                      <Pressable
+                        key={item.id}
+                        style={styles.heroRowTile}
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/library/${item.boardId}` as never); }}
+                      >
+                        <ExpoImage
+                          source={item.thumbUrl || item.imageUrl}
+                          style={styles.albumImage}
+                          contentFit="cover"
+                          transition={120}
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+
+                <View style={styles.albumGrid}>
+                  {individualItems.slice(3).map((item, index) => (
+                    <Pressable
+                      key={item.id}
+                      style={[
+                        styles.albumTile,
+                        index % 5 === 0 && styles.albumTileTall,
+                      ]}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/library/${item.boardId}` as never); }}
+                    >
+                      <ExpoImage
+                        source={item.thumbUrl || item.imageUrl}
+                        style={styles.albumImage}
+                        contentFit="cover"
+                        transition={120}
+                      />
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             ) : (
               boards.map((board) =>
@@ -89,7 +128,7 @@ export default function CollectionDetailScreen() {
                   <Pressable
                     key={board.id}
                     style={styles.boardCard}
-                    onPress={() => router.push(`/library/${board.id}` as never)}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/library/${board.id}` as never); }}
                   >
                     <View>
                       <Text style={styles.boardTitle}>{board.promptTitle}</Text>
@@ -153,6 +192,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: C.muted,
+  },
+  heroTile: {
+    width: '100%',
+    aspectRatio: 1.4,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: C.card,
+    marginBottom: 10,
+  },
+  heroRowTwo: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  heroRowTile: {
+    flex: 1,
+    aspectRatio: 0.9,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: C.card,
   },
   albumGrid: {
     flexDirection: 'row',

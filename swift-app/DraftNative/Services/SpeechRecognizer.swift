@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import Speech
+import SwiftUI
 
 @MainActor
 final class SpeechRecognizer: NSObject, ObservableObject {
@@ -10,11 +11,15 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     @Published var errorMessage = ""
     @Published private(set) var speechAuthorized = false
     @Published private(set) var microphoneAuthorized = false
+    @Published private(set) var canUseVoice = true
+    @Published private(set) var completedTranscriptionCount = 0
 
     private let audioEngine = AVAudioEngine()
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var isFinishingRecognition = false
+    private var shouldPublishCompletionOnStop = false
 
     func requestPermissions() async {
         let speechStatus = await withCheckedContinuation { continuation in
@@ -26,12 +31,19 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         speechAuthorized = speechStatus == .authorized
 
         let micAllowed = await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { allowed in
-                continuation.resume(returning: allowed)
+            if #available(iOS 17.0, *) {
+                AVAudioApplication.requestRecordPermission { allowed in
+                    continuation.resume(returning: allowed)
+                }
+            } else {
+                AVAudioSession.sharedInstance().requestRecordPermission { allowed in
+                    continuation.resume(returning: allowed)
+                }
             }
         }
 
         microphoneAuthorized = micAllowed
+        canUseVoice = speechAuthorized && microphoneAuthorized
 
         if !speechAuthorized || !microphoneAuthorized {
             statusMessage = "Voice is unavailable. You can still type a prompt."
@@ -51,6 +63,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             await requestPermissions()
             if !speechAuthorized || !microphoneAuthorized {
                 errorMessage = "Microphone or speech permissions were denied."
+                canUseVoice = false
                 return
             }
         }
@@ -64,23 +77,17 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
 
-    func stopListening() {
-        recognitionTask?.cancel()
-        recognitionTask = nil
+    func stopListening(shouldSubmit: Bool = true) {
+        isFinishingRecognition = true
+        shouldPublishCompletionOnStop = shouldSubmit
         recognitionRequest?.endAudio()
+        teardownAudio()
+
+        recognitionTask?.finish()
+        recognitionTask = nil
         recognitionRequest = nil
 
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
-
-        isListening = false
-        if transcript.isEmpty {
-            statusMessage = "Speak clearly and pause when finished"
-        } else {
-            statusMessage = "Voice capture finished."
-        }
+        finalizeStoppedState()
     }
 
     private func startListening() throws {
@@ -90,11 +97,12 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             ])
         }
 
-        stopListening()
+        stopListening(shouldSubmit: false)
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         recognitionRequest = request
+        isFinishingRecognition = false
 
         let audioSession = AVAudioSession.sharedInstance()
         try audioSession.setCategory(.record, mode: .measurement, options: [.duckOthers])
@@ -131,11 +139,50 @@ final class SpeechRecognizer: NSObject, ObservableObject {
 
             if let error {
                 Task { @MainActor in
+                    if self.isFinishingRecognition {
+                        self.isFinishingRecognition = false
+                        self.finalizeStoppedState()
+                        return
+                    }
+
                     self.errorMessage = error.localizedDescription
                     self.statusMessage = "Voice capture failed. Try again."
-                    self.stopListening()
+                    self.teardownAudio()
+                    self.recognitionTask = nil
+                    self.recognitionRequest = nil
+                    self.isListening = false
                 }
             }
         }
+    }
+
+    private func teardownAudio() {
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+
+        audioEngine.inputNode.removeTap(onBus: 0)
+
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            // Ignore deactivation failures; they should not block the UI state reset.
+        }
+    }
+
+    private func finalizeStoppedState() {
+        isListening = false
+        let trimmedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedTranscript.isEmpty {
+            statusMessage = "Speak clearly and pause when finished"
+        } else {
+            statusMessage = "Voice capture finished."
+        }
+
+        if shouldPublishCompletionOnStop && !trimmedTranscript.isEmpty {
+            completedTranscriptionCount += 1
+        }
+
+        shouldPublishCompletionOnStop = false
     }
 }

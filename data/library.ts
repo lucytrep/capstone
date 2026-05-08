@@ -41,6 +41,11 @@ const openCourt02 = require('../assets/open-court-2.jpg');
 const openCourt03 = require('../assets/open-court-3.jpg');
 const openCourt04 = require('../assets/open-court-4.jpg');
 const openCourt05 = require('../assets/open-court-5.jpg');
+const nikeEditorial01 = require('../assets/nike-editorial-1.jpg');
+const nikeEditorial02 = require('../assets/nike-editorial-2.jpg');
+const nikeEditorial03 = require('../assets/nike-editorial-3.jpg');
+const nikeEditorial04 = require('../assets/nike-editorial-4.jpg');
+const nikeEditorial05 = require('../assets/nike-editorial-5.jpg');
 const recipeAppConcept01 = require('../assets/recipe-app-concept-1.jpg');
 const recipeAppConcept03 = require('../assets/recipe-app-concept-3.jpg');
 const recipeAppConcept04 = require('../assets/recipe-app-concept-4.jpg');
@@ -445,6 +450,80 @@ export const libraryBoards: LibraryBoard[] = [
         alt: 'Dynamic fashion figures suspended mid-air against a gradient sky',
         source: 'gemini',
         author: 'Direction 4',
+      },
+    ],
+  },
+  {
+    id: 'nike-editorial-board',
+    promptTitle: 'Nike Editorial',
+    itemCount: 5,
+    updatedAtLabel: 'Saved today',
+    generationId: 'gen-nike-editorial',
+    items: [
+      {
+        id: 'nike-editorial-1',
+        kind: 'image',
+        label: 'Nike portrait',
+        previewColor: '#F3D11E',
+        secondaryColor: '#A83B25',
+        generationId: 'gen-nike-editorial',
+        imageUrl: nikeEditorial01,
+        thumbUrl: nikeEditorial01,
+        alt: 'Profile portrait with oversized Nike wordmark and bright cyan hair against a red background',
+        source: 'gemini',
+        author: 'Direction 5',
+      },
+      {
+        id: 'nike-editorial-2',
+        kind: 'image',
+        label: 'City tote',
+        previewColor: '#F3D11E',
+        secondaryColor: '#7CB6F7',
+        generationId: 'gen-nike-editorial',
+        imageUrl: nikeEditorial02,
+        thumbUrl: nikeEditorial02,
+        alt: 'Low-angle street fashion image with a sculptural yellow bag in Times Square',
+        source: 'gemini',
+        author: 'Direction 5',
+      },
+      {
+        id: 'nike-editorial-3',
+        kind: 'image',
+        label: 'Lime motion',
+        previewColor: '#E4D01D',
+        secondaryColor: '#ACB4C1',
+        generationId: 'gen-nike-editorial',
+        imageUrl: nikeEditorial03,
+        thumbUrl: nikeEditorial03,
+        alt: 'Dynamic low-angle fashion shot with a neon yellow garment against a pale sky',
+        source: 'gemini',
+        author: 'Direction 5',
+      },
+      {
+        id: 'nike-editorial-4',
+        kind: 'image',
+        label: 'Typographic lockup',
+        previewColor: '#F0CE18',
+        secondaryColor: '#111111',
+        generationId: 'gen-nike-editorial',
+        imageUrl: nikeEditorial04,
+        thumbUrl: nikeEditorial04,
+        alt: 'Bold black typographic lockup on a bright yellow field',
+        source: 'gemini',
+        author: 'Direction 5',
+      },
+      {
+        id: 'nike-editorial-5',
+        kind: 'image',
+        label: 'Get Into It',
+        previewColor: '#D9DA8A',
+        secondaryColor: '#D85A23',
+        generationId: 'gen-nike-editorial',
+        imageUrl: nikeEditorial05,
+        thumbUrl: nikeEditorial05,
+        alt: 'Poster-style campaign image with GET INTO IT typography and a model in yellow activewear',
+        source: 'gemini',
+        author: 'Direction 5',
       },
     ],
   },

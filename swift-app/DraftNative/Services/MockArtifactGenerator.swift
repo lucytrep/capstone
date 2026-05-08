@@ -1,165 +1,1446 @@
 import Foundation
 
 struct MockArtifactGenerator: ArtifactGenerating {
+    private enum BoardType {
+        case color
+        case image
+        case moodboard
+        case ui
+    }
+
+    private struct APIKeys {
+        let anthropic: String
+        let pexels: String
+        let unsplash: String
+        let pinterestServiceURL: String
+        let arenaToken: String
+        let googleApiKey: String
+        let googleSearchEngineId: String
+
+        static func load() -> APIKeys {
+            let env = loadEnvironment()
+
+            return APIKeys(
+                anthropic: env["EXPO_PUBLIC_ANTHROPIC_API_KEY"] ?? "",
+                pexels: env["EXPO_PUBLIC_PEXELS_API_KEY"] ?? "",
+                unsplash: env["EXPO_PUBLIC_UNSPLASH_ACCESS_KEY"] ?? "",
+                pinterestServiceURL: env["EXPO_PUBLIC_PINTEREST_SERVICE_URL"] ?? "",
+                arenaToken: env["EXPO_PUBLIC_ARENA_ACCESS_TOKEN"] ?? "",
+                googleApiKey: env["EXPO_PUBLIC_GOOGLE_API_KEY"] ?? "",
+                googleSearchEngineId: env["EXPO_PUBLIC_GOOGLE_SEARCH_ENGINE_ID"] ?? ""
+            )
+        }
+
+        private static func loadEnvironment() -> [String: String] {
+            let paths = [
+                "/Users/lucytrepanier/Code/capstone/.env.local",
+                "/Users/lucytrepanier/Code/capstone/.env"
+            ]
+
+            for path in paths {
+                if let data = try? String(contentsOfFile: path, encoding: .utf8) {
+                    return parseEnvironment(data)
+                }
+            }
+
+            // On device: try LocalSecrets.plist (gitignored) first, then Info.plist
+            let plistKeys = [
+                "EXPO_PUBLIC_ANTHROPIC_API_KEY",
+                "EXPO_PUBLIC_PEXELS_API_KEY",
+                "EXPO_PUBLIC_UNSPLASH_ACCESS_KEY",
+                "EXPO_PUBLIC_PINTEREST_SERVICE_URL",
+                "EXPO_PUBLIC_ARENA_ACCESS_TOKEN",
+                "EXPO_PUBLIC_GOOGLE_API_KEY",
+                "EXPO_PUBLIC_GOOGLE_SEARCH_ENGINE_ID"
+            ]
+            var result: [String: String] = [:]
+
+            // LocalSecrets.plist is gitignored and holds the real keys
+            if let url = Bundle.main.url(forResource: "LocalSecrets", withExtension: "plist"),
+               let localSecrets = NSDictionary(contentsOf: url) as? [String: String] {
+                for key in plistKeys {
+                    if let value = localSecrets[key], !value.isEmpty {
+                        result[key] = value
+                    }
+                }
+                if !result.isEmpty { return result }
+            }
+
+            for key in plistKeys {
+                if let value = Bundle.main.infoDictionary?[key] as? String, !value.isEmpty {
+                    result[key] = value
+                }
+            }
+            return result
+        }
+
+        private static func parseEnvironment(_ raw: String) -> [String: String] {
+            raw
+                .split(separator: "\n")
+                .reduce(into: [:]) { partialResult, line in
+                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return }
+
+                    let parts = trimmed.split(separator: "=", maxSplits: 1).map(String.init)
+                    guard parts.count == 2 else { return }
+                    partialResult[parts[0]] = parts[1]
+                }
+        }
+    }
+
+    private struct TheColorAPISchemeResponse: Decodable {
+        struct Entry: Decodable {
+            struct Name: Decodable { let value: String? }
+            struct Hex: Decodable { let value: String? }
+
+            let name: Name?
+            let hex: Hex?
+        }
+
+        let colors: [Entry]?
+    }
+
+    private struct TheColorAPIIDResponse: Decodable {
+        struct Name: Decodable { let value: String? }
+        let name: Name?
+    }
+
+    private struct ColormindResponse: Decodable {
+        let result: [[Double]]?
+    }
+
+    private struct PexelsResponse: Decodable {
+        struct Photo: Decodable {
+            struct Source: Decodable {
+                let large2x: String?
+                let large: String?
+                let medium: String?
+            }
+
+            let id: Int?
+            let alt: String?
+            let url: String?
+            let photographer: String?
+            let src: Source?
+        }
+
+        let photos: [Photo]?
+    }
+
+    private struct UnsplashResponse: Decodable {
+        struct Photo: Decodable {
+            struct Links: Decodable { let html: String? }
+            struct User: Decodable { let name: String? }
+            struct URLs: Decodable {
+                let regular: String?
+                let small: String?
+            }
+
+            let id: String?
+            let alt_description: String?
+            let description: String?
+            let links: Links?
+            let user: User?
+            let urls: URLs?
+        }
+
+        let results: [Photo]?
+    }
+
+    private struct ArenaResponse: Decodable {
+        struct Block: Decodable {
+            struct ArenaImage: Decodable {
+                struct ImageFile: Decodable { let url: String? }
+                let original: ImageFile?
+                let display: ImageFile?
+                let thumb: ImageFile?
+            }
+            struct Source: Decodable { let url: String? }
+
+            let id: Int?
+            let title: String?
+            let blockClass: String?
+            let image: ArenaImage?
+            let source: Source?
+
+            enum CodingKeys: String, CodingKey {
+                case id, title, image, source
+                case blockClass = "class"
+            }
+        }
+
+        let blocks: [Block]?
+    }
+
+    private struct GoogleSearchResponse: Decodable {
+        struct Item: Decodable {
+            struct ImageInfo: Decodable {
+                let thumbnailLink: String?
+                let contextLink: String?
+            }
+            let title: String?
+            let link: String?
+            let image: ImageInfo?
+        }
+        let items: [Item]?
+    }
+
+    private struct ClaudeResponse: Decodable {
+        struct ContentBlock: Decodable {
+            let type: String?
+            let text: String?
+        }
+
+        let content: [ContentBlock]?
+    }
+
+    private let keys = APIKeys.load()
+    private let claudeModel = "claude-sonnet-4-6"
+    private let claudeEndpoint = URL(string: "https://api.anthropic.com/v1/messages")!
+    private let colorAPIBase = URL(string: "https://www.thecolorapi.com")!
+    private let colormindURL = URL(string: "https://colormind.io/api/")!
+    private let pexelsBase = URL(string: "https://api.pexels.com/v1")!
+    private let unsplashBase = URL(string: "https://api.unsplash.com")!
+    private let arenaBase = URL(string: "https://api.are.na/v2")!
+    private let googleSearchBase = URL(string: "https://www.googleapis.com/customsearch/v1")!
+    private let claudeSystemPrompt = """
+    You are a design artifact generator. The user will describe a design idea. You must ALWAYS respond with only valid HTML and CSS - never text, never questions, never explanations. This app supports exactly 3 board types: UI boards, photo boards, and color boards. Always return a complete, beautiful, self-contained HTML document with embedded CSS. Never ask for clarification. Just build it. Start your response directly with <!DOCTYPE html> and nothing else.
+
+    When the user asks for a UI, app screen, interface, product concept, or visual design mock, you MUST follow this exact product-shell pattern:
+    - Background must be pure black: #000000
+    - Title area at top-left must always say "Draft" on line 1 and "UI" on line 2
+    - Top-right must include two circular action buttons with an "x" and a check mark
+    - Show exactly 3 swipeable screen options laid out horizontally
+    - The HTML itself must support horizontal swipe using CSS scroll snapping
+    - Each option must be sized for a single iPhone screen and fill the available width without shrinking
+    - Under the cards, show 3 pagination dots with the active dot elongated
+    - Do not include a bottom navigation bar; the app chrome is provided outside the generated UI
+    - The aesthetic should be bold, high-contrast, polished, and phone-mock presentation
+    - Use strong spacing, large rounded corners, and mobile-first sizing
+    - The result must be a complete self-contained HTML document with embedded CSS and optional inline SVG only
+    - Do not rely on external assets
+    - Label the three swipeable options using data-ui-option="1", data-ui-option="2", and data-ui-option="3"
+    """
+
+    private let paletteKeywords: [String: String] = [
+        // Basic color names — must be present so user prompts like "yellow and orange" seed correctly
+        "yellow":     "#F5C518",
+        "orange":     "#F08D3A",
+        "red":        "#E82050",
+        "green":      "#40C880",
+        "blue":       "#4080C0",
+        "purple":     "#9B3FC7",
+        "pink":       "#F46FA9",
+        "gold":       "#D4A017",
+        "brown":      "#A07850",
+        "grey":       "#909090",
+        "gray":       "#909090",
+        "teal":       "#2A9D8F",
+        "cyan":       "#00B4D8",
+        "indigo":     "#4B5EAA",
+        "violet":     "#8A56D4",
+        "magenta":    "#E040C0",
+        "peach":      "#FFAD85",
+        "coral":      "#FF6B6B",
+        "sage":       "#77A17E",
+        "olive":      "#8A8A4E",
+        "tan":        "#C49A6C",
+        "beige":      "#F2E0C8",
+        "cream":      "#FFFDD0",
+        "maroon":     "#800020",
+        "navy":       "#1A2F6B",
+        "burgundy":   "#800020",
+        "terracotta": "#E2725B",
+        "rust":       "#B7410E",
+        "mustard":    "#FFDB58",
+        "amber":      "#FFBF00",
+        "lime":       "#32CD32",
+        "emerald":    "#50C878",
+        "cobalt":     "#0047AB",
+        "sky":        "#87CEEB",
+        "slate":      "#708090",
+        "charcoal":   "#36454F",
+        "sand":       "#C2B280",
+        "copper":     "#B87333",
+        "bronze":     "#CD7F32",
+        "silver":     "#C0C0C0",
+        // Descriptive / mood keywords
+        "easter":     "#C8A0E8",
+        "spring":     "#90D4A8",
+        "floral":     "#F0A0C0",
+        "lavender":   "#C8A0E8",
+        "lilac":      "#C8A0E8",
+        "mint":       "#90E4B0",
+        "blush":      "#F4B8CC",
+        "pastel":     "#F0C0DC",
+        "neon":       "#554EF7",
+        "rose":       "#EC6478",
+        "sunset":     "#F08D3A",
+        "saffron":    "#FBEBB0",
+        "sea":        "#7EC8A8",
+        "forest":     "#68865E",
+        "midnight":   "#141826",
+        "editorial":  "#D98752",
+        "warm":       "#E8A070",
+        "cool":       "#7090E0",
+        "earth":      "#A07850",
+        "ocean":      "#4080C0",
+        "desert":     "#D09050",
+        "autumn":     "#D06030",
+        "summer":     "#F0B040",
+        "tropical":   "#40C880",
+        "bold":       "#E82050",
+        "neutral":    "#A09080",
+        "monochrome": "#606060",
+    ]
+
     func generateArtifact(from prompt: String) async throws -> GeneratedArtifact {
-        try await Task.sleep(for: .seconds(2))
+        let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let boardType = resolveBoardType(trimmedPrompt)
 
-        let escapedPrompt = prompt
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-
-        let html = """
-        <!doctype html>
-        <html lang="en">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-          <style>
-            :root {
-              --bg: #0e0d0c;
-              --card: #171513;
-              --line: rgba(255,255,255,0.08);
-              --text: #f6f1ea;
-              --muted: #b0a59a;
-              --accent: #e8a87c;
-            }
-
-            * { box-sizing: border-box; }
-            body {
-              margin: 0;
-              font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-              background:
-                radial-gradient(circle at top left, rgba(232,168,124,0.18), transparent 30%),
-                linear-gradient(180deg, #12110f 0%, var(--bg) 100%);
-              color: var(--text);
-              min-height: 100vh;
-              padding: 24px;
-            }
-
-            .shell {
-              max-width: 920px;
-              margin: 0 auto;
-              display: grid;
-              gap: 18px;
-            }
-
-            .hero, .grid-card {
-              background: var(--card);
-              border: 1px solid var(--line);
-              border-radius: 28px;
-            }
-
-            .hero {
-              padding: 28px;
-            }
-
-            .eyebrow {
-              color: var(--accent);
-              letter-spacing: 0.14em;
-              font-size: 12px;
-              text-transform: uppercase;
-            }
-
-            h1 {
-              margin: 14px 0 10px;
-              font-size: clamp(34px, 6vw, 62px);
-              line-height: 0.95;
-            }
-
-            p {
-              margin: 0;
-              color: var(--muted);
-              line-height: 1.5;
-              font-size: 17px;
-            }
-
-            .grid {
-              display: grid;
-              grid-template-columns: repeat(2, minmax(0, 1fr));
-              gap: 18px;
-            }
-
-            .grid-card {
-              min-height: 180px;
-              padding: 22px;
-            }
-
-            .swatches {
-              display: flex;
-              gap: 10px;
-              margin-top: 18px;
-            }
-
-            .swatch {
-              width: 56px;
-              height: 56px;
-              border-radius: 18px;
-              border: 1px solid rgba(255,255,255,0.08);
-            }
-
-            .cta-row {
-              display: flex;
-              gap: 12px;
-              margin-top: 20px;
-            }
-
-            .cta {
-              border-radius: 999px;
-              padding: 12px 18px;
-              font-weight: 600;
-              font-size: 14px;
-            }
-
-            .cta.primary {
-              background: var(--accent);
-              color: #1f1814;
-            }
-
-            .cta.secondary {
-              border: 1px solid var(--line);
-              color: var(--text);
-            }
-
-            @media (max-width: 720px) {
-              body { padding: 16px; }
-              .grid { grid-template-columns: 1fr; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="shell">
-            <section class="hero">
-              <div class="eyebrow">Draft Native Mock</div>
-              <h1>Artifact for “\(escapedPrompt)”</h1>
-              <p>This is a placeholder HTML artifact rendered inside `WKWebView` so we can preserve parity with the current Expo output flow while we rebuild the service layer safely.</p>
-              <div class="cta-row">
-                <div class="cta primary">Primary CTA</div>
-                <div class="cta secondary">Secondary CTA</div>
-              </div>
-            </section>
-            <section class="grid">
-              <article class="grid-card">
-                <div class="eyebrow">Palette</div>
-                <h2>Warm editorial tones</h2>
-                <div class="swatches">
-                  <div class="swatch" style="background:#e8a87c"></div>
-                  <div class="swatch" style="background:#f4e6d5"></div>
-                  <div class="swatch" style="background:#6d5f56"></div>
-                  <div class="swatch" style="background:#2c2622"></div>
-                </div>
-              </article>
-              <article class="grid-card">
-                <div class="eyebrow">Direction</div>
-                <h2>Native rebuild path</h2>
-                <p>Next we can replace this mock generator with a real API client and port the output controls from the React Native app.</p>
-              </article>
-            </section>
-          </div>
-        </body>
-        </html>
-        """
+        let html: String
+        switch boardType {
+        case .color:
+            html = try await generateColorArtifact(prompt: trimmedPrompt)
+        case .image:
+            html = try await generateImageArtifact(prompt: trimmedPrompt)
+        case .moodboard:
+            html = try await generateMoodboardArtifact(prompt: trimmedPrompt)
+        case .ui:
+            html = try await generateUIArtifact(prompt: trimmedPrompt)
+        }
 
         return GeneratedArtifact(html: html)
+    }
+
+    private func resolveBoardType(_ transcript: String) -> BoardType {
+        if isMoodboardPrompt(transcript) {
+            return .moodboard
+        }
+
+        if isPalettePrompt(transcript) {
+            return .color
+        }
+
+        if isPhotoPrompt(transcript) {
+            return .image
+        }
+
+        // If the prompt mentions color at all without strong UI signals, route to palette —
+        // never show a UI template for a color request.
+        if looksLikeColorRequest(transcript) {
+            return .color
+        }
+
+        return .ui
+    }
+
+    // Catches "give me warm autumn colors", "yellow and orange", "calm palette", "monochrome direction", etc.
+    private func looksLikeColorRequest(_ transcript: String) -> Bool {
+        guard !isUiPrompt(transcript) else { return false }
+
+        // Explicit color/colours word
+        if contains(transcript, pattern: #"(?i)\bcolou?rs?\b"#) { return true }
+
+        // Specific color name(s) mentioned
+        if contains(
+            transcript,
+            pattern: #"(?i)\b(yellow|orange|red|green|blue|purple|pink|gold|brown|grey|gray|teal|cyan|indigo|violet|magenta|peach|coral|sage|olive|tan|beige|cream|maroon|navy|burgundy|terracotta|rust|mustard|amber|lime|emerald|cobalt|silver|copper|bronze|lavender|lilac|mint|blush|rose|saffron|ochre|scarlet|crimson|turquoise|aqua|ivory|champagne|taupe|caramel)\b"#
+        ), !isPhotoPrompt(transcript) { return true }
+
+        // Mood/descriptor terms that map clearly to palette from semantic_core.csv
+        // e.g. "calm", "earthy but not depressing", "girly but mature", "futuristic neon", "monochrome"
+        let paletteDescriptors = #"(?i)\b(calm|soothing|relaxing|peaceful|serene|moody|earthy|natural|grounded|organic|feminine|girly|futuristic neon|cyber|monochrome|grayscale|black and white|pastel|neon|vivid|saturated|vibrant|playful bright|fun colors?|colorful|warm tones?|cool tones?|dark lux|muted|high contrast|low saturation|retro|vintage palette)\b"#
+        if contains(transcript, pattern: paletteDescriptors), !isPhotoPrompt(transcript) { return true }
+
+        // Season/nature color contexts when not a photo request
+        let seasonalColor = #"(?i)\b(autumn (tones?|palette|colors?)|fall (tones?|palette|colors?)|spring (palette|tones?|colors?)|sunset (palette|tones?|colors?)|ocean palette|coastal (palette|tones?))\b"#
+        if contains(transcript, pattern: seasonalColor) { return true }
+
+        return false
+    }
+
+    private func generateColorArtifact(prompt: String) async throws -> String {
+        let seedHex = inferSeedHex(prompt)
+
+        do {
+            async let analogic = getTheColorScheme(seedHex: seedHex, mode: "analogic")
+            async let quad = getTheColorScheme(seedHex: seedHex, mode: "quad")
+            async let colormind = getColormindPalette(seedHex: seedHex)
+
+            let analogicSwatches = try await analogic
+            let quadSwatches = try await quad
+            let colormindSwatches = try await colormind
+
+            let options = [
+                PaletteOptionPayload(id: "palette-1", swatches: withFixedPaletteBase(analogicSwatches)),
+                PaletteOptionPayload(id: "palette-2", swatches: withFixedPaletteBase(quadSwatches)),
+                PaletteOptionPayload(id: "palette-3", swatches: withFixedPaletteBase(colormindSwatches))
+            ]
+
+            return buildPaletteArtifactHTML(options: options)
+        } catch {
+            let fallback = buildLocalPaletteOptions(seedHex: seedHex)
+            return buildPaletteArtifactHTML(options: fallback)
+        }
+    }
+
+    private func generateImageArtifact(prompt: String) async throws -> String {
+        try await generatePhotoArtifact(prompt: prompt, displayMode: .image)
+    }
+
+    private func generateMoodboardArtifact(prompt: String) async throws -> String {
+        try await generatePhotoArtifact(prompt: prompt, displayMode: .moodboard)
+    }
+
+    private func generatePhotoArtifact(prompt: String, displayMode: PhotoDisplayMode) async throws -> String {
+        if !hasImageProviders {
+            return try await photoArtifactFallback(prompt: prompt, displayMode: displayMode)
+        }
+
+        let requestSeed = hashSeed(prompt + "::native")
+        let query = buildSearchQuery(prompt)
+
+        async let pexelsPhotos = fetchPexelsPhotos(query: query, seed: requestSeed + 11)
+        async let unsplashPhotos = fetchUnsplashPhotos(query: query, seed: requestSeed + 17)
+        async let pinterestPhotos = fetchPinterestPhotos(query: query)
+        async let arenaPhotos = fetchArenaPhotos(query: query)
+        async let googlePhotos = fetchGooglePhotos(query: query)
+
+        let pexels = ((try? await pexelsPhotos) ?? []) + (await pinterestPhotos)
+        let unsplash = (try? await unsplashPhotos) ?? []
+        let arena = await arenaPhotos
+        let google = await googlePhotos
+        let moodboardSwatches = displayMode == .moodboard
+            ? await buildMoodboardSwatchSets(prompt: prompt)
+            : [[]]
+
+        let options = buildPhotoOptions(
+            pexels: pexels,
+            unsplash: unsplash,
+            arena: arena,
+            google: google,
+            displayMode: displayMode,
+            seed: requestSeed,
+            swatchSets: moodboardSwatches
+        )
+
+        guard options.count == 3, options.allSatisfy({ $0.photos.count >= 5 }) else {
+            return try await photoArtifactFallback(prompt: prompt, displayMode: displayMode)
+        }
+
+        return buildPhotoArtifactHTML(options: options)
+    }
+
+    private func generateUIArtifact(prompt: String) async throws -> String {
+        if let artifact = try await generateClaudeUIArtifact(prompt: prompt) {
+            return artifact
+        }
+
+        return buildUIArtifactHTML(options: buildUIOptions(prompt: prompt))
+    }
+
+    private func getTheColorScheme(seedHex: String, mode: String) async throws -> [PaletteSwatch] {
+        let hex = seedHex.replacingOccurrences(of: "#", with: "")
+        let url = makeURL(base: colorAPIBase, path: "/scheme", queryItems: [
+            URLQueryItem(name: "hex", value: hex),
+            URLQueryItem(name: "mode", value: mode),
+            URLQueryItem(name: "count", value: "6")
+        ])
+
+        let response: TheColorAPISchemeResponse = try await fetchJSON(url: url)
+        return (response.colors ?? [])
+            .compactMap { entry in
+                guard let name = entry.name?.value?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      let hexValue = entry.hex?.value?.uppercased(),
+                      isHex(hexValue) else { return nil }
+                return PaletteSwatch(name: name, hex: hexValue)
+            }
+            .prefix(6)
+            .map { $0 }
+    }
+
+    private func getTheColorName(hex: String) async throws -> String {
+        let cleaned = hex.replacingOccurrences(of: "#", with: "")
+        let url = makeURL(base: colorAPIBase, path: "/id", queryItems: [
+            URLQueryItem(name: "hex", value: cleaned)
+        ])
+
+        let response: TheColorAPIIDResponse = try await fetchJSON(url: url)
+        return response.name?.value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Color \(cleaned.uppercased())"
+    }
+
+    private func getColormindPalette(seedHex: String) async throws -> [PaletteSwatch] {
+        let rgb = hexToRGB(seedHex)
+        let body: [String: Any] = [
+            "model": "default",
+            "input": [
+                [rgb.r, rgb.g, rgb.b],
+                "N", "N", "N", "N"
+            ]
+        ]
+
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let response: ColormindResponse = try await fetchJSON(
+            url: colormindURL,
+            method: "POST",
+            headers: ["Content-Type": "application/json"],
+            body: data
+        )
+
+        let colors = Array((response.result ?? []).prefix(5))
+        if colors.count < 5 {
+            throw ArtifactGenerationError.unavailableBackend
+        }
+
+        var swatches: [PaletteSwatch] = [PaletteSwatch(name: try await getTheColorName(hex: seedHex), hex: seedHex)]
+        for (index, color) in colors.enumerated().dropFirst() {
+            let hex = rgbToHex(
+                Int(color[safe: 0] ?? 0),
+                Int(color[safe: 1] ?? 0),
+                Int(color[safe: 2] ?? 0)
+            )
+            let name = try await getTheColorName(hex: hex)
+            swatches.append(PaletteSwatch(name: index == 0 ? "Anchor" : name, hex: hex))
+        }
+
+        if let accent = colors.first {
+            swatches.append(
+                PaletteSwatch(
+                    name: "Accent",
+                    hex: rgbToHex(
+                        Int(accent[safe: 0] ?? 0),
+                        Int(accent[safe: 1] ?? 0),
+                        Int(accent[safe: 2] ?? 0)
+                    )
+                )
+            )
+        }
+
+        return Array(swatches.prefix(6))
+    }
+
+    private func fetchPexelsPhotos(query: String, seed: Int) async throws -> [PhotoItemPayload] {
+        guard !keys.pexels.isEmpty else { return [] }
+
+        let page = (abs(seed) % 3) + 1
+        let url = makeURL(base: pexelsBase, path: "/search", queryItems: [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "per_page", value: "8"),
+            URLQueryItem(name: "orientation", value: "portrait"),
+            URLQueryItem(name: "page", value: "\(page)")
+        ])
+
+        let response: PexelsResponse = try await fetchJSON(url: url, headers: [
+            "Authorization": keys.pexels
+        ])
+
+        return (response.photos ?? []).compactMap { photo in
+            guard let id = photo.id else { return nil }
+            let imageURL = photo.src?.large2x ?? photo.src?.large ?? photo.src?.medium
+            let thumbURL = photo.src?.medium ?? photo.src?.large ?? photo.src?.large2x
+            guard let imageURL, let thumbURL else { return nil }
+
+            return PhotoItemPayload(
+                id: "pexels-\(id)",
+                imageUrl: imageURL,
+                thumbUrl: thumbURL,
+                bundleImageName: nil,
+                alt: photo.alt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Pexels inspiration image",
+                source: .pexels,
+                author: photo.photographer?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Pexels",
+                detailUrl: photo.url ?? ""
+            )
+        }
+    }
+
+    private func fetchUnsplashPhotos(query: String, seed: Int) async throws -> [PhotoItemPayload] {
+        guard !keys.unsplash.isEmpty else { return [] }
+
+        let page = (abs(seed) % 3) + 1
+        let url = makeURL(base: unsplashBase, path: "/search/photos", queryItems: [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "per_page", value: "8"),
+            URLQueryItem(name: "orientation", value: "portrait"),
+            URLQueryItem(name: "page", value: "\(page)")
+        ])
+
+        let response: UnsplashResponse = try await fetchJSON(url: url, headers: [
+            "Authorization": "Client-ID \(keys.unsplash)",
+            "Accept-Version": "v1"
+        ])
+
+        return (response.results ?? []).compactMap { photo in
+            guard let id = photo.id,
+                  let imageURL = photo.urls?.regular,
+                  let thumbURL = photo.urls?.small else {
+                return nil
+            }
+
+            return PhotoItemPayload(
+                id: "unsplash-\(id)",
+                imageUrl: imageURL,
+                thumbUrl: thumbURL,
+                bundleImageName: nil,
+                alt: photo.alt_description?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ?? photo.description?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ?? "Unsplash inspiration image",
+                source: .unsplash,
+                author: photo.user?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unsplash",
+                detailUrl: photo.links?.html ?? ""
+            )
+        }
+    }
+
+    private func fetchArenaPhotos(query: String) async -> [PhotoItemPayload] {
+        guard !keys.arenaToken.isEmpty else { return [] }
+
+        let url = makeURL(base: arenaBase, path: "/search/blocks", queryItems: [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "per_page", value: "10")
+        ])
+
+        guard let response: ArenaResponse = try? await fetchJSON(url: url, headers: [
+            "Authorization": "Bearer \(keys.arenaToken)"
+        ]) else { return [] }
+
+        return (response.blocks ?? []).compactMap { block in
+            guard block.blockClass == "Image" else { return nil }
+            let imageURL = block.image?.original?.url ?? block.image?.display?.url
+            let thumbURL = block.image?.thumb?.url ?? block.image?.display?.url
+            guard let imageURL, let thumbURL, !imageURL.isEmpty else { return nil }
+            let id = block.id.map { "arena-\($0)" } ?? "arena-\(UUID().uuidString)"
+            return PhotoItemPayload(
+                id: id,
+                imageUrl: imageURL,
+                thumbUrl: thumbURL,
+                bundleImageName: nil,
+                alt: block.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Are.na inspiration",
+                source: .arena,
+                author: "Are.na",
+                detailUrl: block.source?.url ?? ""
+            )
+        }
+    }
+
+    private func fetchGooglePhotos(query: String) async -> [PhotoItemPayload] {
+        guard !keys.googleApiKey.isEmpty, !keys.googleSearchEngineId.isEmpty else { return [] }
+
+        let url = makeURL(base: googleSearchBase, path: "", queryItems: [
+            URLQueryItem(name: "key", value: keys.googleApiKey),
+            URLQueryItem(name: "cx", value: keys.googleSearchEngineId),
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "searchType", value: "image"),
+            URLQueryItem(name: "num", value: "10"),
+            URLQueryItem(name: "imgType", value: "photo"),
+            URLQueryItem(name: "safe", value: "active")
+        ])
+
+        guard let response: GoogleSearchResponse = try? await fetchJSON(url: url) else { return [] }
+
+        return (response.items ?? []).enumerated().compactMap { index, item in
+            guard let imageURL = item.link, !imageURL.isEmpty else { return nil }
+            let thumbURL = item.image?.thumbnailLink ?? imageURL
+            return PhotoItemPayload(
+                id: "google-\(index)-\(hashSeed(imageURL))",
+                imageUrl: imageURL,
+                thumbUrl: thumbURL,
+                bundleImageName: nil,
+                alt: item.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Google inspiration",
+                source: .google,
+                author: "Google",
+                detailUrl: item.image?.contextLink ?? ""
+            )
+        }
+    }
+
+    private func buildPhotoOptions(
+        pexels: [PhotoItemPayload],
+        unsplash: [PhotoItemPayload],
+        arena: [PhotoItemPayload],
+        google: [PhotoItemPayload],
+        displayMode: PhotoDisplayMode,
+        seed: Int,
+        swatchSets: [[PaletteSwatch]]
+    ) -> [PhotoOptionPayload] {
+        let editorialPool = dedupePhotos(pexels + unsplash + arena + google)
+        let cleanPool = dedupePhotos(unsplash + arena + pexels + google)
+        let experimentalPool = dedupePhotos(google + arena + unsplash + pexels)
+
+        let options = [
+            PhotoOptionPayload(
+                id: "photos-editorial",
+                displayMode: displayMode,
+                source: editorialPool.first?.source ?? .mixed,
+                direction: "editorial",
+                photos: Array(shuffle(editorialPool, seed: seed + 1).prefix(5)),
+                swatches: displayMode == .moodboard ? swatchSet(at: 0, in: swatchSets) : nil
+            ),
+            PhotoOptionPayload(
+                id: "photos-clean",
+                displayMode: displayMode,
+                source: cleanPool.first?.source ?? .mixed,
+                direction: "clean",
+                photos: Array(shuffle(cleanPool, seed: seed + 2).prefix(5)),
+                swatches: displayMode == .moodboard ? (swatchSet(at: 1, in: swatchSets) ?? swatchSet(at: 0, in: swatchSets)) : nil
+            ),
+            PhotoOptionPayload(
+                id: "photos-experimental",
+                displayMode: displayMode,
+                source: experimentalPool.first?.source ?? .mixed,
+                direction: "experimental",
+                photos: Array(shuffle(experimentalPool, seed: seed + 3).prefix(5)),
+                swatches: displayMode == .moodboard ? (swatchSet(at: 2, in: swatchSets) ?? swatchSet(at: 0, in: swatchSets)) : nil
+            )
+        ]
+
+        return options.filter { $0.photos.count >= 5 }
+    }
+
+    private func buildUIOptions(prompt: String) -> [UIOptionPayload] {
+        let productName = buildUIConceptName(prompt: prompt)
+        let subject = inferUISubject(prompt: prompt)
+        let feature = inferUIFeature(prompt: prompt)
+
+        return [
+            UIOptionPayload(
+                id: "ui-1",
+                direction: .editorial,
+                label: "Editorial",
+                productName: productName,
+                headline: "A dramatic \(subject) with layered storytelling",
+                supportingText: "Strong hierarchy, image-led composition, and premium pacing built for a first-impression concept.",
+                primaryCta: "Explore concept",
+                secondaryCta: "View story",
+                accent: "#D98752",
+                background: "#F6ECDD",
+                surface: "#FFF9F2",
+                mutedSurface: "#EEDBC5",
+                text: "#1D120A",
+                mutedText: "rgba(29,18,10,0.62)",
+                featureKind: feature.kind,
+                featureTitle: feature.title,
+                featureItems: feature.items
+            ),
+            UIOptionPayload(
+                id: "ui-2",
+                direction: .minimal,
+                label: "Minimal",
+                productName: productName,
+                headline: "A clear \(subject) system with calm spacing",
+                supportingText: "Minimal framing, crisp modules, and a quieter visual rhythm for a refined polished direction.",
+                primaryCta: "See layout",
+                secondaryCta: "Read details",
+                accent: "#6D8CFF",
+                background: "#EEF3FF",
+                surface: "#FFFFFF",
+                mutedSurface: "#E1E9FF",
+                text: "#111827",
+                mutedText: "rgba(17,24,39,0.62)",
+                featureKind: feature.kind,
+                featureTitle: feature.title,
+                featureItems: feature.items
+            ),
+            UIOptionPayload(
+                id: "ui-3",
+                direction: .bold,
+                label: "Bold",
+                productName: productName,
+                headline: "A high-energy \(subject) with punchy motion cues",
+                supportingText: "Asymmetry, larger moments, and brighter contrast for a more expressive concept direction.",
+                primaryCta: "Launch idea",
+                secondaryCta: "See modules",
+                accent: "#F46FA9",
+                background: "#111111",
+                surface: "#1F1F1F",
+                mutedSurface: "#2A2A2A",
+                text: "#FFFFFF",
+                mutedText: "rgba(255,255,255,0.62)",
+                featureKind: feature.kind,
+                featureTitle: feature.title,
+                featureItems: feature.items
+            )
+        ]
+    }
+
+    private func inferUIFeature(prompt: String) -> (kind: UIFeatureKind, title: String, items: [String]) {
+        let lowered = prompt.lowercased()
+
+        if contains(lowered, pattern: #"(?i)(toggle|toggles|switch|switches|selection states?)"#) {
+            return (.toggles, "Control States", ["Enabled", "Muted", "Focused"])
+        }
+
+        if contains(lowered, pattern: #"(?i)(picker|segment|segmented|tab|tabs|filter|chip|chips|dropdown)"#) {
+            return (.picker, "Selection System", ["For You", "Popular", "Saved"])
+        }
+
+        if contains(lowered, pattern: #"(?i)(button|buttons|cta|call to action)"#) {
+            return (.buttons, "Action Set", ["Primary", "Secondary", "Ghost"])
+        }
+
+        return (.cards, "Feature Modules", ["Overview", "Details", "Saved"])
+    }
+
+    private func buildPaletteArtifactHTML(options: [PaletteOptionPayload]) -> String {
+        let payload = ["kind": "palette-options"]
+        let data = try? JSONEncoder().encode(EmbeddedPayload(kind: payload["kind"]!, options: options))
+        let json = data.flatMap { String(data: $0, encoding: .utf8) } ?? "{\"kind\":\"palette-options\",\"options\":[]}"
+
+        return """
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+            <script id="draft-palette-options" type="application/json">\(json)</script>
+          </head>
+          <body style="margin:0;background:#000;color:#fff;font-family:-apple-system,'SF Pro',sans-serif;">
+            <div style="padding:28px 20px;">
+              <div style="font-size:40px;font-weight:700;">Draft</div>
+              <div style="font-size:20px;opacity:0.82;">Color Palette</div>
+              <div style="margin-top:20px;font-size:15px;opacity:0.62;">Preparing native palette output...</div>
+            </div>
+          </body>
+        </html>
+        """
+    }
+
+    private func buildPhotoArtifactHTML(options: [PhotoOptionPayload]) -> String {
+        let data = try? JSONEncoder().encode(EmbeddedPayload(kind: "photo-options", options: options))
+        let json = data.flatMap { String(data: $0, encoding: .utf8) } ?? "{\"kind\":\"photo-options\",\"options\":[]}"
+
+        return """
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+            <script id="draft-photo-options" type="application/json">\(json)</script>
+          </head>
+          <body style="margin:0;background:#000;color:#fff;font-family:-apple-system,'SF Pro',sans-serif;">
+            <div style="padding:28px 20px;">
+              <div style="font-size:40px;font-weight:700;">Draft</div>
+              <div style="font-size:20px;opacity:0.82;">\(options.first?.displayMode == .image ? "Image Gathering" : "Moodboard")</div>
+              <div style="margin-top:20px;font-size:15px;opacity:0.62;">Preparing native \(options.first?.displayMode == .image ? "image" : "moodboard") output...</div>
+            </div>
+          </body>
+        </html>
+        """
+    }
+
+    private func buildUIArtifactHTML(options: [UIOptionPayload]) -> String {
+        let data = try? JSONEncoder().encode(EmbeddedPayload(kind: "ui-options", options: options))
+        let json = data.flatMap { String(data: $0, encoding: .utf8) } ?? "{\"kind\":\"ui-options\",\"options\":[]}"
+
+        return """
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+            <script id="draft-ui-options" type="application/json">\(json)</script>
+          </head>
+          <body style="margin:0;background:#000;color:#fff;font-family:-apple-system,'SF Pro',sans-serif;">
+            <div style="padding:28px 20px;">
+              <div style="font-size:40px;font-weight:700;">Draft</div>
+              <div style="font-size:20px;opacity:0.82;">UI</div>
+              <div style="margin-top:20px;font-size:15px;opacity:0.62;">Preparing native UI output...</div>
+            </div>
+          </body>
+        </html>
+        """
+    }
+
+    private func inferSeedHex(_ transcript: String) -> String {
+        let lowered = transcript.lowercased()
+
+        for (keyword, hex) in paletteKeywords where lowered.contains(keyword) {
+            return hex
+        }
+
+        let hash = hashSeed(lowered)
+        let r = 48 + (hash & 0x7f)
+        let g = 48 + ((hash >> 7) & 0x7f)
+        let b = 48 + ((hash >> 14) & 0x7f)
+        return rgbToHex(r, g, b)
+    }
+
+    private func buildSearchQuery(_ prompt: String) -> String {
+        prompt
+            .lowercased()
+            .replacingOccurrences(of: #"\b(can you|could you|would you|i want|i need|help me|show me|give me|find me|make me|please|curate|put together|bring together|draft)\b"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"\b(some|a set of|set of|collection of)\b"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"\b(reference images?|reference photos?|image references?|photo references?|images?|photos?|imagery|art direction|moodboard)\b"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"[.,!?;:()\[\]"]"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func requestClaudeArtifact(
+        transcript: String,
+        extraInstruction: String? = nil,
+        maxTokens: Int = 2400
+    ) async throws -> String {
+        guard !keys.anthropic.isEmpty else {
+            throw ArtifactGenerationError.unavailableBackend
+        }
+
+        let userContent = extraInstruction.map {
+            "\(transcript)\n\nAdditional hard requirements:\n\($0)"
+        } ?? transcript
+
+        let payload: [String: Any] = [
+            "model": claudeModel,
+            "max_tokens": maxTokens,
+            "system": claudeSystemPrompt,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": userContent
+                ]
+            ]
+        ]
+
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        let response: ClaudeResponse = try await fetchJSON(
+            url: claudeEndpoint,
+            method: "POST",
+            headers: [
+                "x-api-key": keys.anthropic,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            ],
+            body: body
+        )
+
+        let text = (response.content ?? [])
+            .filter { $0.type == "text" }
+            .compactMap(\.text)
+            .joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !text.isEmpty else {
+            throw ArtifactGenerationError.unavailableBackend
+        }
+
+        return cleanClaudeHTML(text)
+    }
+
+    private func generateClaudeUIArtifact(prompt: String) async throws -> String? {
+        guard !keys.anthropic.isEmpty else { return nil }
+
+        let uiInstructions = [
+            "Return exactly 3 swipeable UI options.",
+            "Each option container must include data-ui-option=\"1\", data-ui-option=\"2\", and data-ui-option=\"3\".",
+            "Make the 3 options genuinely distinct directions, not minor color tweaks.",
+            "The three directions must differ in layout, hierarchy, composition, and component structure.",
+            "Changing only color is invalid.",
+            "Use a clear trio such as editorial, minimal, and experimental, or another equally distinct set of directions.",
+            "Use horizontal scroll snapping so the user can land on one option at a time.",
+            "Keep the Draft / UI header, top-right action buttons, and pagination dots.",
+            "Do not include a bottom navigation bar; app chrome is already provided outside the generated UI."
+        ].joined(separator: "\n")
+
+        let artifact = try await requestClaudeArtifact(
+            transcript: prompt,
+            extraInstruction: uiInstructions,
+            maxTokens: 2600
+        )
+
+        return validateUIArtifact(artifact) ? artifact : nil
+    }
+
+    private func generateClaudePhotoArtifact(prompt: String, displayMode: PhotoDisplayMode) async throws -> String? {
+        guard !keys.anthropic.isEmpty else { return nil }
+
+        let requestLabel = displayMode == .image ? "image" : "moodboard"
+        let instructions = [
+            "This is an \(requestLabel) request.",
+            "Do not rely on external image URLs, stock APIs, or remote assets.",
+            "Create a self-contained visual artifact with 3 swipeable directions using gradients, shapes, captions, and art-direction treatments.",
+            "Treat each option as a different image-generation direction or moodboard concept for the same request.",
+            "If photos would normally appear, simulate them with polished abstract editorial placeholders instead."
+        ].joined(separator: "\n")
+
+        return try await requestClaudeArtifact(
+            transcript: prompt,
+            extraInstruction: instructions,
+            maxTokens: 1600
+        )
+    }
+
+    private func photoArtifactFallback(prompt: String, displayMode: PhotoDisplayMode) async throws -> String {
+        let localOptions = buildLocalPhotoOptions(prompt: prompt, displayMode: displayMode)
+        if localOptions.count == 3, localOptions.allSatisfy({ $0.photos.count >= 5 }) {
+            return buildPhotoArtifactHTML(options: localOptions)
+        }
+
+        if let claudeFallback = try await generateClaudePhotoArtifact(prompt: prompt, displayMode: displayMode) {
+            return claudeFallback
+        }
+
+        throw ArtifactGenerationError.unavailableImageGeneration
+    }
+
+    private func cleanClaudeHTML(_ text: String) -> String {
+        var cleaned = text
+            .replacingOccurrences(of: #"^```html\s*"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"^```\s*"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"\s*```$"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let firstTag = cleaned.firstIndex(of: "<"), firstTag > cleaned.startIndex {
+            cleaned = String(cleaned[firstTag...])
+        }
+
+        return cleaned
+    }
+
+    private func validateUIArtifact(_ html: String) -> Bool {
+        let optionMatches = matches(for: #"data-ui-option="([123])""#, in: html).count
+        let hasScrollSnap =
+            contains(html, pattern: #"scroll-snap-type"#) ||
+            contains(html, pattern: #"snap-aligned"#) ||
+            contains(html, pattern: #"overflow-x:\s*(auto|scroll)"#)
+        let hasDraftUIHeader = contains(html, pattern: #"Draft"#) && contains(html, pattern: #">\s*UI\s*<"#)
+        let tagCount = matches(for: #"<div\b|<section\b|<button\b|<main\b|<article\b"#, in: html).count
+        let hasRichStructure =
+            contains(html, pattern: #"border-radius"#) &&
+            contains(html, pattern: #"display:\s*(flex|grid)"#) &&
+            tagCount >= 12
+
+        return optionMatches >= 3 && hasScrollSnap && hasDraftUIHeader && hasRichStructure
+    }
+
+    private func buildUIConceptName(prompt: String) -> String {
+        let cleaned = prompt
+            .lowercased()
+            .replacingOccurrences(of: #"\b(generate|design|create|build|make|show|give|app|screen|interface|ui|dashboard|landing page|mobile|website|site|header|hero|section|layout|ideas|concept|for|with|a|an|the)\b"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"[^\w\s]"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let base = cleaned
+            .split(separator: " ")
+            .prefix(2)
+            .map { $0.capitalized }
+            .joined(separator: " ")
+
+        let name = base.isEmpty ? "Studio" : base
+        return name.replacingOccurrences(of: " Concept", with: "")
+    }
+
+    private func inferUISubject(prompt: String) -> String {
+        let cleaned = prompt
+            .lowercased()
+            .replacingOccurrences(of: #"\b(generate|design|create|build|make|show|give|ideas|inspiration|creative direction|for|a|an|the)\b"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"[^\w\s]"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return cleaned.isEmpty ? "digital experience" : cleaned
+    }
+
+    private func buildLocalPaletteOptions(seedHex: String) -> [PaletteOptionPayload] {
+        let pastel = [
+            PaletteSwatch(name: "Anchor", hex: seedHex),
+            PaletteSwatch(name: "Mist", hex: mixHex(seedHex, "#FFFFFF", 0.58)),
+            PaletteSwatch(name: "Glow", hex: mixHex(seedHex, "#FFF4E8", 0.42)),
+            PaletteSwatch(name: "Bloom", hex: mixHex(seedHex, "#FFD9E8", 0.34)),
+            PaletteSwatch(name: "Skywash", hex: mixHex(seedHex, "#DDF1FF", 0.4)),
+            PaletteSwatch(name: "Clay", hex: mixHex(seedHex, "#E7C6B1", 0.28))
+        ]
+
+        let airy = [
+            PaletteSwatch(name: "Petal", hex: mixHex(seedHex, "#FFE4EF", 0.5)),
+            PaletteSwatch(name: "Cloud", hex: mixHex(seedHex, "#FFFFFF", 0.7)),
+            PaletteSwatch(name: "Shell", hex: mixHex(seedHex, "#FFF4EC", 0.64)),
+            PaletteSwatch(name: "Haze", hex: mixHex(seedHex, "#E6F0FF", 0.5)),
+            PaletteSwatch(name: "Powder", hex: mixHex(seedHex, "#F2E9FF", 0.52)),
+            PaletteSwatch(name: "Petal Dust", hex: mixHex(seedHex, "#F7D8D0", 0.45))
+        ]
+
+        let contrast = [
+            PaletteSwatch(name: "Core", hex: mixHex(seedHex, "#000000", 0.06)),
+            PaletteSwatch(name: "Sunwash", hex: mixHex(seedHex, "#FFF3C4", 0.36)),
+            PaletteSwatch(name: "Rosewater", hex: mixHex(seedHex, "#FFD4E6", 0.32)),
+            PaletteSwatch(name: "Cool Air", hex: mixHex(seedHex, "#D7EAFF", 0.28)),
+            PaletteSwatch(name: "Blush", hex: mixHex(seedHex, "#F3C4C4", 0.24)),
+            PaletteSwatch(name: "Creamlight", hex: mixHex(seedHex, "#FFF8F0", 0.6))
+        ]
+
+        return [
+            PaletteOptionPayload(id: "palette-local-1", swatches: withFixedPaletteBase(pastel)),
+            PaletteOptionPayload(id: "palette-local-2", swatches: withFixedPaletteBase(airy)),
+            PaletteOptionPayload(id: "palette-local-3", swatches: withFixedPaletteBase(contrast))
+        ]
+    }
+
+    private func buildLocalPhotoOptions(prompt: String, displayMode: PhotoDisplayMode) -> [PhotoOptionPayload] {
+        let candidateBoards = LibrarySeedData.boards.filter { board in
+            board.items.filter { $0.kind == .image && $0.bundleImageName != nil }.count >= 5
+        }
+
+        let scoredBoards = candidateBoards
+            .map { board in (board: board, score: localPhotoBoardScore(board: board, prompt: prompt)) }
+            .sorted { lhs, rhs in
+                if lhs.score == rhs.score {
+                    return lhs.board.id < rhs.board.id
+                }
+                return lhs.score > rhs.score
+            }
+            .map(\.board)
+
+        let orderedBoards = Array(scoredBoards.prefix(3))
+        guard orderedBoards.count == 3 else { return [] }
+
+        let swatchSets = displayMode == .moodboard
+            ? orderedBoards.map(localMoodboardSwatches(for:))
+            : Array(repeating: [], count: orderedBoards.count)
+
+        let directions = ["editorial", "clean", "experimental"]
+
+        return orderedBoards.enumerated().map { index, board in
+            let photos = board.items
+                .filter { $0.kind == .image }
+                .prefix(5)
+                .enumerated()
+                .map { photoIndex, item in
+                    PhotoItemPayload(
+                        id: "\(board.id)-local-\(photoIndex)",
+                        imageUrl: "",
+                        thumbUrl: "",
+                        bundleImageName: item.bundleImageName,
+                        alt: item.alt ?? item.label,
+                        source: photoSource(from: item.source),
+                        author: item.author ?? board.promptTitle,
+                        detailUrl: ""
+                    )
+                }
+
+            return PhotoOptionPayload(
+                id: "local-\(board.id)",
+                displayMode: displayMode,
+                source: photos.first?.source ?? .mixed,
+                direction: index < directions.count ? directions[index] : directions[0],
+                photos: photos,
+                swatches: displayMode == .moodboard && index < swatchSets.count ? swatchSets[index] : nil
+            )
+        }
+    }
+
+    private func localPhotoBoardScore(board: LibraryBoard, prompt: String) -> Int {
+        let promptTerms = normalizedTerms(prompt)
+        guard !promptTerms.isEmpty else { return 0 }
+
+        let boardTerms = normalizedTerms(
+            ([board.promptTitle] + board.items.flatMap { [$0.label, $0.alt ?? "", $0.author ?? ""] })
+                .joined(separator: " ")
+        )
+
+        return promptTerms.reduce(into: 0) { score, term in
+            if boardTerms.contains(term) {
+                score += term.count > 5 ? 3 : 2
+            }
+        }
+    }
+
+    private func normalizedTerms(_ text: String) -> Set<String> {
+        let normalized = text
+            .lowercased()
+            .replacingOccurrences(of: #"[^a-z0-9\s]"#, with: " ", options: .regularExpression)
+            .split(whereSeparator: \.isWhitespace)
+            .map(String.init)
+            .filter { $0.count > 2 }
+
+        return Set(normalized)
+    }
+
+    private func localMoodboardSwatches(for board: LibraryBoard) -> [PaletteSwatch] {
+        Array(
+            board.items
+                .filter { $0.kind == .image }
+                .prefix(4)
+                .enumerated()
+                .map { index, item in
+                    PaletteSwatch(
+                        name: index == 0 ? "Anchor" : item.label,
+                        hex: String(format: "#%06X", item.previewColorHex)
+                    )
+                }
+        )
+    }
+
+    private func photoSource(from source: LibrarySource?) -> PhotoSource {
+        switch source {
+        case .pexels:
+            return .pexels
+        case .unsplash:
+            return .unsplash
+        case .pinterest:
+            return .pinterest
+        case .arena:
+            return .arena
+        case .google:
+            return .google
+        case nil:
+            return .mixed
+        }
+    }
+
+    private func buildMoodboardSwatchSets(prompt: String) async -> [[PaletteSwatch]] {
+        let seedHex = inferSeedHex(prompt)
+
+        do {
+            async let analogic = getTheColorScheme(seedHex: seedHex, mode: "analogic")
+            async let quad = getTheColorScheme(seedHex: seedHex, mode: "quad")
+            async let colormind = getColormindPalette(seedHex: seedHex)
+
+            let fetched = [
+                try await analogic,
+                try await quad,
+                try await colormind
+            ]
+            let mapped = fetched.map(compactMoodboardSwatches)
+            if mapped.allSatisfy({ $0.count >= 4 }) {
+                return mapped
+            }
+        } catch {
+            // Fall back to deterministic local palettes when network-backed color APIs miss.
+        }
+
+        return buildLocalPaletteOptions(seedHex: seedHex)
+            .map { compactMoodboardSwatches($0.swatches) }
+    }
+
+    private func swatchSet(at index: Int, in sets: [[PaletteSwatch]]) -> [PaletteSwatch]? {
+        guard sets.indices.contains(index) else { return nil }
+        return sets[index]
+    }
+
+    private func compactMoodboardSwatches(_ swatches: [PaletteSwatch]) -> [PaletteSwatch] {
+        let filtered = swatches.filter { swatch in
+            let name = swatch.name.lowercased()
+            return name != "night" && name != "seasalt"
+        }
+
+        return Array(filtered.prefix(4))
+    }
+
+    private func withFixedPaletteBase(_ swatches: [PaletteSwatch]) -> [PaletteSwatch] {
+        Array(swatches.prefix(6)) + [
+            PaletteSwatch(name: "Night", hex: "#000000"),
+            PaletteSwatch(name: "Seasalt", hex: "#F7F7F9")
+        ]
+    }
+
+    private var hasImageProviders: Bool {
+        !keys.pexels.isEmpty || !keys.unsplash.isEmpty || !keys.pinterestServiceURL.isEmpty
+            || !keys.arenaToken.isEmpty || !keys.googleApiKey.isEmpty
+    }
+
+    private func fetchPinterestPhotos(query: String) async -> [PhotoItemPayload] {
+        guard !keys.pinterestServiceURL.isEmpty,
+              let baseURL = URL(string: keys.pinterestServiceURL) else { return [] }
+
+        var components = URLComponents(url: baseURL.appendingPathComponent("search"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "max", value: "10")
+        ]
+
+        guard let url = components?.url else { return [] }
+
+        struct PinterestPhoto: Decodable {
+            let id: String?
+            let imageUrl: String?
+            let thumbUrl: String?
+            let alt: String?
+            let author: String?
+            let detailUrl: String?
+        }
+        struct PinterestResponse: Decodable {
+            let photos: [PinterestPhoto]?
+        }
+
+        guard let response: PinterestResponse = try? await fetchJSON(url: url) else { return [] }
+
+        return (response.photos ?? []).compactMap { photo in
+            guard let id = photo.id,
+                  let imageUrl = photo.imageUrl, !imageUrl.isEmpty,
+                  let thumbUrl = photo.thumbUrl, !thumbUrl.isEmpty else { return nil }
+            return PhotoItemPayload(
+                id: id,
+                imageUrl: imageUrl,
+                thumbUrl: thumbUrl,
+                bundleImageName: nil,
+                alt: photo.alt ?? "Pinterest inspiration",
+                source: .pinterest,
+                author: photo.author ?? "Pinterest",
+                detailUrl: photo.detailUrl ?? ""
+            )
+        }
+    }
+
+    private func isPalettePrompt(_ transcript: String) -> Bool {
+        contains(
+            transcript,
+            pattern: #"(?i)(color palette|colour palette|palette|palettes|color scheme|colour scheme|brand colou?rs?|color direction|colour direction|color story|colour story|color system|colour system)"#
+        )
+    }
+
+    private func isMoodboardPrompt(_ transcript: String) -> Bool {
+        contains(transcript, pattern: #"(?i)(mood\s*board|moodboard)"#)
+    }
+
+    // Matches any clear UI / interface / screen / product request
+    private func isUiPrompt(_ transcript: String) -> Bool {
+        contains(
+            transcript,
+            pattern: #"(?i)\b(ui|ux|app screen|interface|product concept|visual design mock|dashboard|landing page|mobile app|screen design|app design|build a screen|generate a screen|home screen|design an app|design a mobile app|design a dashboard|design a landing page|website|web page|webpage|site|header|hero section|section design|layout concept|toggle|toggles|switch|switches|button|buttons|cta|picker|segment|segmented|tab bar|chip|chips|filter|dropdown|slider|stepper|bottom sheet|drawer|modal|form|settings screen|profile screen|onboarding|selection states?)\b"#
+        )
+        ||
+        // App-first domain terms that map clearly to UI generation
+        contains(
+            transcript,
+            pattern: #"(?i)\b(fitness (app|tracker)|wellness app|meditation app|music app|travel app|shopping app|ecommerce app|finance (app|dashboard)|social app|community app|creator (app|tool)|productivity (app|tool)|task app|planner app|investing (app|dashboard)|luxury app|playful app)\b"#
+        )
+    }
+
+    // Matches photo/imagery/moodboard requests
+    private func isPhotoPrompt(_ transcript: String) -> Bool {
+        if isMoodboardPrompt(transcript) { return true }
+
+        // Direct photo request words
+        if contains(
+            transcript,
+            pattern: #"(?i)\b(photo|photos|photography|imagery|images|art direction|inspiration|reference images?|inspo|visual references?|photo references?|image references?)\b"#
+        ), !isUiPrompt(transcript) {
+            return true
+        }
+
+        // Photo-only domains from semantic_core.csv
+        if contains(
+            transcript,
+            pattern: #"(?i)(fashion editorial|editorial fashion|magazine shoot|interior inspo|interior design|home moodboard|food shoot|food photography|recipe images|restaurant vibe|texture references|material moodboard|surfaces moodboard|street style|urban culture|city energy|misty forest|coastal cliffs|quiet nature|nature moodboard|portrait inspo|beauty references|face.focused shoot|concert vibe|festival mood|event (vibe|mood|energy)|workspace (moodboard|inspo)|desk setup|brand (shoot|campaign)|campaign references|travel (inspo|inspiration|moodboard)|wanderlust|creative collage|experimental image|luxury product (references|shoot|images))"#
+        ) { return true }
+
+        if isPalettePrompt(transcript) || isUiPrompt(transcript) { return false }
+
+        return false
+    }
+
+    private func fetchJSON<T: Decodable>(
+        url: URL,
+        method: String = "GET",
+        headers: [String: String] = [:],
+        body: Data? = nil
+    ) async throws -> T {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.httpBody = body
+        request.timeoutInterval = 20
+        headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw ArtifactGenerationError.unavailableBackend
+        }
+
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    private func shuffle<T>(_ items: [T], seed: Int) -> [T] {
+        guard items.count > 1 else { return items }
+
+        var copy = items
+        var state = max(seed, 1)
+
+        for index in stride(from: copy.count - 1, through: 1, by: -1) {
+            state = (state &* 1664525 &+ 1013904223) & 0x7fffffff
+            let swapIndex = state % (index + 1)
+            copy.swapAt(index, swapIndex)
+        }
+
+        return copy
+    }
+
+    private func dedupePhotos(_ photos: [PhotoItemPayload]) -> [PhotoItemPayload] {
+        var seen = Set<String>()
+        return photos.filter { photo in
+            let key = photo.id + photo.imageUrl
+            if seen.contains(key) { return false }
+            seen.insert(key)
+            return true
+        }
+    }
+
+    private func mixHex(_ base: String, _ target: String, _ amount: Double) -> String {
+        let from = hexToRGB(base)
+        let to = hexToRGB(target)
+        let mix = { (start: Int, end: Int) in
+            Int(round(Double(start) + (Double(end - start) * amount)))
+        }
+
+        return rgbToHex(mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b))
+    }
+
+    private func contains(_ text: String, pattern: String) -> Bool {
+        text.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    private func matches(for pattern: String, in text: String) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let range = NSRange(location: 0, length: text.utf16.count)
+        return regex.matches(in: text, range: range).compactMap { match in
+            guard let matchRange = Range(match.range, in: text) else { return nil }
+            return String(text[matchRange])
+        }
+    }
+
+    private func makeURL(base: URL, path: String, queryItems: [URLQueryItem] = []) -> URL {
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        let basePath = components?.path ?? ""
+        components?.path = basePath + path
+        if !queryItems.isEmpty {
+            components?.queryItems = queryItems
+        }
+
+        return components?.url ?? base
+    }
+
+    private func isHex(_ value: String) -> Bool {
+        value.range(of: #"^#[0-9A-F]{6}$"#, options: .regularExpression) != nil
+    }
+
+    private func hashSeed(_ input: String) -> Int {
+        input.unicodeScalars.reduce(5381) { partialResult, scalar in
+            ((partialResult << 5) &+ partialResult) &+ Int(scalar.value)
+        }
+    }
+
+    private func hexToRGB(_ hex: String) -> (r: Int, g: Int, b: Int) {
+        let cleaned = hex.replacingOccurrences(of: "#", with: "")
+        let r = Int(cleaned.prefix(2), radix: 16) ?? 0
+        let g = Int(cleaned.dropFirst(2).prefix(2), radix: 16) ?? 0
+        let b = Int(cleaned.dropFirst(4).prefix(2), radix: 16) ?? 0
+        return (r, g, b)
+    }
+
+    private func rgbToHex(_ r: Int, _ g: Int, _ b: Int) -> String {
+        String(format: "#%02X%02X%02X", clamp(r), clamp(g), clamp(b))
+    }
+
+    private func clamp(_ value: Int) -> Int {
+        min(max(value, 0), 255)
+    }
+}
+
+private struct EmbeddedPayload<T: Encodable>: Encodable {
+    let kind: String
+    let options: [T]
+}
+
+private extension Array where Element == Double {
+    subscript(safe index: Int) -> Double? {
+        guard indices.contains(index) else { return nil }
+        return self[index]
     }
 }

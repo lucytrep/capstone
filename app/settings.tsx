@@ -6,9 +6,9 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import { AppText as Text } from '@/components/app-typography';
 
 const C = {
   bg: '#000000',

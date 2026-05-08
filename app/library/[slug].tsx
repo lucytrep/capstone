@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import {
@@ -8,11 +9,11 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { AppText as Text } from '@/components/app-typography';
 import { AppBottomNav } from '@/components/app-bottom-nav';
 import { getBoardById, type LibraryItem } from '@/data/library';
 
@@ -77,7 +78,7 @@ function BoardTile({
           />
           {imageOverlay ? <View style={styles.tileOverlay} /> : null}
         </>
-      ) : showPaletteMeta ? (
+      ) : showPaletteMeta && item.kind === 'palette' ? (
         <View style={styles.paletteMeta}>
           <Text
             style={[
@@ -273,16 +274,16 @@ export default function BoardDetailScreen() {
   const board = slug ? getBoardById(slug) : undefined;
 
   const pages = useMemo(() => (board ? chunkItems(board.items, 5) : []), [board]);
-  const isPaletteBoard = Boolean(board) && board.items.every((item) => item.kind === 'palette');
+  const isPaletteBoard = board?.items.every((item) => item.kind === 'palette') ?? false;
   const isUiBoard = board?.id === 'ui-controls-board';
   const isDesertBoard = board?.id === 'yellow-kitchen-refresh';
   const boardLabel = isPaletteBoard ? 'Color Palette' : isUiBoard ? 'UI' : isDesertBoard ? 'Mood Board' : 'Photos';
   const imageItems = useMemo(
     () =>
-      board?.items.filter(
+      (board?.items ?? []).filter(
         (item): item is LibraryItem & { kind: 'image'; imageUrl: string } =>
           item.kind === 'image' && Boolean(item.imageUrl)
-      ) ?? [],
+      ),
     [board]
   );
 
@@ -328,10 +329,10 @@ export default function BoardDetailScreen() {
           </View>
 
           <View style={styles.actionsWrap}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.actionButton} hitSlop={12}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.actionButton} hitSlop={12}>
               <Feather name="x" size={18} color={C.cream} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.back()} style={styles.actionButton} hitSlop={12}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.back(); }} style={styles.actionButton} hitSlop={12}>
               <Feather name="check" size={18} color={C.cream} />
             </TouchableOpacity>
           </View>
@@ -504,7 +505,7 @@ export default function BoardDetailScreen() {
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => setFullscreenIndex(null)}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFullscreenIndex(null); }}
                 style={styles.fullscreenCloseButton}
                 hitSlop={12}
               >

@@ -1,0 +1,4 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+scrapy>=2.11.0
+scrapeops-scrapy-proxy-sdk>=0.2.2

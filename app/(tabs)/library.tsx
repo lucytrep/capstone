@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import {
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import { AppText as Text } from '@/components/app-typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBottomNav } from '@/components/app-bottom-nav';
 import { libraryBoards, type LibraryBoard } from '@/data/library';
+import { PINTEREST_SERVICE_URL } from '@/config/keys';
 
 const C = {
   bg: '#000000',
@@ -131,20 +133,23 @@ function BoardPreview({ board }: { board: LibraryBoard }) {
   }
 
   const previewTiles = Array.from({ length: 4 }, (_, index) => board.items[index]);
+  const tileStyles = (item?: LibraryBoard['items'][number]) => [
+    styles.previewTile,
+    item?.kind === 'image' ? styles.previewTileImage : null,
+    item?.kind === 'palette'
+      ? {
+          backgroundColor: item.previewColor,
+          borderColor: item.secondaryColor,
+        }
+      : null,
+  ];
 
   return (
     <View style={styles.previewGrid}>
       {[previewTiles[0]].map((item, index) => (
         <View
           key={item?.id ?? `placeholder-${index}`}
-          style={[
-            styles.previewTile,
-            styles.previewSlotHero,
-            item?.kind === 'palette' && {
-              backgroundColor: item.previewColor,
-              borderColor: item.secondaryColor,
-            },
-          ]}>
+          style={[styles.previewSlotHero, ...tileStyles(item)]}>
           {item ? (
             item.kind === 'image' && item.imageUrl ? (
               <>
@@ -170,12 +175,8 @@ function BoardPreview({ board }: { board: LibraryBoard }) {
           <View
             key={item?.id ?? `placeholder-middle-${index}`}
             style={[
-              styles.previewTile,
               index === 0 ? styles.previewSlotWide : styles.previewSlotNarrow,
-              item?.kind === 'palette' && {
-                backgroundColor: item.previewColor,
-                borderColor: item.secondaryColor,
-              },
+              ...tileStyles(item),
             ]}>
             {item ? (
               item.kind === 'image' && item.imageUrl ? (
@@ -200,12 +201,8 @@ function BoardPreview({ board }: { board: LibraryBoard }) {
 
       <View
         style={[
-          styles.previewTile,
           styles.previewSlotBottom,
-          previewTiles[3]?.kind === 'palette' && {
-            backgroundColor: previewTiles[3].previewColor,
-            borderColor: previewTiles[3].secondaryColor,
-          },
+          ...tileStyles(previewTiles[3]),
         ]}>
         {previewTiles[3] ? (
           previewTiles[3].kind === 'image' && previewTiles[3].imageUrl ? (
@@ -233,7 +230,7 @@ function BoardCard({ board }: { board: LibraryBoard }) {
   return (
     <Pressable
       style={styles.boardCard}
-      onPress={() => router.push(`/library/${board.id}` as never)}
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/library/${board.id}` as never); }}
       delayPressIn={90}
     >
       <View style={styles.boardHeader}>
@@ -245,8 +242,64 @@ function BoardCard({ board }: { board: LibraryBoard }) {
   );
 }
 
+type PinterestPhoto = { id: string; imageUrl: string; thumbUrl: string; alt: string };
+
+function PinterestBoardCard({ photos }: { photos: PinterestPhoto[] }) {
+  const preview = photos.slice(0, 4);
+
+  return (
+    <Pressable
+      style={styles.boardCard}
+      onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+      delayPressIn={90}
+    >
+      <View style={styles.boardHeader}>
+        <Text numberOfLines={1} style={styles.boardTitle}>Pinterest Picks</Text>
+        <Text style={styles.boardCount}>{photos.length} items · Live</Text>
+      </View>
+      <View style={[styles.previewGrid, { aspectRatio: 1.6 }]}>
+        <View style={[styles.previewSlotHero, styles.previewTile, styles.previewTileImage]}>
+          {preview[0] ? (
+            <ExpoImage source={preview[0].thumbUrl} style={styles.previewPhotoImage} contentFit="cover" transition={120} />
+          ) : null}
+        </View>
+        <View style={styles.previewMiddleRow}>
+          {preview[1] ? (
+            <View style={[styles.previewSlotWide, styles.previewTile, styles.previewTileImage]}>
+              <ExpoImage source={preview[1].thumbUrl} style={styles.previewPhotoImage} contentFit="cover" transition={120} />
+            </View>
+          ) : null}
+          {preview[2] ? (
+            <View style={[styles.previewSlotNarrow, styles.previewTile, styles.previewTileImage]}>
+              <ExpoImage source={preview[2].thumbUrl} style={styles.previewPhotoImage} contentFit="cover" transition={120} />
+            </View>
+          ) : null}
+        </View>
+        {preview[3] ? (
+          <View style={[styles.previewSlotBottom, styles.previewTile, styles.previewTileImage]}>
+            <ExpoImage source={preview[3].thumbUrl} style={styles.previewPhotoImage} contentFit="cover" transition={120} />
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
+  const [pinterestPhotos, setPinterestPhotos] = useState<PinterestPhoto[]>([]);
+
+  useEffect(() => {
+    if (!PINTEREST_SERVICE_URL.trim()) return;
+    fetch(`${PINTEREST_SERVICE_URL}/search?q=editorial+fashion+inspiration&max=8`)
+      .then((res) => res.json())
+      .then((data: { photos?: PinterestPhoto[] }) => {
+        if (data.photos && data.photos.length > 0) {
+          setPinterestPhotos(data.photos);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -269,7 +322,7 @@ export default function LibraryScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open settings"
-              onPress={() => router.push('/settings')}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/settings'); }}
               style={styles.settingsButton}
               hitSlop={10}
             >
@@ -278,6 +331,9 @@ export default function LibraryScreen() {
           </View>
 
           <View style={styles.boardsGrid}>
+            {pinterestPhotos.length > 0 ? (
+              <PinterestBoardCard photos={pinterestPhotos} />
+            ) : null}
             {libraryBoards.map((board) => (
               <BoardCard key={board.id} board={board} />
             ))}
@@ -328,13 +384,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boardsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: 22,
+    flexDirection: 'column',
     rowGap: 10,
   },
   boardCard: {
-    width: '46.6%',
+    width: '100%',
     gap: 12,
   },
   boardHeader: {
@@ -354,7 +408,7 @@ const styles = StyleSheet.create({
   },
   previewGrid: {
     width: '100%',
-    aspectRatio: 0.64,
+    aspectRatio: 1.6,
     gap: 6,
   },
   previewMiddleRow: {
@@ -385,6 +439,9 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     overflow: 'hidden',
     padding: 10,
+  },
+  previewTileImage: {
+    padding: 0,
   },
   uiPreviewCanvas: {
     flex: 1,

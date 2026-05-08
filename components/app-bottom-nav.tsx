@@ -3,6 +3,7 @@ import { Feather } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 const C = {
@@ -15,6 +16,7 @@ const C = {
   homeNavGlow: 'rgba(255, 255, 255, 0.16)',
   homeNavShine: 'rgba(255, 255, 255, 0.34)',
   icon: 'rgba(255, 248, 252, 0.86)',
+  iconDim: '#696969',
 };
 
 type AppTab = {
@@ -63,15 +65,16 @@ export function AppBottomNav({ variant = 'default' }: AppBottomNavProps) {
             key={tab.key}
             style={styles.navIcon}
             onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (!isActive) {
                 router.replace(tab.href as never);
               }
             }}
           >
             {tab.sfIcon ? (
-              <IconSymbol name={tab.sfIcon} size={28} color={C.icon} weight="regular" />
+              <IconSymbol name={tab.sfIcon} size={28} color={isActive ? C.icon : C.iconDim} weight="regular" />
             ) : (
-              <Feather name={tab.icon} size={24} color={C.icon} />
+              <Feather name={tab.icon} size={24} color={isActive ? C.icon : C.iconDim} />
             )}
           </Pressable>
         );

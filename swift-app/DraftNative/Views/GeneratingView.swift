@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 struct GeneratingView: View {
@@ -7,38 +8,38 @@ struct GeneratingView: View {
         ZStack {
             Color(hex: 0x111111).ignoresSafeArea()
 
-            VStack(spacing: 28) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Draft")
+                    .font(.system(size: 34, weight: .semibold, design: .default))
+                    .kerning(-0.5)
+                    .foregroundStyle(.white)
+
+                Text(appModel.transcript.trimmingCharacters(in: .whitespacesAndNewlines))
+                    .font(.system(size: 34, weight: .regular, design: .default))
+                    .kerning(-0.5)
+                    .foregroundStyle(.white.opacity(0.98))
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
+
                 Spacer()
 
-                if case .failed = appModel.generationState {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 54))
-                        .foregroundStyle(Color(hex: 0xE8A87C))
-                } else {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(Color(hex: 0xE8A87C))
-                        .scaleEffect(1.6)
+                Group {
+                    if case .failed = appModel.generationState {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 54))
+                            .foregroundStyle(Color(hex: 0xE8A87C))
+                    } else {
+                        LoadingLogoVideo()
+                            .frame(width: 220, height: 220)
+                    }
                 }
-
-                VStack(spacing: 10) {
-                    Text(titleText)
-                        .font(.system(size: 24, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-
-                    Text(messageText)
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(hex: 0xA59B92))
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 300)
-                }
+                .frame(maxWidth: .infinity)
 
                 if case .failed = appModel.generationState {
                     VStack(spacing: 12) {
                         Button("Try Again") {
-                            Task {
-                                await appModel.retryGeneration()
-                            }
+                            Task { await appModel.retryGeneration() }
                         }
                         .buttonStyle(PrimaryButtonStyle())
 
@@ -47,37 +48,109 @@ struct GeneratingView: View {
                         }
                         .buttonStyle(SecondaryButtonStyle())
                     }
+                } else {
+                    Button("Cancel") {
+                        appModel.dismissFlow()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
-
-                Spacer()
             }
             .padding(28)
         }
-        .task {
-            guard case .generating = appModel.generationState else { return }
-            await appModel.generateArtifact()
+    }
+}
+
+private struct LoadingLogoVideo: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIView(context: Context) -> PlayerContainerView {
+        let view = PlayerContainerView()
+        view.backgroundColor = .clear
+
+        guard let url = Bundle.main.url(forResource: "Logo", withExtension: "mov") else {
+            return view
+        }
+
+        let playerItem = AVPlayerItem(url: url)
+        let queuePlayer = AVQueuePlayer()
+        queuePlayer.isMuted = true
+        queuePlayer.actionAtItemEnd = .none
+
+        let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+        context.coordinator.player = queuePlayer
+        context.coordinator.looper = looper
+        context.coordinator.observeLoopEnd(for: playerItem)
+
+        view.playerLayer.player = queuePlayer
+        view.playerLayer.videoGravity = .resizeAspect
+        queuePlayer.play()
+
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerContainerView, context: Context) {
+        if context.coordinator.player?.timeControlStatus != .playing {
+            context.coordinator.player?.play()
         }
     }
 
-    private var titleText: String {
-        switch appModel.generationState {
-        case .failed:
-            return "Generation failed"
-        case .idle, .generating:
-            return "Generating your artifact"
-        case .ready:
-            return "Ready"
-        }
+    static func dismantleUIView(_ uiView: PlayerContainerView, coordinator: Coordinator) {
+        coordinator.player?.pause()
+        coordinator.stopObserving()
+        uiView.playerLayer.player = nil
+        coordinator.looper = nil
+        coordinator.player = nil
     }
 
-    private var messageText: String {
-        switch appModel.generationState {
-        case .failed(let message):
-            return message
-        case .idle, .generating:
-            return "This preserves the current app's dedicated generation flow while we rebuild it natively."
-        case .ready:
-            return "Artifact loaded."
+    final class Coordinator {
+        var player: AVQueuePlayer?
+        var looper: AVPlayerLooper?
+        private var observer: NSObjectProtocol?
+        private let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+
+        func observeLoopEnd(for templateItem: AVPlayerItem) {
+            stopObserving()
+            feedbackGenerator.prepare()
+            observer = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: templateItem,
+                queue: .main
+            ) { [weak self] _ in
+                self?.feedbackGenerator.impactOccurred(intensity: 0.65)
+                self?.feedbackGenerator.prepare()
+            }
         }
+
+        func stopObserving() {
+            if let observer {
+                NotificationCenter.default.removeObserver(observer)
+                self.observer = nil
+            }
+        }
+
+        deinit {
+            stopObserving()
+        }
+    }
+}
+
+private final class PlayerContainerView: UIView {
+    let playerLayer = AVPlayerLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.addSublayer(playerLayer)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer.frame = bounds
     }
 }

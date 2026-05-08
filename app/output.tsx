@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   SafeAreaView,
   Platform,
@@ -13,6 +12,8 @@ import { Image as ExpoImage } from 'expo-image';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { AppText as Text } from '@/components/app-typography';
+import { PEXELS_API_KEY } from '@/config/keys';
 import { SessionStore } from '@/store/session';
 
 const C = {
@@ -40,14 +41,15 @@ type PhotoItem = {
   imageUrl: string;
   thumbUrl: string;
   alt: string;
-  source: 'pexels' | 'unsplash' | 'gemini';
+  source: 'pexels' | 'unsplash' | 'gemini' | 'pinterest';
   author: string;
   detailUrl: string;
 };
 
 type PhotoOption = {
   id: string;
-  source: 'pexels' | 'unsplash' | 'gemini' | 'mixed';
+  displayMode?: 'image' | 'moodboard';
+  source: 'pexels' | 'unsplash' | 'gemini' | 'pinterest' | 'mixed';
   photos: PhotoItem[];
 };
 
@@ -80,7 +82,8 @@ type EmbeddedPhotoOptions = {
   kind?: string;
   options?: {
     id?: string;
-    source?: 'pexels' | 'unsplash' | 'mixed';
+    displayMode?: 'image' | 'moodboard';
+    source?: 'pexels' | 'unsplash' | 'gemini' | 'mixed';
     photos?: PhotoItem[];
   }[];
 };
@@ -344,6 +347,7 @@ function parseEmbeddedPhotoOptions(html: string): PhotoOption[] {
     return parsed.options
       .map((option, index) => ({
         id: option.id || `photos-${index + 1}`,
+        displayMode: option.displayMode,
         source: option.source || 'mixed',
         photos: (option.photos ?? []).filter(
           (photo): photo is PhotoItem =>
@@ -633,6 +637,166 @@ function BottomNavPill({ onMicPress }: { onMicPress: () => void }) {
   );
 }
 
+type MoodPhoto = {
+  id: string;
+  imageUrl: string;
+  alt: string;
+};
+
+type ArenaChannel = {
+  id: string;
+  title: string;
+  thumbUrl: string;
+};
+
+function extractMoodKeywords(transcript: string): string {
+  return transcript
+    .replace(
+      /\b(a|an|the|and|or|but|in|on|at|to|for|of|with|i|me|my|we|please|help|show|make|create|build|give|find|generate|design|get|need|want|can|you|some|us|this|that|images?|photos?|imagery|moodboard|references?)\b/gi,
+      ' '
+    )
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter((w) => w.length > 2)
+    .slice(0, 3)
+    .join(' ');
+}
+
+function useMoodImages(transcript: string) {
+  const [pexelsPhotos, setPexelsPhotos] = useState<MoodPhoto[]>([]);
+  const [arenaChannels, setArenaChannels] = useState<ArenaChannel[]>([]);
+
+  useEffect(() => {
+    if (!transcript.trim()) return;
+    const keywords = extractMoodKeywords(transcript);
+    if (!keywords) return;
+    let cancelled = false;
+
+    if (PEXELS_API_KEY) {
+      fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(keywords)}&per_page=6&orientation=portrait`,
+        { headers: { Authorization: PEXELS_API_KEY } }
+      )
+        .then((r) => r.json())
+        .then(
+          (data: {
+            photos?: Array<{
+              id?: number;
+              alt?: string;
+              src?: { medium?: string; large?: string };
+            }>;
+          }) => {
+            if (cancelled) return;
+            const photos = (data.photos ?? [])
+              .map((p) => {
+                const url = p.src?.medium || p.src?.large;
+                if (!p.id || !url) return null;
+                return { id: `pm-${p.id}`, imageUrl: url, alt: p.alt || '' };
+              })
+              .filter((p): p is MoodPhoto => p !== null);
+            setPexelsPhotos(photos);
+          }
+        )
+        .catch(() => {});
+    }
+
+    fetch(`https://api.are.na/v2/search/channels?q=${encodeURIComponent(keywords)}&per=4`)
+      .then((r) => r.json())
+      .then(
+        (data: {
+          channels?: Array<{
+            id?: number;
+            title?: string;
+            image?: {
+              display?: { url?: string };
+              square?: { url?: string };
+              thumb?: { url?: string };
+            };
+          }>;
+        }) => {
+          if (cancelled) return;
+          const channels = (data.channels ?? [])
+            .map((c) => {
+              const thumbUrl =
+                c.image?.display?.url || c.image?.square?.url || c.image?.thumb?.url;
+              if (!c.id || !c.title || !thumbUrl) return null;
+              return { id: `arena-${c.id}`, title: c.title, thumbUrl };
+            })
+            .filter((c): c is ArenaChannel => c !== null);
+          setArenaChannels(channels);
+        }
+      )
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [transcript]);
+
+  return { pexelsPhotos, arenaChannels };
+}
+
+function MoodImageRows({ transcript }: { transcript: string }) {
+  const { pexelsPhotos, arenaChannels } = useMoodImages(transcript);
+
+  if (pexelsPhotos.length === 0 && arenaChannels.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={styles.moodSection}>
+      {pexelsPhotos.length > 0 && (
+        <View style={styles.moodGroup}>
+          <Text style={styles.moodLabel}>Mood</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.moodScrollContent}
+          >
+            {pexelsPhotos.map((photo) => (
+              <View key={photo.id} style={styles.moodPhotoTile}>
+                <ExpoImage
+                  source={photo.imageUrl}
+                  style={styles.moodTileImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+      {arenaChannels.length > 0 && (
+        <View style={styles.moodGroup}>
+          <Text style={styles.moodLabel}>References</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.moodScrollContent}
+          >
+            {arenaChannels.map((channel) => (
+              <View key={channel.id} style={styles.moodChannelTile}>
+                <ExpoImage
+                  source={channel.thumbUrl}
+                  style={styles.moodTileImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <View style={styles.moodChannelOverlay} />
+                <Text style={styles.moodChannelTitle} numberOfLines={2}>
+                  {channel.title}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function NativeUiOptionCard({ option }: { option: UiOption }) {
   return (
     <View
@@ -646,7 +810,6 @@ function NativeUiOptionCard({ option }: { option: UiOption }) {
     >
       <View style={styles.nativeUiCardHeader}>
         <View>
-          <Text style={[styles.nativeUiDirection, { color: option.mutedText }]}>{option.label}</Text>
           <Text style={[styles.nativeUiProduct, { color: option.text }]}>{option.productName}</Text>
         </View>
         <View style={[styles.nativeUiStatusChip, { backgroundColor: option.mutedSurface }]}>
@@ -876,7 +1039,7 @@ export default function OutputScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.nativePaletteContent}>
+          <ScrollView style={styles.moodOuterScroll} showsVerticalScrollIndicator={false} bounces={false}>
             <ScrollView
               horizontal
               pagingEnabled
@@ -965,7 +1128,8 @@ export default function OutputScreen() {
                 />
               ))}
             </View>
-          </View>
+            <MoodImageRows transcript={transcript} />
+          </ScrollView>
 
           <BottomNavPill onMicPress={handleNew} />
         </View>
@@ -993,7 +1157,7 @@ export default function OutputScreen() {
             </View>
           </View>
 
-          <View style={styles.nativePhotoContent}>
+          <ScrollView style={styles.moodOuterScroll} showsVerticalScrollIndicator={false} bounces={false}>
             <ScrollView
               horizontal
               pagingEnabled
@@ -1030,7 +1194,8 @@ export default function OutputScreen() {
                 />
               ))}
             </View>
-          </View>
+            <MoodImageRows transcript={transcript} />
+          </ScrollView>
 
           <BottomNavPill onMicPress={handleNew} />
         </View>
@@ -1054,7 +1219,9 @@ export default function OutputScreen() {
           <View style={styles.nativePhotoTopBar}>
             <View style={styles.photoHeadingWrap}>
               <Text style={styles.photoScreenTitle}>Draft</Text>
-              <Text style={styles.photoScreenSubtitle}>Photos</Text>
+              <Text style={styles.photoScreenSubtitle}>
+                {photoOptions[0]?.displayMode === 'moodboard' ? 'Moodboard' : 'Image Gathering'}
+              </Text>
             </View>
 
             <View style={styles.photoActions}>
@@ -1067,7 +1234,7 @@ export default function OutputScreen() {
             </View>
           </View>
 
-          <View style={styles.nativePhotoContent}>
+          <ScrollView style={styles.moodOuterScroll} showsVerticalScrollIndicator={false} bounces={false}>
             <ScrollView
               horizontal
               pagingEnabled
@@ -1122,7 +1289,8 @@ export default function OutputScreen() {
                 />
               ))}
             </View>
-          </View>
+            <MoodImageRows transcript={transcript} />
+          </ScrollView>
 
           <BottomNavPill onMicPress={handleNew} />
         </View>
@@ -1359,14 +1527,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  nativeUiDirection: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
   nativeUiProduct: {
-    marginTop: 6,
     fontSize: 27,
     lineHeight: 31,
     fontWeight: '700',
@@ -1652,5 +1813,60 @@ const styles = StyleSheet.create({
   newButtonSmallText: {
     color: C.amber,
     fontSize: 15,
+  },
+  moodOuterScroll: {
+    flex: 1,
+  },
+  moodSection: {
+    paddingTop: 20,
+    paddingBottom: 24,
+  },
+  moodGroup: {
+    marginBottom: 14,
+  },
+  moodLabel: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    paddingHorizontal: 18,
+    marginBottom: 10,
+  },
+  moodScrollContent: {
+    paddingHorizontal: 18,
+    gap: 8,
+  },
+  moodPhotoTile: {
+    width: 90,
+    height: 118,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#1A1A1A',
+  },
+  moodChannelTile: {
+    width: 130,
+    height: 80,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#1A1A1A',
+  },
+  moodTileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  moodChannelOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  moodChannelTitle: {
+    position: 'absolute',
+    bottom: 7,
+    left: 8,
+    right: 8,
+    color: '#F5F0E8',
+    fontSize: 9,
+    fontWeight: '600',
+    lineHeight: 12,
   },
 });

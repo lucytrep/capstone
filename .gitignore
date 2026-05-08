@@ -34,6 +34,10 @@ yarn-error.*
 .env
 .env*.local
 
+# local secrets (never commit — contains real API keys)
+LocalSecrets.plist
+swift-app/DraftNative/LocalSecrets.plist
+
 # typescript
 *.tsbuildinfo
 
