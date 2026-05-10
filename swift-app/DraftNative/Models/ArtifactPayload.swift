@@ -36,10 +36,64 @@ struct PhotoItemPayload: Codable, Hashable {
     let imageUrl: String
     let thumbUrl: String
     let bundleImageName: String?
+    /// Longest edge in pixels for on-device assets; used to prefer sharp slots. Omitted in JSON when absent.
+    let maxPixelDimension: Int?
     let alt: String
     let source: PhotoSource
     let author: String
     let detailUrl: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, imageUrl, thumbUrl, bundleImageName, maxPixelDimension, alt, source, author, detailUrl
+    }
+
+    init(
+        id: String,
+        imageUrl: String,
+        thumbUrl: String,
+        bundleImageName: String?,
+        maxPixelDimension: Int? = nil,
+        alt: String,
+        source: PhotoSource,
+        author: String,
+        detailUrl: String
+    ) {
+        self.id = id
+        self.imageUrl = imageUrl
+        self.thumbUrl = thumbUrl
+        self.bundleImageName = bundleImageName
+        self.maxPixelDimension = maxPixelDimension
+        self.alt = alt
+        self.source = source
+        self.author = author
+        self.detailUrl = detailUrl
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        imageUrl = try c.decode(String.self, forKey: .imageUrl)
+        thumbUrl = try c.decode(String.self, forKey: .thumbUrl)
+        bundleImageName = try c.decodeIfPresent(String.self, forKey: .bundleImageName)
+        maxPixelDimension = try c.decodeIfPresent(Int.self, forKey: .maxPixelDimension)
+        alt = try c.decode(String.self, forKey: .alt)
+        source = try c.decode(PhotoSource.self, forKey: .source)
+        author = try c.decode(String.self, forKey: .author)
+        detailUrl = try c.decode(String.self, forKey: .detailUrl)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(imageUrl, forKey: .imageUrl)
+        try c.encode(thumbUrl, forKey: .thumbUrl)
+        try c.encodeIfPresent(bundleImageName, forKey: .bundleImageName)
+        try c.encodeIfPresent(maxPixelDimension, forKey: .maxPixelDimension)
+        try c.encode(alt, forKey: .alt)
+        try c.encode(source, forKey: .source)
+        try c.encode(author, forKey: .author)
+        try c.encode(detailUrl, forKey: .detailUrl)
+    }
 }
 
 struct PhotoOptionPayload: Codable, Hashable {

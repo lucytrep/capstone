@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text as RNText,
   TextInput as RNTextInput,
@@ -25,6 +26,38 @@ export const FontFamilies = {
 function normalizeWeight(weight?: TextStyle['fontWeight']) {
   if (weight == null) return undefined;
   return typeof weight === 'number' ? `${weight}` : weight;
+}
+
+/**
+ * SF Pro Rounded on iOS (system-installed). Falls back to bundled SF Pro Text on other platforms.
+ */
+export function getSFProRoundedFontFamily(weight?: TextStyle['fontWeight']): string {
+  if (Platform.OS !== 'ios') {
+    return getSFFontFamily(weight);
+  }
+
+  const w = normalizeWeight(weight);
+  switch (w) {
+    case '100':
+    case '200':
+      return 'SFProRounded-Ultralight';
+    case '300':
+      return 'SFProRounded-Light';
+    case '500':
+      return 'SFProRounded-Medium';
+    case '600':
+      return 'SFProRounded-Semibold';
+    case '700':
+    case 'bold':
+      return 'SFProRounded-Bold';
+    case '800':
+      return 'SFProRounded-Heavy';
+    case '900':
+    case 'black':
+      return 'SFProRounded-Black';
+    default:
+      return 'SFProRounded-Regular';
+  }
 }
 
 export function getSFFontFamily(weight?: TextStyle['fontWeight']) {

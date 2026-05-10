@@ -1,0 +1,16 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/SettingsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 9
+        }
+      }
+    ]
+  },
+  "version": 1
+}

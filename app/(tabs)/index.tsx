@@ -1,18 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
-  Animated,
   KeyboardAvoidingView,
   SafeAreaView,
   Platform,
+  Pressable,
   StyleSheet,
   type TextInput as RNTextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,49 +19,40 @@ import Voice, {
   SpeechResultsEvent,
   SpeechStartEvent,
 } from '@react-native-voice/voice';
-import { AppText as Text, AppTextInput as TextInput } from '@/components/app-typography';
+import {
+  AppText as Text,
+  AppTextInput as TextInput,
+  getSFProRoundedFontFamily,
+} from '@/components/app-typography';
 import { AppBottomNav } from '@/components/app-bottom-nav';
-import { SoundwaveBackground } from '@/components/soundwave-background';
+import { DictationRippleBackground } from '@/components/dictation-ripple-background';
+import { OnboardingSwipeIntro } from '@/components/onboarding-swipe-intro';
 import { SessionStore } from '@/store/session';
 
 const C = {
-  cardBase: '#E277B8',
-  cardActive: '#B74989',
-  white: '#FFF8FC',
-  softWhite: 'rgba(255, 248, 252, 0.74)',
-  softWhiteStrong: 'rgba(255, 248, 252, 0.9)',
-  nav: 'rgba(255, 240, 248, 0.22)',
-  navBorder: 'rgba(255, 240, 248, 0.32)',
-  ring: 'rgba(255, 248, 252, 0.22)',
+  white: '#FFFFFF',
 };
 
 const ONBOARDING_KEY = 'draft.onboarding.seen';
-const HOME_GRADIENTS = [
-  ['#2A0620', '#6B0132', '#DD2B77', '#CE68A4'],
-  ['#E08A6D', '#9A5B77', '#4C425C'],
-  ['#8E6BC7', '#6A567F', '#383E58'],
-  ['#69A6B0', '#5E688D', '#3D3F59'],
-] as const;
+
+/** Web dev reload behavior differs; iOS/Android persist “seen” across tab visits and remounts. */
+const onboardingPersistsAcrossReload =
+  Platform.OS === 'ios' || Platform.OS === 'android';
 
 export default function HomeScreen() {
   const [text, setText] = useState('');
-  const [focused, setFocused] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState<boolean | null>(null);
-  const [voiceStatus, setVoiceStatus] = useState('Speak clearly and pause when finished');
   const [voiceError, setVoiceError] = useState('');
   const [showTypedFallback, setShowTypedFallback] = useState(false);
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
-  const [gradientIndex, setGradientIndex] = useState(0);
-  const pulse = useRef(new Animated.Value(1)).current;
+  const [pressActive, setPressActive] = useState(false);
   const isNavigatingRef = useRef(false);
-  const hasFocusedOnceRef = useRef(false);
+  const holdActiveRef = useRef(false);
   const transcriptRef = useRef('');
   const inputRef = useRef<RNTextInput | null>(null);
   const insets = useSafeAreaInsets();
-  const activeGradient = HOME_GRADIENTS[gradientIndex];
 
   const triggerGenerate = useCallback((value: string) => {
     const cleaned = value.trim();
@@ -78,20 +67,14 @@ export default function HomeScreen() {
     Voice.onSpeechStart = (_e: SpeechStartEvent) => {
       setIsListening(true);
       setVoiceError('');
-      setVoiceStatus('Listening...');
     };
 
     Voice.onSpeechEnd = () => {
       setIsListening(false);
       const captured = transcriptRef.current.trim();
       if (captured) {
-        setVoiceStatus('Voice recording captured. Generating...');
         triggerGenerate(captured);
-        return;
       }
-      setVoiceStatus((current) =>
-        current === 'Listening...' ? 'Voice capture finished.' : current
-      );
     };
 
     Voice.onSpeechResults = (e: SpeechResultsEvent) => {
@@ -99,7 +82,6 @@ export default function HomeScreen() {
       if (!result) return;
       transcriptRef.current = result;
       setText(result);
-      setVoiceStatus('Voice recording captured.');
     };
 
     Voice.onSpeechPartialResults = (e: SpeechResultsEvent) => {
@@ -113,8 +95,8 @@ export default function HomeScreen() {
       const message = e.error?.message || 'Voice recognition failed.';
       transcriptRef.current = '';
       setIsListening(false);
+      setPressActive(false);
       setVoiceError(message);
-      setVoiceStatus('Voice capture failed. Try again.');
       setShowTypedFallback(true);
     };
   }, [triggerGenerate]);
@@ -125,12 +107,10 @@ export default function HomeScreen() {
       setVoiceAvailable(Boolean(available));
       if (!available) {
         setShowTypedFallback(true);
-        setVoiceStatus('Voice is unavailable here. Type a prompt to test instead.');
       }
     } catch {
       setVoiceAvailable(false);
       setShowTypedFallback(true);
-      setVoiceStatus('Voice is unavailable here. Type a prompt to test instead.');
     }
   }, []);
 
@@ -154,21 +134,13 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (hasFocusedOnceRef.current) {
-        setGradientIndex((current) => (current + 1) % HOME_GRADIENTS.length);
-      } else {
-        hasFocusedOnceRef.current = true;
-      }
-
       isNavigatingRef.current = false;
+      holdActiveRef.current = false;
       transcriptRef.current = '';
       setText('');
-      setFocused(false);
       setIsListening(false);
+      setPressActive(false);
       setVoiceError('');
-      setVoiceStatus('Speak clearly and pause when finished');
-      pulse.stopAnimation();
-      pulse.setValue(1);
       resetVoiceEngine().catch((error) => {
         console.error('Voice reset failed on focus:', error);
       });
@@ -177,10 +149,15 @@ export default function HomeScreen() {
         Voice.cancel().catch(() => undefined);
         Voice.stop().catch(() => undefined);
       };
-    }, [pulse, resetVoiceEngine])
+    }, [resetVoiceEngine])
   );
 
   useEffect(() => {
+    if (!onboardingPersistsAcrossReload) {
+      setShowOnboarding(true);
+      setOnboardingReady(true);
+      return;
+    }
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then((value) => {
         setShowOnboarding(value !== 'true');
@@ -202,33 +179,7 @@ export default function HomeScreen() {
     };
   }, [resetVoiceEngine]);
 
-  useEffect(() => {
-    if (!isListening) {
-      pulse.stopAnimation();
-      pulse.setValue(1);
-      return;
-    }
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1.08,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    animation.start();
-    return () => animation.stop();
-  }, [isListening, pulse]);
-
-  const handleMicPress = async () => {
+  const handleHoldStart = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (showOnboarding) {
       return;
@@ -236,36 +187,50 @@ export default function HomeScreen() {
 
     if (voiceAvailable === false) {
       setShowTypedFallback(true);
-      setVoiceStatus('Voice is unavailable here. Type a prompt to test instead.');
       inputRef.current?.focus();
       return;
     }
 
+    if (holdActiveRef.current) {
+      return;
+    }
+    holdActiveRef.current = true;
+
     try {
       setVoiceError('');
-
-      if (isListening) {
-        await Voice.stop();
-        return;
-      }
-
       await resetVoiceEngine();
-      transcriptRef.current = '';
-      setText('');
-      setVoiceStatus('Starting microphone...');
+      transcriptRef.current = text.trim();
       await Voice.start('en-US');
     } catch (error) {
-      console.error('Voice start/stop error:', error);
+      console.error('Voice start error:', error);
+      holdActiveRef.current = false;
+      setPressActive(false);
       setIsListening(false);
       setVoiceError('Could not start voice recognition.');
-      setVoiceStatus('Voice capture failed. Try again.');
       setShowTypedFallback(true);
       inputRef.current?.focus();
     }
   };
 
+  const handleHoldEnd = async () => {
+    setPressActive(false);
+    if (!holdActiveRef.current) {
+      return;
+    }
+    holdActiveRef.current = false;
+
+    try {
+      await Voice.stop();
+    } catch (error) {
+      console.error('Voice stop error:', error);
+    }
+  };
+
   const completeOnboarding = async () => {
     setShowOnboarding(false);
+    if (!onboardingPersistsAcrossReload) {
+      return;
+    }
     try {
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     } catch (error) {
@@ -273,67 +238,88 @@ export default function HomeScreen() {
     }
   };
 
-  const advanceOnboarding = () => {
-    if (onboardingStep === 0) {
-      setOnboardingStep(1);
-      return;
-    }
-
-    completeOnboarding().catch(() => undefined);
-  };
-
-  const promptText =
+  const centerMainText =
     text.trim().length > 0
       ? text.trim()
-      : focused
-        ? ''
-        : 'Tap to dictate';
+      : pressActive || isListening
+        ? 'Listening....'
+        : 'Press and hold\nto dictate';
+
+  const centerIsPlaceholder = !text.trim() && !pressActive && !isListening;
 
   return (
-    <View style={[styles.container, { backgroundColor: activeGradient[activeGradient.length - 1] }]}>
-      <LinearGradient
-        colors={activeGradient}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.backgroundGradient}
-      >
-        <SoundwaveBackground active={isListening} />
-        <View style={styles.atmosphereGlowTop} pointerEvents="none" />
-        <View style={styles.atmosphereGlowBottom} pointerEvents="none" />
-        <SafeAreaView style={styles.safeArea}>
-          <KeyboardAvoidingView
-            style={styles.inner}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <View style={styles.container}>
+      <DictationRippleBackground listening={pressActive || isListening} />
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          style={styles.inner}
+          behavior={Platform.OS === 'ios' && showTypedFallback ? 'padding' : undefined}
+        >
+          <View
+            style={[
+              styles.content,
+              {
+                paddingTop: Math.max(insets.top, 18) + 8,
+                paddingBottom: 120 + Math.max(insets.bottom, 10),
+              },
+            ]}
           >
-            <View
-              style={[
-                styles.card,
-                isListening && styles.cardListening,
-                {
-                  paddingTop: Math.max(insets.top, 18) + 14,
-                  paddingBottom: 128 + Math.max(insets.bottom, 10),
-                },
-              ]}
-            >
-              <Text style={styles.brand}>Draft</Text>
+            <Text style={styles.draftTitle}>Draft</Text>
 
-              <View style={styles.promptArea}>
-                <Text style={[styles.promptText, !text.trim() && styles.promptPlaceholder]}>
-                  {promptText}
-                </Text>
-                <Text style={styles.statusText}>{voiceStatus}</Text>
-                {voiceError ? <Text style={styles.errorText}>{voiceError}</Text> : null}
-              </View>
+            <View style={styles.dictationTopFlex} />
+
+            <View style={styles.glowWrap}>
+              <Pressable
+                style={styles.glowPressable}
+                onPressIn={() => {
+                  if (showOnboarding) {
+                    return;
+                  }
+                  if (voiceAvailable === false) {
+                    setShowTypedFallback(true);
+                    inputRef.current?.focus();
+                    return;
+                  }
+                  setPressActive(true);
+                  handleHoldStart().catch((error) => {
+                    console.error('Hold start failed:', error);
+                    setPressActive(false);
+                  });
+                }}
+                onPressOut={() => {
+                  handleHoldEnd().catch((error) => {
+                    console.error('Hold end failed:', error);
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Dictation"
+                accessibilityHint="Press and hold to speak your prompt"
+              />
+            </View>
+
+            <View style={styles.dictationBottomFlex} />
+
+            <View style={styles.instructionColumn}>
+              <Text
+                style={[
+                  styles.centerText,
+                  centerIsPlaceholder ? styles.centerPlaceholder : styles.centerListeningSlot,
+                ]}
+              >
+                {centerMainText}
+              </Text>
+
+              {voiceError ? <Text style={styles.errorText}>{voiceError}</Text> : null}
 
               <TextInput
                 ref={inputRef}
                 style={showTypedFallback ? styles.fallbackInput : styles.hiddenInput}
                 value={text}
                 onChangeText={setText}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                placeholder={showTypedFallback ? 'Type a prompt to test in Simulator' : 'Tap to dictate'}
-                placeholderTextColor={showTypedFallback ? 'rgba(255, 248, 252, 0.56)' : 'transparent'}
+                placeholder={
+                  showTypedFallback ? 'Type a prompt to test in Simulator' : 'Press and hold to dictate'
+                }
+                placeholderTextColor={showTypedFallback ? 'rgba(255, 255, 255, 0.5)' : 'transparent'}
                 multiline
                 autoCorrect
                 autoCapitalize="sentences"
@@ -342,8 +328,14 @@ export default function HomeScreen() {
               {showTypedFallback ? (
                 <View style={styles.fallbackComposer}>
                   <TouchableOpacity
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); triggerGenerate(text); }}
-                    style={[styles.fallbackGenerateButton, !text.trim() && styles.fallbackGenerateButtonDisabled]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      triggerGenerate(text);
+                    }}
+                    style={[
+                      styles.fallbackGenerateButton,
+                      !text.trim() && styles.fallbackGenerateButtonDisabled,
+                    ]}
                     disabled={!text.trim()}
                     activeOpacity={0.85}
                   >
@@ -351,68 +343,19 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
               ) : null}
-
-              <View style={styles.micArea}>
-                <Animated.View style={[styles.micRing, { transform: [{ scale: pulse }] }]}>
-                  <TouchableOpacity
-                    style={[styles.micButton, isListening && styles.micButtonActive]}
-                    onPress={handleMicPress}
-                    activeOpacity={0.85}
-                  >
-                    <Feather name="mic" size={30} color={C.white} />
-                  </TouchableOpacity>
-                </Animated.View>
-                <Text style={styles.recordingText}>
-                  {isListening ? 'Tap the mic again to stop' : 'Tap the mic to begin'}
-                </Text>
-              </View>
             </View>
-          </KeyboardAvoidingView>
-          <AppBottomNav variant="home" />
-          {onboardingReady && showOnboarding ? (
-            <View style={styles.onboardingOverlay}>
-              <View style={styles.onboardingCard}>
-                <Text style={styles.onboardingEyebrow}>
-                  {onboardingStep === 0 ? 'Welcome to Draft' : 'How it works'}
-                </Text>
-                <Text style={styles.onboardingTitle}>
-                  {onboardingStep === 0
-                    ? 'Speak the direction you want to explore'
-                    : 'We turn your prompt into visual directions you can compare'}
-                </Text>
-                <Text style={styles.onboardingBody}>
-                  {onboardingStep === 0
-                    ? 'Describe a moodboard, palette, UI direction, or photo concept, then tap the mic to start generating.'
-                    : 'Use the library to review boards, open details, and compare multiple routes before choosing what to keep.'}
-                </Text>
-
-                <View style={styles.onboardingDots}>
-                  {[0, 1].map((index) => (
-                    <View
-                      key={`onboarding-dot-${index}`}
-                      style={[
-                        styles.onboardingDot,
-                        onboardingStep === index && styles.onboardingDotActive,
-                      ]}
-                    />
-                  ))}
-                </View>
-
-                <View style={styles.onboardingActions}>
-                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); completeOnboarding(); }} style={styles.onboardingSecondary}>
-                    <Text style={styles.onboardingSecondaryText}>Skip</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); advanceOnboarding(); }} style={styles.onboardingPrimary}>
-                    <Text style={styles.onboardingPrimaryText}>
-                      {onboardingStep === 0 ? 'Next' : 'Got it'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ) : null}
-        </SafeAreaView>
-      </LinearGradient>
+          </View>
+        </KeyboardAvoidingView>
+        <AppBottomNav variant="default" />
+      </SafeAreaView>
+      {onboardingReady && showOnboarding ? (
+        <OnboardingSwipeIntro
+          bottomInset={insets.bottom}
+          onComplete={() => {
+            completeOnboarding();
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -420,28 +363,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#454050',
-  },
-  backgroundGradient: {
-    flex: 1,
-  },
-  atmosphereGlowTop: {
-    position: 'absolute',
-    top: -120,
-    left: -40,
-    right: -40,
-    height: 280,
-    borderRadius: 180,
-    backgroundColor: 'rgba(255, 243, 246, 0.08)',
-  },
-  atmosphereGlowBottom: {
-    position: 'absolute',
-    left: -80,
-    right: -80,
-    bottom: -120,
-    height: 360,
-    borderRadius: 220,
-    backgroundColor: 'rgba(79, 11, 45, 0.16)',
+    backgroundColor: '#000000',
   },
   safeArea: {
     flex: 1,
@@ -451,53 +373,70 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  card: {
+  content: {
     flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 32,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
   },
-  cardListening: {
-    backgroundColor: 'rgba(126, 34, 88, 0.12)',
-  },
-  brand: {
-    fontSize: 28,
-    lineHeight: 32,
-    fontWeight: '700',
+  draftTitle: {
+    fontSize: 40,
+    lineHeight: 46,
+    fontFamily: getSFProRoundedFontFamily('700'),
     color: C.white,
+    textAlign: 'center',
   },
-  promptArea: {
-    paddingTop: 32,
-    paddingBottom: 18,
-    minHeight: 190,
+  dictationTopFlex: {
+    flex: 1.1,
+    minHeight: 0,
+  },
+  dictationBottomFlex: {
+    flex: 1.35,
+    minHeight: 0,
+  },
+  instructionColumn: {
     alignItems: 'center',
+    width: '100%',
+    // ~3rem @ 16px — lift copy away from bottom nav
+    marginBottom: 48,
   },
-  promptText: {
-    fontSize: 17,
-    lineHeight: 21,
-    fontWeight: '400',
+  glowWrap: {
+    width: 320,
+    height: 320,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowPressable: {
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+  },
+  centerText: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: getSFProRoundedFontFamily('400'),
     color: C.white,
     textAlign: 'center',
-    maxWidth: '84%',
+    paddingHorizontal: 12,
+    maxWidth: '92%',
+    minHeight: 56,
   },
-  promptPlaceholder: {
-    opacity: 0.96,
+  centerPlaceholder: {
+    fontSize: 20,
+    fontFamily: getSFProRoundedFontFamily('500'),
+    opacity: 0.95,
   },
-  statusText: {
-    marginTop: 12,
-    fontSize: 14,
-    lineHeight: 19,
-    color: C.softWhite,
-    textAlign: 'center',
+  centerListeningSlot: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: getSFProRoundedFontFamily('500'),
   },
   errorText: {
-    marginTop: 8,
+    marginTop: 4,
     fontSize: 14,
     lineHeight: 19,
-    color: '#FFE2E8',
+    fontFamily: getSFProRoundedFontFamily('500'),
+    color: 'rgba(255, 200, 200, 0.95)',
     textAlign: 'center',
+    paddingHorizontal: 12,
   },
   hiddenInput: {
     position: 'absolute',
@@ -506,21 +445,25 @@ const styles = StyleSheet.create({
     height: 1,
   },
   fallbackInput: {
+    marginTop: 8,
+    width: '100%',
     minHeight: 120,
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingVertical: 16,
-    backgroundColor: 'rgba(255, 248, 252, 0.09)',
+    backgroundColor: 'rgba(255, 255, 255, 0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 248, 252, 0.18)',
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     color: C.white,
     fontSize: 16,
     lineHeight: 22,
+    fontFamily: getSFProRoundedFontFamily('400'),
     textAlignVertical: 'top',
   },
   fallbackComposer: {
     alignItems: 'center',
-    paddingTop: 16,
+    paddingTop: 12,
+    width: '100%',
   },
   fallbackGenerateButton: {
     borderRadius: 18,
@@ -534,114 +477,8 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   fallbackGenerateButtonText: {
-    color: '#8A2960',
+    color: '#2A0620',
     fontSize: 15,
-    fontWeight: '700',
-  },
-  micArea: {
-    alignItems: 'center',
-    paddingTop: 34,
-  },
-  micRing: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.ring,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 248, 252, 0.2)',
-  },
-  micButton: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 248, 252, 0.08)',
-  },
-  micButtonActive: {
-    backgroundColor: 'rgba(255, 248, 252, 0.16)',
-  },
-  recordingText: {
-    marginTop: 42,
-    fontSize: 15,
-    color: C.softWhite,
-  },
-  onboardingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(28, 6, 21, 0.42)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  onboardingCard: {
-    width: '100%',
-    borderRadius: 28,
-    paddingHorizontal: 22,
-    paddingVertical: 24,
-    backgroundColor: 'rgba(131, 54, 95, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 248, 252, 0.16)',
-    gap: 12,
-  },
-  onboardingEyebrow: {
-    fontSize: 13,
-    lineHeight: 16,
-    fontWeight: '600',
-    color: C.softWhiteStrong,
-  },
-  onboardingTitle: {
-    fontSize: 24,
-    lineHeight: 29,
-    fontWeight: '700',
-    color: C.white,
-  },
-  onboardingBody: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: C.softWhiteStrong,
-  },
-  onboardingDots: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingTop: 4,
-  },
-  onboardingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 248, 252, 0.32)',
-  },
-  onboardingDotActive: {
-    width: 18,
-    backgroundColor: C.white,
-  },
-  onboardingActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    paddingTop: 8,
-  },
-  onboardingSecondary: {
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-  },
-  onboardingSecondaryText: {
-    color: C.softWhiteStrong,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  onboardingPrimary: {
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    backgroundColor: C.white,
-  },
-  onboardingPrimaryText: {
-    color: '#7E2255',
-    fontSize: 15,
-    fontWeight: '700',
+    fontFamily: getSFProRoundedFontFamily('700'),
   },
 });

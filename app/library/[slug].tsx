@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import {
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -32,6 +33,18 @@ function chunkItems(items: LibraryItem[], size: number) {
   }
 
   return pages;
+}
+
+/** Same luminance threshold as native `textColor(for:)` swatch captions. */
+function isLightPreviewHex(hex: string): boolean {
+  const normalized = hex.trim().replace('#', '');
+  if (normalized.length !== 6) return false;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return false;
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000 / 255;
+  return brightness > 0.72;
 }
 
 function BoardTile({
@@ -82,17 +95,10 @@ function BoardTile({
         <View style={styles.paletteMeta}>
           <Text
             style={[
-              styles.paletteName,
-              item.previewColor === '#F7F7F9' || item.previewColor === '#FFF8F2' ? styles.paletteTextDark : null,
+              styles.paletteSwatchHexOnly,
+              isLightPreviewHex(item.previewColor) ? styles.paletteTextDark : null,
             ]}>
-            {item.label}
-          </Text>
-          <Text
-            style={[
-              styles.paletteHex,
-              item.previewColor === '#F7F7F9' || item.previewColor === '#FFF8F2' ? styles.paletteTextDark : null,
-            ]}>
-            {item.previewColor.replace('#', '')}
+            {item.previewColor.toUpperCase()}
           </Text>
         </View>
       ) : null}
@@ -110,162 +116,6 @@ function BoardTile({
   return tileContent;
 }
 
-function SoftSpatialUiTile({
-  kind,
-  width,
-  height,
-}: {
-  kind: 'avatar' | 'floating' | 'picker' | 'selection';
-  width: number;
-  height: number;
-}) {
-  const [activePill, setActivePill] = useState(1);
-  const [activeAvatar, setActiveAvatar] = useState(1);
-  const avatarPeople = [
-    { name: 'Mason Reed', color: '#7E5C44', initials: 'M.R' },
-    { name: 'Albert Bellamy', color: '#F7A62C', initials: 'A.B' },
-    { name: 'Nia Harper', color: '#8043DB', initials: 'N.H' },
-    { name: 'Sora Bloom', color: '#90C4BC', initials: 'S.B' },
-    { name: 'Iris Valentina', color: '#BB6B5A', initials: 'I.V' },
-  ];
-
-  const toggleSelection = (index: number) => {
-    setActivePill(index);
-  };
-
-  return (
-    <View style={[styles.uiLiveTile, { width, height }]}>
-      {kind === 'avatar' ? (
-        <View style={styles.uiAvatarScene}>
-          <View
-            style={[
-              styles.uiTooltip,
-              { marginLeft: -84 + activeAvatar * 58 },
-            ]}>
-            <Text style={styles.uiTooltipText}>{avatarPeople[activeAvatar].name}</Text>
-            <View
-              style={[
-                styles.uiTooltipPointer,
-                { left: 28 + activeAvatar * 14 },
-              ]}
-            />
-          </View>
-          <View style={styles.uiAvatarRow}>
-            {avatarPeople.map((person, index) => {
-              const isActive = index === activeAvatar;
-
-              return (
-                <Pressable
-                  key={`avatar-${index}`}
-                  onPress={() => setActiveAvatar(index)}
-                  style={[
-                    styles.uiAvatar,
-                    { backgroundColor: person.color },
-                    isActive && styles.uiAvatarSelected,
-                  ]}>
-                  <Text style={styles.uiAvatarActiveText}>{person.initials}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      ) : null}
-
-      {kind === 'floating' ? (
-        <View style={styles.uiFloatingScene}>
-          <View style={styles.uiFloatingCircleGridOnly}>
-            <View style={styles.uiFloatingCircleRow}>
-              <View style={[styles.uiFloatingCircle, styles.uiFloatingCircleBrown]}>
-                <Text style={styles.uiFloatingCircleText}>M.R</Text>
-              </View>
-              <View style={[styles.uiFloatingCircle, styles.uiFloatingCircleOrange]}>
-                <Text style={styles.uiFloatingCircleText}>A.B</Text>
-              </View>
-              <View style={[styles.uiFloatingCircle, styles.uiFloatingCirclePurple]}>
-                <Text style={styles.uiFloatingCircleText}>N.H</Text>
-              </View>
-            </View>
-            <View style={styles.uiFloatingCircleRowBottom}>
-              <View style={[styles.uiFloatingCircle, styles.uiFloatingCircleMint]}>
-                <Text style={styles.uiFloatingCircleText}>S.B</Text>
-              </View>
-              <View style={[styles.uiFloatingCircle, styles.uiFloatingCircleClay]}>
-                <Text style={styles.uiFloatingCircleText}>I.V</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      ) : null}
-
-      {kind === 'picker' ? (
-        <View style={styles.uiPickerScene}>
-          <View style={styles.uiPickerCluster}>
-            {[
-              { key: 'mr', label: 'M.R', color: '#95B173', style: styles.uiPickerClusterTop },
-              { key: 'ab', label: 'A.B', color: '#D4D8DC', style: styles.uiPickerClusterOne, dark: true },
-              { key: 'nh', label: 'N.H', color: '#A9C8E6', style: styles.uiPickerClusterTwo },
-              { key: 'sb', label: 'S.B', color: '#9A7A64', style: styles.uiPickerClusterThree },
-              { key: 'iv', label: 'I.V', color: '#F6F3EC', style: styles.uiPickerClusterFour, dark: true, border: true },
-            ].map((dot, index) => (
-              <Pressable
-                key={dot.key}
-                onPress={() => toggleSelection(index)}
-                style={[
-                  styles.uiPickerClusterCircle,
-                  dot.style,
-                  { backgroundColor: dot.color, opacity: index === activePill ? 1 : 0.94 },
-                  dot.border ? styles.uiPickerClusterBorder : null,
-                ]}>
-                <Text style={dot.dark ? styles.uiPickerClusterTextDark : styles.uiPickerClusterText}>
-                  {dot.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {kind === 'selection' ? (
-        <View style={styles.uiSelectionScene}>
-          <View style={styles.uiSelectionFrame}>
-            <View style={styles.uiSelectionTray}>
-              <View style={styles.uiSelectionSequence}>
-                {[
-                  { key: 'mr', label: 'M.R', color: '#7E5C44', large: true },
-                  { key: 'ab', label: 'A.B', color: '#F7A62C', large: false },
-                  { key: 'nh', label: 'N.H', color: '#8043DB', large: true },
-                  { key: 'sb', label: 'S.B', color: '#90C4BC', large: false },
-                  { key: 'iv', label: 'I.V', color: '#BB6B5A', large: true },
-                ].map((dot, index) => {
-                  const isActive = index === activePill;
-                  return (
-                    <Pressable
-                      key={dot.key}
-                      onPress={() => toggleSelection(index)}
-                      style={[
-                        styles.uiSelectionSequenceDot,
-                        dot.large ? styles.uiSelectionSequenceDotLarge : styles.uiSelectionSequenceDotSmall,
-                        { backgroundColor: dot.color, opacity: isActive ? 1 : 0.96 },
-                      ]}>
-                      <Text
-                        style={[
-                          styles.uiSelectionSequenceText,
-                          dot.large ? styles.uiSelectionSequenceTextLarge : styles.uiSelectionSequenceTextSmall,
-                        ]}>
-                        {dot.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 export default function BoardDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { width, height } = useWindowDimensions();
@@ -281,8 +131,8 @@ export default function BoardDetailScreen() {
   const imageItems = useMemo(
     () =>
       (board?.items ?? []).filter(
-        (item): item is LibraryItem & { kind: 'image'; imageUrl: string } =>
-          item.kind === 'image' && Boolean(item.imageUrl)
+        (item): item is LibraryItem & { kind: 'image'; imageUrl: string | number } =>
+          item.kind === 'image' && item.imageUrl !== undefined && item.imageUrl !== null
       ),
     [board]
   );
@@ -378,13 +228,41 @@ export default function BoardDetailScreen() {
           ) : isUiBoard ? (
             <View style={styles.uiBoardPage}>
               <View style={styles.uiBoardRows}>
-                <SoftSpatialUiTile kind="avatar" width={heroWidth} height={uiHeroHeight} />
+                {board.items[0] ? (
+                  <BoardTile
+                    item={board.items[0]}
+                    width={heroWidth}
+                    height={uiHeroHeight}
+                    onPress={() => openFullscreen(board.items[0])}
+                  />
+                ) : null}
                 <View style={styles.row}>
-                  <SoftSpatialUiTile kind="floating" width={uiWideWidth} height={uiMidHeight} />
-                  <SoftSpatialUiTile kind="picker" width={uiNarrowWidth} height={uiMidHeight} />
+                  {board.items[1] ? (
+                    <BoardTile
+                      item={board.items[1]}
+                      width={uiWideWidth}
+                      height={uiMidHeight}
+                      onPress={() => openFullscreen(board.items[1])}
+                    />
+                  ) : null}
+                  {board.items[2] ? (
+                    <BoardTile
+                      item={board.items[2]}
+                      width={uiNarrowWidth}
+                      height={uiMidHeight}
+                      onPress={() => openFullscreen(board.items[2])}
+                    />
+                  ) : null}
                 </View>
                 <View style={styles.row}>
-                  <SoftSpatialUiTile kind="selection" width={uiBottomLeftWidth} height={uiBottomHeight} />
+                  {board.items[3] ? (
+                    <BoardTile
+                      item={board.items[3]}
+                      width={uiBottomLeftWidth}
+                      height={uiBottomHeight}
+                      onPress={() => openFullscreen(board.items[3])}
+                    />
+                  ) : null}
                   <View style={styles.uiBottomSpacer} />
                 </View>
               </View>
@@ -749,72 +627,23 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     fontWeight: '700',
   },
-  uiPickerScene: {
+  uiPickerSolidTile: {
     flex: 1,
-    backgroundColor: '#F8F6F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
+    width: '100%',
+    borderRadius: 22,
+    backgroundColor: '#B5D9CA',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    paddingLeft: 18,
+    paddingBottom: 16,
+    paddingRight: 14,
+    paddingTop: 14,
   },
-  uiPickerCluster: {
-    width: 122,
-    height: 122,
-  },
-  uiPickerClusterCircle: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  uiPickerClusterTop: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    top: 8,
-    left: 44,
-  },
-  uiPickerClusterOne: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    top: 28,
-    left: 79,
-  },
-  uiPickerClusterTwo: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    top: 72,
-    left: 64,
-  },
-  uiPickerClusterThree: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    top: 72,
-    left: 24,
-  },
-  uiPickerClusterFour: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    top: 28,
-    left: 9,
-  },
-  uiPickerClusterBorder: {
-    borderWidth: 1,
-    borderColor: '#DFDCD5',
-  },
-  uiPickerClusterText: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    lineHeight: 9,
-    fontWeight: '700',
-  },
-  uiPickerClusterTextDark: {
-    color: '#4F4F4F',
-    fontSize: 8,
-    lineHeight: 9,
-    fontWeight: '700',
+  uiPickerSolidLabel: {
+    fontSize: 15,
+    lineHeight: 19,
+    fontWeight: '600',
+    color: 'rgba(22, 38, 32, 0.9)',
   },
   uiSelectionScene: {
     flex: 1,
@@ -924,16 +753,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 2,
   },
-  paletteName: {
+  paletteSwatchHexOnly: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 16,
-  },
-  paletteHex: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
   },
   paletteTextDark: {
     color: '#111111',

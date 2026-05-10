@@ -198,6 +198,11 @@ struct LibraryBoardDetailView: View {
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            if !isSelectMode, let item {
+                NavigationLink(value: LibraryRoute.item(item.id)) { Color.clear }
+            }
+        }
         .onTapGesture {
             guard isSelectMode, let item else { return }
             withAnimation(.easeInOut(duration: 0.15)) {

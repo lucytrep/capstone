@@ -14,13 +14,13 @@ struct AppBottomNav: View {
     var body: some View {
         HStack(spacing: 20) {
             Button(action: onSelectCreate) {
-                navIcon(systemName: "waveform", active: selectedTab == .create, size: 24)
+                navIcon(assetName: "nav-soundwaves", active: selectedTab == .create, iconSize: 26)
             }
             .buttonStyle(.plain)
             .contentShape(Rectangle())
 
             Button(action: onSelectLibrary) {
-                navIcon(systemName: "books.vertical.fill", active: selectedTab == .library, size: 22)
+                navIcon(assetName: "nav-library", active: selectedTab == .library, iconSize: 24)
             }
             .buttonStyle(.plain)
             .contentShape(Rectangle())
@@ -94,11 +94,18 @@ struct AppBottomNav: View {
     }
 
     @ViewBuilder
-    private func navIcon(systemName: String, active: Bool, size: CGFloat, width: CGFloat = 62, height: CGFloat = 54) -> some View {
+    private func navIcon(assetName: String, active: Bool, iconSize: CGFloat, width: CGFloat = 62, height: CGFloat = 54) -> some View {
+        let tint: Color = variant == .default
+            ? (active ? Color.white.opacity(0.9) : Color(hex: 0x696969))
+            : (active ? Color(hex: 0x2A0620) : Color.white.opacity(0.92))
+
         if variant == .default {
-            Image(systemName: systemName)
-                .font(.system(size: size, weight: .medium))
-                .foregroundStyle(active ? Color.white.opacity(0.9) : Color(hex: 0x696969))
+            Image(assetName)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: iconSize, height: iconSize)
+                .foregroundStyle(tint)
         } else {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -111,9 +118,12 @@ struct AppBottomNav: View {
                     }
                     .frame(width: width, height: height)
 
-                Image(systemName: systemName)
-                    .font(.system(size: size, weight: .regular))
-                    .foregroundStyle(active ? Color(hex: 0x2A0620) : Color.white.opacity(0.92))
+                Image(assetName)
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: iconSize, height: iconSize)
+                    .foregroundStyle(tint)
             }
             .frame(width: width, height: height)
             .compositingGroup()

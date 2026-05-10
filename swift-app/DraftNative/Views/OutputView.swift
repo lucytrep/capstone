@@ -70,14 +70,14 @@ struct OutputView: View {
             Spacer()
 
             HStack(spacing: 12) {
-                shellAction(systemName: "xmark") { appModel.resetSession() }
-                shellAction(systemName: "checkmark") { appModel.dismissFlow() }
+                shellAction(systemName: "xmark", accessibilityLabel: "Discard") { appModel.resetSession() }
+                shellAction(systemName: "checkmark", accessibilityLabel: "Done") { appModel.dismissFlow() }
             }
         }
         .padding(.bottom, 20)
     }
 
-    private func shellAction(systemName: String, action: @escaping () -> Void) -> some View {
+    private func shellAction(systemName: String, accessibilityLabel: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Circle()
                 .fill(
@@ -99,6 +99,7 @@ struct OutputView: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     @ViewBuilder
@@ -260,6 +261,7 @@ private struct PhotoArtifactPager: View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 PhotoArtifactPage(option: option)
+                    .id(option.id)
                     .tag(index)
             }
         }
@@ -271,76 +273,124 @@ private struct PhotoArtifactPage: View {
     let option: PhotoOptionPayload
 
     private let gap: CGFloat = 10
+    private let tileCorner: CGFloat = 16
+
+    /// Matches `MockArtifactGenerator.swapLowResBundleAssetsTowardThirdDirection`.
+    private static let lowResBundleLayoutThreshold = 1200
+
+    /// For each grid slot 0…5, the index into `option.photos` shown there (nil = placeholder).
+    private var slotOriginalIndices: [Int?] {
+        Self.slotOriginalIndices(for: option.photos)
+    }
 
     var body: some View {
-        VStack(spacing: gap) {
-            photoOrPlaceholder(at: 0, swatch: option.swatches?[safe: 0])
-                .frame(maxWidth: .infinity)
-                .frame(height: 210)
+        GeometryReader { geometry in
+            let contentWidth = geometry.size.width
+            let contentHeight = geometry.size.height
+            let gridHeight = contentHeight
+            let baseHeights: [CGFloat] = [210, 148, 168]
+            let rowGaps = gap * 2
+            let heightBudget = max(0, gridHeight - rowGaps)
+            let baseSum = baseHeights.reduce(0, +)
+            let heightScale = baseSum > 0 ? min(1, heightBudget / baseSum) : 0
+            let heroHeight = baseHeights[0] * heightScale
+            let midHeight = baseHeights[1] * heightScale
+            let bottomHeight = baseHeights[2] * heightScale
+            let midCellWidth = floor((contentWidth - gap) / 2)
+            let bottomCellWidth = floor((contentWidth - 2 * gap) / 3)
 
-            HStack(spacing: gap) {
-                photoOrPlaceholder(at: 1, swatch: option.swatches?[safe: 1])
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 145)
-                photoOrPlaceholder(at: 2, swatch: option.swatches?[safe: 2])
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 145)
-            }
+            VStack(spacing: gap) {
+                photoCell(index: 0, swatch: swatchForLayoutSlot(0))
+                    .frame(width: contentWidth, height: heroHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
 
-            HStack(spacing: gap) {
-                photoOrPlaceholder(at: 3, swatch: option.swatches?[safe: 3])
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 145)
-                photoOrPlaceholder(at: 4, swatch: option.swatches?[safe: 0])
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 145)
-            }
-
-            if option.displayMode == .moodboard, let swatches = option.swatches, !swatches.isEmpty {
-                let swatchCount = max(1, min(swatches.count, 4))
                 HStack(spacing: gap) {
-                    ForEach(Array(swatches.prefix(swatchCount).enumerated()), id: \.offset) { _, swatch in
-                        MoodboardSwatchTile(swatch: swatch)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 62)
-                    }
+                    photoCell(index: 1, swatch: swatchForLayoutSlot(1))
+                        .frame(width: midCellWidth, height: midHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
+                    photoCell(index: 2, swatch: swatchForLayoutSlot(2))
+                        .frame(width: midCellWidth, height: midHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
+                }
+
+                HStack(spacing: gap) {
+                    photoCell(index: 3, swatch: swatchForLayoutSlot(3))
+                        .frame(width: bottomCellWidth, height: bottomHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
+                    photoCell(index: 4, swatch: swatchForLayoutSlot(4))
+                        .frame(width: bottomCellWidth, height: bottomHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
+                    photoCell(index: 5, swatch: swatchForLayoutSlot(5))
+                        .frame(width: bottomCellWidth, height: bottomHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .frame(maxWidth: .infinity, alignment: .top)
     }
 
     @ViewBuilder
-    private func photoOrPlaceholder(at index: Int, swatch: PaletteSwatch?) -> some View {
-        if option.photos.indices.contains(index) {
-            PhotoTile(photo: option.photos[index])
-        } else {
-            PlaceholderTile(swatch: swatch)
+    private func photoCell(index: Int, swatch: PaletteSwatch?) -> some View {
+        Group {
+            if let oi = slotOriginalIndices[index], option.photos.indices.contains(oi) {
+                PhotoTile(photo: option.photos[oi])
+            } else {
+                PlaceholderTile(swatch: swatch)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-}
 
-private struct MoodboardSwatchTile: View {
-    let swatch: PaletteSwatch
+    private func swatchForLayoutSlot(_ slot: Int) -> PaletteSwatch? {
+        slotOriginalIndices[slot].flatMap { option.swatches?[safe: $0] }
+    }
 
-    var body: some View {
-        let background = ArtifactColorParser.color(from: swatch.hex)
-        let textColor = ArtifactColorParser.isLight(hex: swatch.hex) ? Color.black.opacity(0.92) : Color.white
+    /// Puts small bundled assets in the bottom row first, then mid/hero, so large slots show sharp images.
+    private static func slotOriginalIndices(for photos: [PhotoItemPayload]) -> [Int?] {
+        var result: [Int?] = Array(repeating: nil, count: 6)
+        guard !photos.isEmpty else { return result }
 
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(background)
-            .overlay(
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(swatch.name)
-                        .font(.system(size: 12, weight: .bold))
-                    Text(swatch.hex.replacingOccurrences(of: "#", with: ""))
-                        .font(.system(size: 10, weight: .medium))
-                        .opacity(0.9)
-                }
-                .foregroundStyle(textColor)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .padding(12)
-            )
+        func isLowResBundle(_ p: PhotoItemPayload) -> Bool {
+            guard let b = p.bundleImageName, !b.isEmpty else { return false }
+            guard let d = p.maxPixelDimension else { return true }
+            return d < lowResBundleLayoutThreshold
+        }
+
+        let lowOrig = photos.indices.filter { isLowResBundle(photos[$0]) }
+        let highOrig = photos.indices.filter { !isLowResBundle(photos[$0]) }
+        let bottomSlots = [3, 4, 5]
+        let topSlots = [0, 1, 2]
+
+        var lowQ = lowOrig
+        var highQ = highOrig
+        var nextFree = 0
+
+        func takeNextSlot() -> Int? {
+            while nextFree < 6 {
+                if result[nextFree] == nil { return nextFree }
+                nextFree += 1
+            }
+            return nil
+        }
+
+        for s in bottomSlots {
+            guard let oi = lowQ.first else { break }
+            lowQ.removeFirst()
+            if s < result.count { result[s] = oi }
+        }
+        for s in topSlots {
+            guard let oi = highQ.first else { break }
+            highQ.removeFirst()
+            if s < result.count { result[s] = oi }
+        }
+        var remainder = lowQ + highQ
+        while let oi = remainder.first {
+            remainder.removeFirst()
+            guard let slot = takeNextSlot() else { break }
+            result[slot] = oi
+            nextFree = slot + 1
+        }
+        return result
     }
 }
 
@@ -348,7 +398,7 @@ private struct PlaceholderTile: View {
     var swatch: PaletteSwatch? = nil
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 4, style: .continuous)
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
             .fill(gradient)
             .overlay(
                 Group {
@@ -383,18 +433,22 @@ private struct PhotoTile: View {
         ZStack(alignment: .bottomLeading) {
             ArtifactImageView(urlString: photo.imageUrl, bundleImageName: photo.bundleImageName)
             LinearGradient(
-                colors: [.clear, Color.black.opacity(0.6)],
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .clear, location: 0.68),
+                    .init(color: .black.opacity(0.52), location: 1)
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 
             Text(photoLabel)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.45), radius: 3, x: 0, y: 1)
                 .padding(14)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var photoLabel: String {
@@ -605,16 +659,21 @@ private struct ArtifactImageView: View {
             if let bundleImage {
                 Image(uiImage: bundleImage)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             } else if let image = dataImage {
                 Image(uiImage: image)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             } else if let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
-                        image.resizable().scaledToFill()
+                        image
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFill()
                     default:
                         placeholder
                     }

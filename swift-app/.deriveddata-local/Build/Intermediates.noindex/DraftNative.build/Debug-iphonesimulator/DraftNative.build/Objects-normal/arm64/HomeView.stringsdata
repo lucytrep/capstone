@@ -1,0 +1,88 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/HomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Draft",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 165
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dictation",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 179
+        }
+      },
+      {
+        "comment": "",
+        "key": "Press and hold to speak your prompt",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate from text",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 268
+        }
+      },
+      {
+        "comment": "",
+        "key": "Welcome to",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 349
+        }
+      },
+      {
+        "comment": "",
+        "key": "Think it.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 353
+        }
+      },
+      {
+        "comment": "",
+        "key": "Say it.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 358
+        }
+      },
+      {
+        "comment": "",
+        "key": "Draft it.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 362
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 392
+        }
+      },
+      {
+        "comment": "",
+        "key": "›››",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 400
+        }
+      }
+    ]
+  },
+  "version": 1
+}

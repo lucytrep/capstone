@@ -50,11 +50,9 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
 
-    func toggleListening(seedTranscript: String) async {
-        if isListening {
-            stopListening()
-            return
-        }
+    /// Starts streaming recognition if not already listening (used for press-and-hold dictation).
+    func beginListening(seedTranscript: String) async {
+        guard !isListening else { return }
 
         errorMessage = ""
         transcript = seedTranscript
@@ -117,7 +115,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         audioEngine.prepare()
         try audioEngine.start()
 
-        statusMessage = "Listening..."
+        statusMessage = "Listening...."
         isListening = true
 
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
@@ -127,14 +125,11 @@ final class SpeechRecognizer: NSObject, ObservableObject {
                 let text = result.bestTranscription.formattedString.trimmingCharacters(in: .whitespacesAndNewlines)
                 Task { @MainActor in
                     self.transcript = text
-                    self.statusMessage = result.isFinal ? "Voice capture finished." : "Listening..."
-                }
-
-                if result.isFinal {
-                    Task { @MainActor in
-                        self.stopListening()
+                    if self.isListening {
+                        self.statusMessage = "Listening...."
                     }
                 }
+
             }
 
             if let error {

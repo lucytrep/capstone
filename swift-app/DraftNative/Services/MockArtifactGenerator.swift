@@ -8,6 +8,31 @@ struct MockArtifactGenerator: ArtifactGenerating {
         case ui
     }
 
+    /// Tokens stripped before comparing alts for “same session” clustering.
+    private enum ShootClustering {
+        static let noiseTokens: Set<String> = [
+            "woman", "women", "man", "men", "young", "adult", "person", "people", "female", "male",
+            "girl", "girls", "boy", "boys", "teen", "teenager",
+            "model", "models", "portrait", "portraits", "posing", "pose", "posed",
+            "standing", "sitting", "walking", "running", "jumping", "looking", "camera", "smiling",
+            "beautiful", "handsome", "attractive", "confident", "happy", "serious", "calm",
+            "wearing", "wear", "dressed", "holding", "shows", "showing",
+            "studio", "indoors", "indoor", "outdoors", "outdoor", "outside", "inside",
+            "background", "backdrop", "blur", "bokeh",
+            "photo", "photography", "photograph", "image", "picture", "shot",
+            "closeup", "close", "angle", "angles", "view", "side", "front", "profile",
+            "full", "body", "waist", "crop", "cropped", "headshot",
+            "editorial", "commercial", "lifestyle",
+            "light", "lighting", "natural", "daylight", "sunlight",
+            "urban", "street", "city",
+            "healthy", "fit", "fitness", "active", "sport", "sports", "athletic", "workout",
+            "fashion", "stylish", "style", "trendy", "elegant", "casual", "formal",
+            "hair", "face", "eyes",
+            "color", "colour", "bright", "dark",
+            "the", "and", "with", "from", "for", "her", "his", "their", "against", "into"
+        ]
+    }
+
     private struct APIKeys {
         let anthropic: String
         let pexels: String
@@ -132,6 +157,8 @@ struct MockArtifactGenerator: ArtifactGenerating {
             struct Links: Decodable { let html: String? }
             struct User: Decodable { let name: String? }
             struct URLs: Decodable {
+                let raw: String?
+                let full: String?
                 let regular: String?
                 let small: String?
             }
@@ -400,6 +427,7 @@ struct MockArtifactGenerator: ArtifactGenerating {
 
         let requestSeed = hashSeed(prompt + "::native")
         let query = buildSearchQuery(prompt)
+        let promptBundled = LibraryBundledPhotoMixer.photoPayloadsMatchingPrompt(prompt, limit: 18)
 
         async let pexelsPhotos = fetchPexelsPhotos(query: query, seed: requestSeed + 11)
         async let unsplashPhotos = fetchUnsplashPhotos(query: query, seed: requestSeed + 17)
@@ -407,7 +435,7 @@ struct MockArtifactGenerator: ArtifactGenerating {
         async let arenaPhotos = fetchArenaPhotos(query: query)
         async let googlePhotos = fetchGooglePhotos(query: query)
 
-        let pexels = ((try? await pexelsPhotos) ?? []) + (await pinterestPhotos)
+        let pexels = promptBundled + (((try? await pexelsPhotos) ?? []) + (await pinterestPhotos))
         let unsplash = (try? await unsplashPhotos) ?? []
         let arena = await arenaPhotos
         let google = await googlePhotos
@@ -526,8 +554,9 @@ struct MockArtifactGenerator: ArtifactGenerating {
         let page = (abs(seed) % 3) + 1
         let url = makeURL(base: pexelsBase, path: "/search", queryItems: [
             URLQueryItem(name: "query", value: query),
-            URLQueryItem(name: "per_page", value: "8"),
+            URLQueryItem(name: "per_page", value: "24"),
             URLQueryItem(name: "orientation", value: "portrait"),
+            URLQueryItem(name: "size", value: "large"),
             URLQueryItem(name: "page", value: "\(page)")
         ])
 
@@ -538,7 +567,7 @@ struct MockArtifactGenerator: ArtifactGenerating {
         return (response.photos ?? []).compactMap { photo in
             guard let id = photo.id else { return nil }
             let imageURL = photo.src?.large2x ?? photo.src?.large ?? photo.src?.medium
-            let thumbURL = photo.src?.medium ?? photo.src?.large ?? photo.src?.large2x
+            let thumbURL = photo.src?.large2x ?? photo.src?.large ?? photo.src?.medium
             guard let imageURL, let thumbURL else { return nil }
 
             return PhotoItemPayload(
@@ -560,7 +589,7 @@ struct MockArtifactGenerator: ArtifactGenerating {
         let page = (abs(seed) % 3) + 1
         let url = makeURL(base: unsplashBase, path: "/search/photos", queryItems: [
             URLQueryItem(name: "query", value: query),
-            URLQueryItem(name: "per_page", value: "8"),
+            URLQueryItem(name: "per_page", value: "24"),
             URLQueryItem(name: "orientation", value: "portrait"),
             URLQueryItem(name: "page", value: "\(page)")
         ])
@@ -571,11 +600,15 @@ struct MockArtifactGenerator: ArtifactGenerating {
         ])
 
         return (response.results ?? []).compactMap { photo in
-            guard let id = photo.id,
-                  let imageURL = photo.urls?.regular,
-                  let thumbURL = photo.urls?.small else {
-                return nil
-            }
+            guard let id = photo.id else { return nil }
+            let imageURL = unsplashDisplayURL(
+                raw: photo.urls?.raw,
+                full: photo.urls?.full,
+                regular: photo.urls?.regular,
+                small: photo.urls?.small
+            )
+            let thumbURL = photo.urls?.regular ?? photo.urls?.small
+            guard let imageURL, let thumbURL else { return nil }
 
             return PhotoItemPayload(
                 id: "unsplash-\(id)",
@@ -663,38 +696,174 @@ struct MockArtifactGenerator: ArtifactGenerating {
         seed: Int,
         swatchSets: [[PaletteSwatch]]
     ) -> [PhotoOptionPayload] {
-        let editorialPool = dedupePhotos(pexels + unsplash + arena + google)
-        let cleanPool = dedupePhotos(unsplash + arena + pexels + google)
-        let experimentalPool = dedupePhotos(google + arena + unsplash + pexels)
+        let merged = filterEditorialQuality(pexels + unsplash + arena + google)
+        let masterPool = dedupePhotos(
+            rankedPhotoPool(merged)
+        )
+        var photoGroups = disjointPhotoGroups(pool: masterPool, groupSize: 6, groupCount: 3, seed: seed)
+        swapLowResBundleAssetsTowardThirdDirection(&photoGroups)
 
         let options = [
             PhotoOptionPayload(
                 id: "photos-editorial",
                 displayMode: displayMode,
-                source: editorialPool.first?.source ?? .mixed,
+                source: photoGroups[0].first?.source ?? .mixed,
                 direction: "editorial",
-                photos: Array(shuffle(editorialPool, seed: seed + 1).prefix(5)),
+                photos: photoGroups[0],
                 swatches: displayMode == .moodboard ? swatchSet(at: 0, in: swatchSets) : nil
             ),
             PhotoOptionPayload(
                 id: "photos-clean",
                 displayMode: displayMode,
-                source: cleanPool.first?.source ?? .mixed,
+                source: photoGroups[1].first?.source ?? .mixed,
                 direction: "clean",
-                photos: Array(shuffle(cleanPool, seed: seed + 2).prefix(5)),
+                photos: photoGroups[1],
                 swatches: displayMode == .moodboard ? (swatchSet(at: 1, in: swatchSets) ?? swatchSet(at: 0, in: swatchSets)) : nil
             ),
             PhotoOptionPayload(
                 id: "photos-experimental",
                 displayMode: displayMode,
-                source: experimentalPool.first?.source ?? .mixed,
+                source: photoGroups[2].first?.source ?? .mixed,
                 direction: "experimental",
-                photos: Array(shuffle(experimentalPool, seed: seed + 3).prefix(5)),
+                photos: photoGroups[2],
                 swatches: displayMode == .moodboard ? (swatchSet(at: 2, in: swatchSets) ?? swatchSet(at: 0, in: swatchSets)) : nil
             )
         ]
 
         return options.filter { $0.photos.count >= 5 }
+    }
+
+    /// Picks `groupCount` lists of `groupSize` photos from `pool`, reusing images across groups only after
+    /// unique photos are exhausted so each direction stays visually distinct when enough results exist.
+    private func disjointPhotoGroups(
+        pool: [PhotoItemPayload],
+        groupSize: Int,
+        groupCount: Int,
+        seed: Int
+    ) -> [[PhotoItemPayload]] {
+        guard groupSize > 0, groupCount > 0 else {
+            return Array(repeating: [], count: max(0, groupCount))
+        }
+
+        let master = dedupePhotos(pool)
+        guard !master.isEmpty else {
+            return Array(repeating: [], count: groupCount)
+        }
+
+        var usedGlobally = Set<String>()
+        var photographersGloballyUsed = Set<String>()
+        var groups: [[PhotoItemPayload]] = []
+        groups.reserveCapacity(groupCount)
+
+        for g in 0..<groupCount {
+            let rotated = shuffle(master, seed: seed &+ 104729 &* (g &+ 1))
+            var group: [PhotoItemPayload] = []
+            for photo in rotated where group.count < groupSize {
+                let key = photo.id + photo.imageUrl
+                if usedGlobally.contains(key) { continue }
+                if blocksPhotographerDiversity(
+                    group: group,
+                    candidate: photo,
+                    photographersGloballyUsed: photographersGloballyUsed,
+                    enforceGlobalUniqueness: true
+                ) { continue }
+                if group.contains(where: { nearDuplicatePhotos($0, photo) }) { continue }
+                usedGlobally.insert(key)
+                group.append(photo)
+                if let pk = namedPhotographerKey(photo) { photographersGloballyUsed.insert(pk) }
+            }
+
+            if group.count < groupSize {
+                let fillerOrder = shuffle(master, seed: seed &+ 5011 &+ g &* 199)
+                for photo in fillerOrder where group.count < groupSize {
+                    let key = photo.id + photo.imageUrl
+                    if group.contains(where: { $0.id == photo.id && $0.imageUrl == photo.imageUrl }) {
+                        continue
+                    }
+                    if usedGlobally.contains(key) { continue }
+                    if blocksPhotographerDiversity(
+                        group: group,
+                        candidate: photo,
+                        photographersGloballyUsed: photographersGloballyUsed,
+                        enforceGlobalUniqueness: true
+                    ) { continue }
+                    if group.contains(where: { nearDuplicatePhotos($0, photo) }) { continue }
+                    usedGlobally.insert(key)
+                    group.append(photo)
+                    if let pk = namedPhotographerKey(photo) { photographersGloballyUsed.insert(pk) }
+                }
+            }
+
+            if group.count < groupSize, !master.isEmpty {
+                let pad = shuffle(master, seed: seed &+ 11_093 &+ g &* 47)
+                var i = 0
+                var guardrails = 0
+                let maxPadSteps = max(pad.count * 8, groupSize * 12)
+                while group.count < groupSize, guardrails < maxPadSteps {
+                    let photo = pad[i % pad.count]
+                    let key = photo.id + photo.imageUrl
+                    if usedGlobally.contains(key) {
+                        i += 1
+                        guardrails += 1
+                        continue
+                    }
+                    let enforceGlobalPhotographer = guardrails < maxPadSteps / 2
+                    if blocksPhotographerDiversity(
+                        group: group,
+                        candidate: photo,
+                        photographersGloballyUsed: photographersGloballyUsed,
+                        enforceGlobalUniqueness: enforceGlobalPhotographer
+                    ) {
+                        i += 1
+                        guardrails += 1
+                        continue
+                    }
+                    if group.contains(where: { nearDuplicatePhotos($0, photo) }) {
+                        i += 1
+                        guardrails += 1
+                        continue
+                    }
+                    usedGlobally.insert(key)
+                    group.append(photo)
+                    if let pk = namedPhotographerKey(photo) { photographersGloballyUsed.insert(pk) }
+                    i += 1
+                    guardrails += 1
+                }
+            }
+
+            groups.append(group)
+        }
+
+        return groups
+    }
+
+    /// Swaps small on-device assets out of directions 1–2 when possible so they land on the third pager.
+    private func swapLowResBundleAssetsTowardThirdDirection(_ groups: inout [[PhotoItemPayload]], threshold: Int = 1200) {
+        guard groups.count == 3 else { return }
+
+        func isLowResBundle(_ p: PhotoItemPayload) -> Bool {
+            guard let b = p.bundleImageName, !b.isEmpty else { return false }
+            guard let d = p.maxPixelDimension else { return true }
+            return d < threshold
+        }
+
+        for gi in 0..<2 {
+            var i = 0
+            while i < groups[gi].count {
+                guard isLowResBundle(groups[gi][i]) else {
+                    i += 1
+                    continue
+                }
+                guard let j = groups[2].firstIndex(where: { !isLowResBundle($0) }) else {
+                    i += 1
+                    continue
+                }
+                let a = groups[gi][i]
+                groups[gi][i] = groups[2][j]
+                groups[2][j] = a
+                i += 1
+            }
+        }
     }
 
     private func buildUIOptions(prompt: String) -> [UIOptionPayload] {
@@ -1096,11 +1265,11 @@ struct MockArtifactGenerator: ArtifactGenerating {
             : Array(repeating: [], count: orderedBoards.count)
 
         let directions = ["editorial", "clean", "experimental"]
+        let promptMatchedBundled = LibraryBundledPhotoMixer.photoPayloadsMatchingPrompt(prompt, limit: 12)
 
         return orderedBoards.enumerated().map { index, board in
-            let photos = board.items
+            let boardPhotos = board.items
                 .filter { $0.kind == .image }
-                .prefix(5)
                 .enumerated()
                 .map { photoIndex, item in
                     PhotoItemPayload(
@@ -1108,12 +1277,15 @@ struct MockArtifactGenerator: ArtifactGenerating {
                         imageUrl: "",
                         thumbUrl: "",
                         bundleImageName: item.bundleImageName,
+                        maxPixelDimension: item.bundleImageName.flatMap { LibraryBundledPhotoMixer.maxPixelDimensionForAsset(named: $0) },
                         alt: item.alt ?? item.label,
                         source: photoSource(from: item.source),
                         author: item.author ?? board.promptTitle,
                         detailUrl: ""
                     )
                 }
+
+            let photos = Array(dedupePhotos(promptMatchedBundled + boardPhotos).prefix(6))
 
             return PhotoOptionPayload(
                 id: "local-\(board.id)",
@@ -1131,7 +1303,7 @@ struct MockArtifactGenerator: ArtifactGenerating {
         guard !promptTerms.isEmpty else { return 0 }
 
         let boardTerms = normalizedTerms(
-            ([board.promptTitle] + board.items.flatMap { [$0.label, $0.alt ?? "", $0.author ?? ""] })
+            ([board.promptTitle] + board.items.flatMap(localRetrievalTerms(for:)))
                 .joined(separator: " ")
         )
 
@@ -1151,6 +1323,31 @@ struct MockArtifactGenerator: ArtifactGenerating {
             .filter { $0.count > 2 }
 
         return Set(normalized)
+    }
+
+    private func localRetrievalTerms(for item: LibraryItem) -> [String] {
+        var terms = [item.label, item.alt ?? "", item.author ?? "", item.bundleImageName ?? ""]
+
+        if item.kind == .image {
+            terms.append("image photo photography reference inspiration moodboard")
+        }
+
+        let bundleName = item.bundleImageName ?? ""
+        let isUIReference =
+            item.id.hasPrefix("ui-") ||
+            item.generationID.hasPrefix("gen-ui-") ||
+            bundleName.contains("ui") ||
+            bundleName.contains("soft-spatial")
+
+        if isUIReference {
+            terms.append("ui interface app mobile screen control button toggle component dashboard")
+        }
+
+        if item.kind == .palette {
+            terms.append("color palette swatch solid hue")
+        }
+
+        return terms
     }
 
     private func localMoodboardSwatches(for board: LibraryBoard) -> [PaletteSwatch] {
@@ -1362,14 +1559,269 @@ struct MockArtifactGenerator: ArtifactGenerating {
         return copy
     }
 
-    private func dedupePhotos(_ photos: [PhotoItemPayload]) -> [PhotoItemPayload] {
-        var seen = Set<String>()
-        return photos.filter { photo in
-            let key = photo.id + photo.imageUrl
-            if seen.contains(key) { return false }
-            seen.insert(key)
+    private func rankedPhotoPool(_ photos: [PhotoItemPayload]) -> [PhotoItemPayload] {
+        photos
+            .enumerated()
+            .sorted { lhs, rhs in
+                let lr = sourceQualityRank(lhs.element.source)
+                let rr = sourceQualityRank(rhs.element.source)
+                if lr != rr { return lr < rr }
+                let ld = lhs.element.maxPixelDimension ?? Int.max
+                let rd = rhs.element.maxPixelDimension ?? Int.max
+                if ld != rd { return ld > rd }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
+    }
+
+    /// Lower sorts earlier (preferred). API order within a source is preserved via `rankedPhotoPool` input index.
+    private func sourceQualityRank(_ source: PhotoSource) -> Int {
+        switch source {
+        case .mixed:
+            return 0
+        case .unsplash:
+            return 1
+        case .pexels:
+            return 2
+        case .arena:
+            return 3
+        case .pinterest:
+            return 4
+        case .google:
+            return 5
+        }
+    }
+
+    private func unsplashDisplayURL(raw: String?, full: String?, regular: String?, small: String?) -> String? {
+        if let raw, !raw.isEmpty {
+            return raw.contains("?")
+                ? "\(raw)&w=2400&q=85&auto=format&fit=max"
+                : "\(raw)?w=2400&q=85&auto=format&fit=max"
+        }
+        if let full, !full.isEmpty { return full }
+        return regular ?? small
+    }
+
+    /// Removes low-trust or low-quality remote URLs so editorial output stays clean. On-device bundle images always pass.
+    private func filterEditorialQuality(_ photos: [PhotoItemPayload]) -> [PhotoItemPayload] {
+        photos.filter { passesEditorialImagePolicy($0) }
+    }
+
+    private func passesEditorialImagePolicy(_ photo: PhotoItemPayload) -> Bool {
+        if let bundle = photo.bundleImageName, !bundle.isEmpty {
             return true
         }
+
+        let raw = photo.imageUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, URL(string: raw) != nil else { return false }
+
+        let lowered = raw.lowercased()
+        guard lowered.hasPrefix("https://") else { return false }
+        guard !lowered.hasSuffix(".svg") else { return false }
+        if lowered.contains(".svg?") { return false }
+
+        let junkMarkers = [
+            "favicon", "sprite", "emoji", "/icons/", "icon.png", "1x1", "pixel.gif",
+            "spacer.gif", "blank.gif", "transparent.gif", "placeholder", "loading.gif",
+            "qrcode", "qr-code"
+        ]
+        if junkMarkers.contains(where: { lowered.contains($0) }) { return false }
+
+        // Google Programmable Search image results are often scraper pages, icons, or odd crops.
+        if photo.source == .google {
+            return false
+        }
+
+        if lowered.contains("googleusercontent.com") || lowered.contains("ggpht.com") {
+            if lowered.range(of: #"=s\d{1,3}(-c)?"#, options: .regularExpression) != nil {
+                return false
+            }
+        }
+
+        switch photo.source {
+        case .pinterest:
+            if !passesPinterestPipelineURL(lowered) { return false }
+        case .pexels:
+            guard lowered.contains("pexels.com") else { return false }
+        case .unsplash:
+            guard lowered.contains("unsplash.com") else { return false }
+        case .arena:
+            if lowered.contains("_thumb.") || lowered.contains("/thumb/") || lowered.contains("thumb.png") {
+                return false
+            }
+            guard lowered.contains("are.na") || passesTrustedImageURLHost(lowered) else { return false }
+        case .google:
+            return false
+        case .mixed:
+            guard passesTrustedImageURLHost(lowered) else { return false }
+        }
+
+        return true
+    }
+
+    /// Pinterest service responses should only surface known-good delivery URLs (or major stock hosts).
+    private func passesPinterestPipelineURL(_ lowered: String) -> Bool {
+        if lowered.contains("pinimg.com") { return true }
+        if lowered.range(of: #"(\.|//)pinterest\.[a-z.]{2,}/"#, options: .regularExpression) != nil { return true }
+        if lowered.contains("pexels.com") || lowered.contains("unsplash.com") { return true }
+        if imageLikePathSuffix(lowered) {
+            return passesTrustedImageURLHost(lowered)
+        }
+        return false
+    }
+
+    private func imageLikePathSuffix(_ lowered: String) -> Bool {
+        guard let path = lowered.split(separator: "?").first.map(String.init) else { return false }
+        let p = path.lowercased()
+        return [".jpg", ".jpeg", ".png", ".webp"].contains { p.hasSuffix($0) }
+    }
+
+    private func passesTrustedImageURLHost(_ lowered: String) -> Bool {
+        guard let host = URL(string: lowered)?.host?.lowercased(), host.contains(".") else { return false }
+        let denyFragments = [
+            "gravatar.com", "reddit.com", "redd.it", "tiktokcdn", "twimg.com",
+            "fbcdn.net", "facebook.com", "instagram.com", "cdninstagram.com",
+            "giphy.com", "ebayimg.com", "pin.it", "bit.ly", "t.co"
+        ]
+        if denyFragments.contains(where: { host.contains($0) }) { return false }
+        return true
+    }
+
+    private func dedupePhotos(_ photos: [PhotoItemPayload]) -> [PhotoItemPayload] {
+        var seen = Set<String>()
+        var pass1: [PhotoItemPayload] = []
+        for photo in photos {
+            let key: String
+            if let bundle = photo.bundleImageName, !bundle.isEmpty {
+                key = "bundle:\(bundle)"
+            } else {
+                key = canonicalImageResourceKey(photo.imageUrl)
+            }
+            if seen.contains(key) { continue }
+            seen.insert(key)
+            pass1.append(photo)
+        }
+        return dedupeNearDuplicateAlts(pass1)
+    }
+
+    private func canonicalImageResourceKey(_ urlString: String) -> String {
+        guard let url = URL(string: urlString) else { return urlString.lowercased() }
+        let host = url.host?.lowercased() ?? ""
+        let path = url.path.lowercased()
+        if host.contains("pexels.com"), path.contains("/photos/") {
+            if let range = path.range(of: #"/photos/\d+"#, options: .regularExpression) {
+                return host + String(path[range])
+            }
+        }
+        return host + path
+    }
+
+    private func altTokenSet(_ alt: String) -> Set<String> {
+        let normalized = alt
+            .lowercased()
+            .replacingOccurrences(of: #"[^a-z0-9\s]"#, with: " ", options: .regularExpression)
+        return Set(
+            normalized
+                .split(whereSeparator: \.isWhitespace)
+                .map(String.init)
+                .filter { $0.count > 2 }
+        )
+    }
+
+    private func meaningfulAltTokens(_ alt: String) -> Set<String> {
+        altTokenSet(alt).subtracting(ShootClustering.noiseTokens)
+    }
+
+    private func jaccard(_ a: Set<String>, _ b: Set<String>) -> Double {
+        let union = a.union(b).count
+        guard union > 0 else { return 0 }
+        return Double(a.intersection(b).count) / Double(union)
+    }
+
+    private func isGenericStockAttribution(_ author: String) -> Bool {
+        let a = author.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let generic: Set<String> = [
+            "pexels", "unsplash", "pinterest", "google", "are.na", "arena",
+            "pexels inspiration image", "unsplash inspiration image", "pinterest inspiration",
+            "google inspiration", "are.na inspiration"
+        ]
+        return generic.contains(a) || a.hasPrefix("pexels ") || a.hasPrefix("unsplash ")
+    }
+
+    private func namedPhotographerKey(_ photo: PhotoItemPayload) -> String? {
+        let raw = photo.author.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, !isGenericStockAttribution(photo.author) else { return nil }
+        return raw.lowercased()
+    }
+
+    /// Blocks a candidate if a credited photographer already appears in this group, or (when `enforceGlobalUniqueness`)
+    /// anywhere on the three-direction board — reducing same-shoot clusters from one creator across the pager.
+    private func blocksPhotographerDiversity(
+        group: [PhotoItemPayload],
+        candidate: PhotoItemPayload,
+        photographersGloballyUsed: Set<String>,
+        enforceGlobalUniqueness: Bool
+    ) -> Bool {
+        guard let pk = namedPhotographerKey(candidate) else { return false }
+        if group.contains(where: { namedPhotographerKey($0) == pk }) { return true }
+        if enforceGlobalUniqueness, photographersGloballyUsed.contains(pk) { return true }
+        return false
+    }
+
+    /// Drops near-duplicates (same URL resource, bundle, or same creator + very similar alt), keeping the first (highest-ranked) row.
+    private func dedupeNearDuplicateAlts(_ photos: [PhotoItemPayload]) -> [PhotoItemPayload] {
+        var out: [PhotoItemPayload] = []
+        for photo in photos {
+            if out.contains(where: { nearDuplicatePhotos($0, photo) }) { continue }
+            out.append(photo)
+        }
+        return out
+    }
+
+    private func nearDuplicatePhotos(_ a: PhotoItemPayload, _ b: PhotoItemPayload) -> Bool {
+        if let ba = a.bundleImageName, let bb = b.bundleImageName, !ba.isEmpty, ba == bb {
+            return true
+        }
+        if canonicalImageResourceKey(a.imageUrl) == canonicalImageResourceKey(b.imageUrl) {
+            return true
+        }
+        return samePhotoshootCluster(a, b)
+    }
+
+    /// Heuristic cluster for “same shoot / same batch”: overlapping scene keywords or same credited photographer + similar copy.
+    private func samePhotoshootCluster(_ a: PhotoItemPayload, _ b: PhotoItemPayload) -> Bool {
+        let authorA = a.author.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let authorB = b.author.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let genA = authorA.isEmpty || isGenericStockAttribution(a.author)
+        let genB = authorB.isEmpty || isGenericStockAttribution(b.author)
+        let ma = meaningfulAltTokens(a.alt)
+        let mb = meaningfulAltTokens(b.alt)
+        let fullA = altTokenSet(a.alt)
+        let fullB = altTokenSet(b.alt)
+
+        if !genA && !genB, authorA == authorB {
+            if ma.count >= 2, mb.count >= 2 {
+                let ij = ma.intersection(mb).count
+                if ij >= 2, jaccard(ma, mb) >= 0.18 { return true }
+                if ij >= 3 { return true }
+            }
+            if fullA.count >= 4, fullB.count >= 4, jaccard(fullA, fullB) >= 0.32 { return true }
+        }
+
+        if genA && genB, ma.count >= 3, mb.count >= 3 {
+            if ma == mb { return true }
+            let ij = ma.intersection(mb).count
+            if ij >= 5 { return true }
+            if jaccard(ma, mb) >= 0.48, ij >= 4 { return true }
+        }
+
+        if genA && genB, a.source == b.source, ma.count >= 4, mb.count >= 4 {
+            let sa = ma.sorted().joined(separator: "+")
+            let sb = mb.sorted().joined(separator: "+")
+            if !sa.isEmpty, sa == sb { return true }
+        }
+
+        return false
     }
 
     private func mixHex(_ base: String, _ target: String, _ amount: Double) -> String {

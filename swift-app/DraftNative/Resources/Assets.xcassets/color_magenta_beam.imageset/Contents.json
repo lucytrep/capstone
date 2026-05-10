@@ -1,0 +1,13 @@
+{
+  "images": [
+    {
+      "idiom": "universal",
+      "filename": "color_magenta_beam.jpg",
+      "scale": "1x"
+    }
+  ],
+  "info": {
+    "version": 1,
+    "author": "xcode"
+  }
+}

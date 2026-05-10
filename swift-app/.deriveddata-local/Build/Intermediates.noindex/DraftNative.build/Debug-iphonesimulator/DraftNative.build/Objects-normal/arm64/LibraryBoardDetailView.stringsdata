@@ -1,0 +1,152 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryBoardDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 124
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Items",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld Selected",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Deselect All",
+        "location": {
+          "startingColumn": 69,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select All",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld items • %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap items to select",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 248
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld item%@ selected",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 249
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 449
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld Item%@ Selected",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 336
+        }
+      },
+      {
+        "comment": "",
+        "key": "What would you like to do?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 342
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 380
+        }
+      },
+      {
+        "comment": "",
+        "key": "Move to Board",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy to Board",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Items will be removed from this board",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 397
+        }
+      },
+      {
+        "comment": "",
+        "key": "Items will remain in this board",
+        "location": {
+          "startingColumn": 82,
+          "startingLine": 397
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld item%@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 459
+        }
+      }
+    ]
+  },
+  "version": 1
+}

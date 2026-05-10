@@ -16,6 +16,7 @@ Endpoint:
 import asyncio
 import json
 import os
+import re
 import sys
 import tempfile
 
@@ -34,6 +35,41 @@ app.add_middleware(
 
 SCRAPER_DIR = os.path.join(os.path.dirname(__file__), "scraper")
 SCRAPEOPS_API_KEY = os.environ.get("SCRAPEOPS_API_KEY", "")
+
+# Drop pins whose titles look unsafe or off-brand before returning JSON (mirrors app sensor).
+_BAD_TITLE_PHRASES = (
+    "clip art",
+    "war zone",
+)
+_BAD_TITLE_WORDS = (
+    "nude",
+    "naked",
+    "nsfw",
+    "porn",
+    "xxx",
+    "erotic",
+    "fetish",
+    "blood",
+    "gore",
+    "meme",
+    "clipart",
+    "tiktok",
+    "watermark",
+    "protest",
+    "riot",
+)
+
+
+def _title_passes_sensor(title: str) -> bool:
+    t = " ".join(title.lower().split())
+    padded = f" {t} "
+    for phrase in _BAD_TITLE_PHRASES:
+        if f" {phrase} " in padded:
+            return False
+    for word in _BAD_TITLE_WORDS:
+        if re.search(rf"(^|\s){re.escape(word)}(\s|$)", t):
+            return False
+    return True
 
 
 @app.get("/health")
@@ -97,6 +133,9 @@ async def search(
 
             photos = []
             for item in items:
+                title = (item.get("result_title") or "").strip()
+                if title and not _title_passes_sensor(title):
+                    continue
                 thumbnail = item.get("thumbnail_url", "")
                 if not thumbnail or "pinimg" not in thumbnail:
                     continue
@@ -105,7 +144,7 @@ async def search(
                         "id": f"pinterest-{item.get('result_id') or len(photos)}",
                         "imageUrl": thumbnail,
                         "thumbUrl": thumbnail,
-                        "alt": item.get("result_title") or "Pinterest inspiration",
+                        "alt": title or "Pinterest inspiration",
                         "source": "pinterest",
                         "author": item.get("creator_name") or "Pinterest",
                         "detailUrl": item.get("result_url") or "",

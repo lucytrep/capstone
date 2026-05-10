@@ -29,6 +29,9 @@
 		A10000000000000000000015 /* ArtifactPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ArtifactPayload.swift */; };
 		A10000000000000000000016 /* Logo.mov in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* Logo.mov */; };
 		A10000000000000000000017 /* LaunchLoadingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* LaunchLoadingOverlay.swift */; };
+		A10000000000000000000018 /* LocalSecrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* LocalSecrets.plist */; };
+		A10000000000000000000019 /* LocalGalleryImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* LocalGalleryImports.swift */; };
+		A1000000000000000000001D /* LibraryBundledPhotoMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +59,9 @@
 		A20000000000000000000017 /* ArtifactPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactPayload.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* Logo.mov */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/Logo.mov; sourceTree = "<group>"; };
 		A20000000000000000000019 /* LaunchLoadingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchLoadingOverlay.swift; sourceTree = "<group>"; };
+		A2000000000000000000001A /* LocalSecrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/LocalSecrets.plist; sourceTree = "<group>"; };
+		A2000000000000000000001B /* LocalGalleryImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalGalleryImports.swift; sourceTree = "<group>"; };
+		A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBundledPhotoMixer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +93,7 @@
 				A40000000000000000000008 /* Views */,
 				A20000000000000000000016 /* Assets.xcassets */,
 				A20000000000000000000018 /* Logo.mov */,
+				A2000000000000000000001A /* LocalSecrets.plist */,
 				A20000000000000000000011 /* Info.plist */,
 			);
 			path = DraftNative;
@@ -106,6 +113,8 @@
 			children = (
 				A20000000000000000000017 /* ArtifactPayload.swift */,
 				A20000000000000000000003 /* LibraryModels.swift */,
+				A2000000000000000000001B /* LocalGalleryImports.swift */,
+				A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -215,6 +224,7 @@
 			files = (
 				A10000000000000000000014 /* Assets.xcassets in Resources */,
 				A10000000000000000000016 /* Logo.mov in Resources */,
+				A10000000000000000000018 /* LocalSecrets.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,6 +255,8 @@
 				A1000000000000000000000F /* Styles.swift in Sources */,
 				A10000000000000000000015 /* ArtifactPayload.swift in Sources */,
 				A10000000000000000000017 /* LaunchLoadingOverlay.swift in Sources */,
+				A10000000000000000000019 /* LocalGalleryImports.swift in Sources */,
+				A1000000000000000000001D /* LibraryBundledPhotoMixer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

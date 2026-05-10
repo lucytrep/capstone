@@ -1,0 +1,96 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Drafts",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 263
+        }
+      },
+      {
+        "comment": "",
+        "key": "All items",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 277
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld items",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 439
+        }
+      },
+      {
+        "comment": "",
+        "key": "Item Actions",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 816
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Board",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 817
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose what you want to do with this item.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 821
+        }
+      },
+      {
+        "comment": "",
+        "key": "Collections",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1042
+        }
+      },
+      {
+        "comment": "",
+        "key": "No other boards available",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1051
+        }
+      },
+      {
+        "comment": "",
+        "key": "This item is already saved in every board.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1054
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld item%@",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1077
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1106
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Feather } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,14 +20,13 @@ const C = {
 
 type AppTab = {
   key: 'home' | 'library';
-  icon: React.ComponentProps<typeof Feather>['name'];
-  sfIcon?: React.ComponentProps<typeof IconSymbol>['name'];
+  sfIcon: React.ComponentProps<typeof IconSymbol>['name'];
   href: string;
 };
 
 const TABS: AppTab[] = [
-  { key: 'home', icon: 'mic', href: '/' },
-  { key: 'library', icon: 'book-open', sfIcon: 'books.vertical.fill', href: '/library' },
+  { key: 'home', sfIcon: 'waveform', href: '/' },
+  { key: 'library', sfIcon: 'books.vertical.fill', href: '/library' },
 ];
 
 type AppBottomNavProps = {
@@ -71,11 +69,12 @@ export function AppBottomNav({ variant = 'default' }: AppBottomNavProps) {
               }
             }}
           >
-            {tab.sfIcon ? (
-              <IconSymbol name={tab.sfIcon} size={28} color={isActive ? C.icon : C.iconDim} weight="regular" />
-            ) : (
-              <Feather name={tab.icon} size={24} color={isActive ? C.icon : C.iconDim} />
-            )}
+            <IconSymbol
+              name={tab.sfIcon}
+              size={tab.key === 'home' ? 26 : 28}
+              color={isActive ? C.icon : C.iconDim}
+              weight="regular"
+            />
           </Pressable>
         );
       })}

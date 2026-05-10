@@ -1,0 +1,506 @@
+[
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 1/image_desert_dreams_1_001.jpg",
+    "target_name": "image_desert_dreams_1_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 1/image_desert_dreams_2_002.jpg",
+    "target_name": "image_desert_dreams_2_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 1/image_desert_dreams_3_003.jpg",
+    "target_name": "image_desert_dreams_3_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 1/image_desert_dreams_4_004.jpg",
+    "target_name": "image_desert_dreams_4_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 1/image_desert_dreams_5_005.jpg",
+    "target_name": "image_desert_dreams_5_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_1_001.jpg",
+    "target_name": "image_open_court_1_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_2_002.jpg",
+    "target_name": "image_open_court_2_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_3_003.jpg",
+    "target_name": "image_open_court_3_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_4_004.jpg",
+    "target_name": "image_open_court_4_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_5_005.jpg",
+    "target_name": "image_open_court_5_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_6_006.jpg",
+    "target_name": "image_open_court_6_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 2/image_open_court_7_007.jpg",
+    "target_name": "image_open_court_7_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 3/image_athletic_001.jpg",
+    "target_name": "image_athletic_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 3/image_track_002.jpg",
+    "target_name": "image_track_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 4/image_recipe_app_concept_1_001.jpg",
+    "target_name": "image_recipe_app_concept_1_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 4/image_image_recipe_app_everything_orbit_motion_002.gif",
+    "target_name": "image_image_recipe_app_everything_orbit_motion_002.gif"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 4/image_recipe_app_concept_2_003.jpg",
+    "target_name": "image_recipe_app_concept_2_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 4/image_recipe_app_concept_3_004.jpg",
+    "target_name": "image_recipe_app_concept_3_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 4/image_recipe_app_concept_5_005.jpg",
+    "target_name": "image_recipe_app_concept_5_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_headmark_portrait_001.png",
+    "target_name": "image_image_headmark_portrait_001.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_city_tote_crop_002.png",
+    "target_name": "image_image_city_tote_crop_002.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_lime_motion_crop_003.png",
+    "target_name": "image_image_lime_motion_crop_003.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_bold_wordmark_004.png",
+    "target_name": "image_image_bold_wordmark_004.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_get_into_it_poster_005.png",
+    "target_name": "image_image_get_into_it_poster_005.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_lime_motion_square_006.jpg",
+    "target_name": "image_image_lime_motion_square_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_wordmark_square_007.jpg",
+    "target_name": "image_image_wordmark_square_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_lime_motion_square_008.jpg",
+    "target_name": "image_image_lime_motion_square_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_get_into_it_cover_009.jpg",
+    "target_name": "image_image_get_into_it_cover_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/Direction 5/image_image_city_tote_frame_010.jpg",
+    "target_name": "image_image_city_tote_frame_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_cream_mist_001.jpg",
+    "target_name": "color_color_cream_mist_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_pale_butter_002.jpg",
+    "target_name": "color_color_pale_butter_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_yellow_glow_003.jpg",
+    "target_name": "color_color_yellow_glow_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/image_image_outdoor_selfie_004.jpg",
+    "target_name": "image_image_outdoor_selfie_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_aqua_wash_005.jpg",
+    "target_name": "color_color_aqua_wash_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_electric_yellow_006.jpg",
+    "target_name": "color_color_electric_yellow_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_soft_vanilla_007.jpg",
+    "target_name": "color_color_soft_vanilla_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/09_files/color_color_apricot_wash_008.jpg",
+    "target_name": "color_color_apricot_wash_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_silhouettes_001.jpg",
+    "target_name": "image_silhouettes_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_surf_dots_002.jpg",
+    "target_name": "image_surf_dots_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_nike_rhythm_003.jpg",
+    "target_name": "image_nike_rhythm_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_halftone_004.jpg",
+    "target_name": "image_halftone_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_moma_eye_005.jpg",
+    "target_name": "image_moma_eye_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_tulips_006.jpg",
+    "target_name": "image_tulips_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_nike_athlete_007.jpg",
+    "target_name": "image_nike_athlete_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui_whispers_ui_008.jpg",
+    "target_name": "ui_whispers_ui_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui_elasti_ui_009.jpg",
+    "target_name": "ui_elasti_ui_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_arcmatrix_010.jpg",
+    "target_name": "image_arcmatrix_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui_ayarx_ui_011.jpg",
+    "target_name": "ui_ayarx_ui_011.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_grid_flower_012.jpg",
+    "target_name": "image_grid_flower_012.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_aura_orange_013.jpg",
+    "target_name": "image_aura_orange_013.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_aura_blue_014.jpg",
+    "target_name": "image_aura_blue_014.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/image_athlete_red_015.jpg",
+    "target_name": "image_athlete_red_015.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_punch_red_001.jpg",
+    "target_name": "color_color_punch_red_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_hot_pink_haze_002.jpg",
+    "target_name": "color_color_hot_pink_haze_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_rose_pink_003.jpg",
+    "target_name": "color_color_rose_pink_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_melon_orange_004.jpg",
+    "target_name": "color_color_melon_orange_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_ultramarine_blur_005.jpg",
+    "target_name": "color_color_ultramarine_blur_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_citrus_lime_006.jpg",
+    "target_name": "color_color_citrus_lime_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_powder_blush_007.jpg",
+    "target_name": "color_color_powder_blush_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_butter_cream_008.jpg",
+    "target_name": "color_color_butter_cream_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_teal_pool_009.jpg",
+    "target_name": "color_color_teal_pool_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_magenta_beam_010.jpg",
+    "target_name": "color_color_magenta_beam_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_lavender_mist_011.jpg",
+    "target_name": "color_color_lavender_mist_011.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_cobalt_pop_012.png",
+    "target_name": "color_color_cobalt_pop_012.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_fuchsia_pop_013.png",
+    "target_name": "color_color_fuchsia_pop_013.png"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/color/color_color_mulberry_bloom_014.jpg",
+    "target_name": "color_color_mulberry_bloom_014.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_orange_car_001.jpg",
+    "target_name": "image_orange_car_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_woman_002.jpg",
+    "target_name": "image_woman_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_jumping_003.jpg",
+    "target_name": "image_jumping_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_hat_collage_004.jpg",
+    "target_name": "image_hat_collage_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_smiley_pool_005.jpg",
+    "target_name": "image_smiley_pool_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_blueberries_006.jpg",
+    "target_name": "image_blueberries_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_daffodil_007.jpg",
+    "target_name": "image_daffodil_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_orange_fit_008.jpg",
+    "target_name": "image_orange_fit_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_stadium_009.jpg",
+    "target_name": "image_stadium_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_rolling_wildflower_hills_001.jpg",
+    "target_name": "image_image_pinterest_rolling_wildflower_hills_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_soft_blank_field_002.jpg",
+    "target_name": "image_image_pinterest_soft_blank_field_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_night_meadow_runner_003.jpg",
+    "target_name": "image_image_pinterest_night_meadow_runner_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_lily_pond_blur_004.jpg",
+    "target_name": "image_image_pinterest_lily_pond_blur_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_forest_contact_grid_005.jpg",
+    "target_name": "image_image_pinterest_forest_contact_grid_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_wildflower_meadow_006.jpg",
+    "target_name": "image_image_pinterest_wildflower_meadow_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_desert_dune_study_007.jpg",
+    "target_name": "image_image_pinterest_desert_dune_study_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_butterfly_meadow_008.jpg",
+    "target_name": "image_image_pinterest_butterfly_meadow_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_dusk_lakeside_009.jpg",
+    "target_name": "image_image_pinterest_dusk_lakeside_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_bouquet_motion_010.jpg",
+    "target_name": "image_image_pinterest_bouquet_motion_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/5_files/image_image_pinterest_willow_light_011.jpg",
+    "target_name": "image_image_pinterest_willow_light_011.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_desert_art_010.jpg",
+    "target_name": "image_desert_art_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_newspaper_011.jpg",
+    "target_name": "image_newspaper_011.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_rolling_wildflower_hills_001.jpg",
+    "target_name": "image_image_pinterest_rolling_wildflower_hills_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_soft_blank_field_002.jpg",
+    "target_name": "image_image_pinterest_soft_blank_field_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_night_meadow_runner_003.jpg",
+    "target_name": "image_image_pinterest_night_meadow_runner_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_lily_pond_blur_004.jpg",
+    "target_name": "image_image_pinterest_lily_pond_blur_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_forest_contact_grid_005.jpg",
+    "target_name": "image_image_pinterest_forest_contact_grid_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_wildflower_meadow_006.jpg",
+    "target_name": "image_image_pinterest_wildflower_meadow_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_desert_dune_study_007.jpg",
+    "target_name": "image_image_pinterest_desert_dune_study_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_butterfly_meadow_008.jpg",
+    "target_name": "image_image_pinterest_butterfly_meadow_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_dusk_lakeside_009.jpg",
+    "target_name": "image_image_pinterest_dusk_lakeside_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_bouquet_motion_010.jpg",
+    "target_name": "image_image_pinterest_bouquet_motion_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest2_files/image_image_pinterest_willow_light_011.jpg",
+    "target_name": "image_image_pinterest_willow_light_011.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_rolling_wildflower_hills_001.jpg",
+    "target_name": "image_image_pinterest_rolling_wildflower_hills_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_soft_blank_field_002.jpg",
+    "target_name": "image_image_pinterest_soft_blank_field_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_night_meadow_runner_003.jpg",
+    "target_name": "image_image_pinterest_night_meadow_runner_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_lily_pond_blur_004.jpg",
+    "target_name": "image_image_pinterest_lily_pond_blur_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_forest_contact_grid_005.jpg",
+    "target_name": "image_image_pinterest_forest_contact_grid_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_wildflower_meadow_006.jpg",
+    "target_name": "image_image_pinterest_wildflower_meadow_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_desert_dune_study_007.jpg",
+    "target_name": "image_image_pinterest_desert_dune_study_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_butterfly_meadow_008.jpg",
+    "target_name": "image_image_pinterest_butterfly_meadow_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_dusk_lakeside_009.jpg",
+    "target_name": "image_image_pinterest_dusk_lakeside_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_bouquet_motion_010.jpg",
+    "target_name": "image_image_pinterest_bouquet_motion_010.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/Pinterest_files/image_image_pinterest_willow_light_011.jpg",
+    "target_name": "image_image_pinterest_willow_light_011.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_raspberries_012.jpg",
+    "target_name": "image_raspberries_012.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_neon_rays_013.jpg",
+    "target_name": "image_neon_rays_013.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_pixelated_014.jpg",
+    "target_name": "image_pixelated_014.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/ui_running_015.jpg",
+    "target_name": "ui_running_015.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_laughing_016.jpg",
+    "target_name": "image_laughing_016.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/imagery/image_skyward_017.jpg",
+    "target_name": "image_skyward_017.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_glass_selector_rail_001.jpg",
+    "target_name": "ui_ui_glass_selector_rail_001.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_glass_subtitly_icon_002.jpg",
+    "target_name": "ui_ui_glass_subtitly_icon_002.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_metrics_neon_bank_003.jpg",
+    "target_name": "ui_ui_metrics_neon_bank_003.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_metrics_viriability_004.jpg",
+    "target_name": "ui_ui_metrics_viriability_004.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_glass_message_composer_005.jpg",
+    "target_name": "ui_ui_glass_message_composer_005.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_glass_commerce_orbit_006.jpg",
+    "target_name": "ui_ui_glass_commerce_orbit_006.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_glass_home_tab_007.jpg",
+    "target_name": "ui_ui_glass_home_tab_007.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_metrics_soft_charts_008.jpg",
+    "target_name": "ui_ui_metrics_soft_charts_008.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_metrics_energy_bar_009.jpg",
+    "target_name": "ui_ui_metrics_energy_bar_009.jpg"
+  },
+  {
+    "source": "/Users/lucytrepanier/Desktop/Major Studio/Semester 2/Capstone/Image Gallery/home/ui/ui_ui_metrics_analytics_cards_010.jpg",
+    "target_name": "ui_ui_metrics_analytics_cards_010.jpg"
+  }
+]

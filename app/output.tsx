@@ -13,7 +13,9 @@ import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { AppText as Text } from '@/components/app-typography';
+import { photoPassesImageContentSensor } from '@/constants/image-content-sensor';
 import { PEXELS_API_KEY } from '@/config/keys';
+import { matchTaggedGallery } from '@/data/tagged-gallery';
 import { SessionStore } from '@/store/session';
 
 const C = {
@@ -639,7 +641,8 @@ function BottomNavPill({ onMicPress }: { onMicPress: () => void }) {
 
 type MoodPhoto = {
   id: string;
-  imageUrl: string;
+  /** Remote URL (string) or bundled asset module id from `require()` */
+  source: string | number;
   alt: string;
 };
 
@@ -690,12 +693,19 @@ function useMoodImages(transcript: string) {
           }) => {
             if (cancelled) return;
             const photos = (data.photos ?? [])
-              .map((p) => {
+              .map((p): MoodPhoto | null => {
                 const url = p.src?.medium || p.src?.large;
                 if (!p.id || !url) return null;
-                return { id: `pm-${p.id}`, imageUrl: url, alt: p.alt || '' };
+                return { id: `pm-${p.id}`, source: url, alt: p.alt || '' };
               })
-              .filter((p): p is MoodPhoto => p !== null);
+              .filter((p): p is MoodPhoto => p !== null)
+              .filter((p) =>
+                photoPassesImageContentSensor({
+                  alt: p.alt,
+                  imageUrl: typeof p.source === 'string' ? p.source : '',
+                  transcript: transcript.trim(),
+                })
+              );
             setPexelsPhotos(photos);
           }
         )
@@ -724,7 +734,14 @@ function useMoodImages(transcript: string) {
               if (!c.id || !c.title || !thumbUrl) return null;
               return { id: `arena-${c.id}`, title: c.title, thumbUrl };
             })
-            .filter((c): c is ArenaChannel => c !== null);
+            .filter((c): c is ArenaChannel => c !== null)
+            .filter((c) =>
+              photoPassesImageContentSensor({
+                alt: c.title,
+                imageUrl: c.thumbUrl,
+                transcript: transcript.trim(),
+              })
+            );
           setArenaChannels(channels);
         }
       )
@@ -741,13 +758,34 @@ function useMoodImages(transcript: string) {
 function MoodImageRows({ transcript }: { transcript: string }) {
   const { pexelsPhotos, arenaChannels } = useMoodImages(transcript);
 
-  if (pexelsPhotos.length === 0 && arenaChannels.length === 0) {
+  const taggedPhotos = useMemo(
+    () =>
+      matchTaggedGallery(transcript).map((entry) => ({
+        id: entry.id,
+        source: entry.imageModule,
+        alt: entry.alt,
+      })),
+    [transcript]
+  );
+
+  const moodPhotos = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: MoodPhoto[] = [];
+    for (const photo of [...taggedPhotos, ...pexelsPhotos]) {
+      if (seen.has(photo.id)) continue;
+      seen.add(photo.id);
+      merged.push(photo);
+    }
+    return merged;
+  }, [taggedPhotos, pexelsPhotos]);
+
+  if (moodPhotos.length === 0 && arenaChannels.length === 0) {
     return null;
   }
 
   return (
     <View style={styles.moodSection}>
-      {pexelsPhotos.length > 0 && (
+      {moodPhotos.length > 0 && (
         <View style={styles.moodGroup}>
           <Text style={styles.moodLabel}>Mood</Text>
           <ScrollView
@@ -755,13 +793,14 @@ function MoodImageRows({ transcript }: { transcript: string }) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.moodScrollContent}
           >
-            {pexelsPhotos.map((photo) => (
+            {moodPhotos.map((photo) => (
               <View key={photo.id} style={styles.moodPhotoTile}>
                 <ExpoImage
-                  source={photo.imageUrl}
+                  source={photo.source}
                   style={styles.moodTileImage}
                   contentFit="cover"
                   transition={200}
+                  accessibilityLabel={photo.alt}
                 />
               </View>
             ))}
@@ -1209,9 +1248,11 @@ export default function OutputScreen() {
     const contentWidth = width - gutter * 2;
     const heroWidth = contentWidth;
     const smallWidth = Math.floor((contentWidth - gap) / 2);
+    const tripleWidth = Math.floor((contentWidth - gap * 2) / 3);
     const availablePhotoHeight = Math.max(520, height - 250);
     const heroHeight = Math.min(300, Math.max(236, availablePhotoHeight * 0.38));
     const smallHeight = Math.min(172, Math.max(136, availablePhotoHeight * 0.24));
+    const bottomRowHeight = Math.min(190, Math.max(140, availablePhotoHeight * 0.27));
 
     return (
       <SafeAreaView style={styles.container}>
@@ -1267,11 +1308,21 @@ export default function OutputScreen() {
                     <View style={styles.photoRow}>
                       <PhotoTile
                         photo={option.photos[3]}
-                        width={smallWidth}
-                        height={smallHeight}
+                        width={tripleWidth}
+                        height={bottomRowHeight}
                         highlighted={optionIndex === 0}
                       />
-                      <PhotoTile photo={option.photos[4]} width={smallWidth} height={smallHeight} />
+                      <PhotoTile photo={option.photos[4]} width={tripleWidth} height={bottomRowHeight} />
+                      {option.photos[5] ? (
+                        <PhotoTile photo={option.photos[5]} width={tripleWidth} height={bottomRowHeight} />
+                      ) : (
+                        <View
+                          style={[
+                            styles.photoTile,
+                            { width: tripleWidth, height: bottomRowHeight, backgroundColor: '#1C1C1C' },
+                          ]}
+                        />
+                      )}
                     </View>
                   </View>
                 </View>

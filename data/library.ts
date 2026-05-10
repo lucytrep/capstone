@@ -46,7 +46,7 @@ const nikeEditorial02 = require('../assets/nike-editorial-2.jpg');
 const nikeEditorial03 = require('../assets/nike-editorial-3.jpg');
 const nikeEditorial04 = require('../assets/nike-editorial-4.jpg');
 const nikeEditorial05 = require('../assets/nike-editorial-5.jpg');
-const recipeAppConcept01 = require('../assets/recipe-app-concept-1.jpg');
+const uiNikeGoChartreuseSwoosh = require('../assets/ui-nike-go-chartreuse-swoosh.png');
 const recipeAppConcept03 = require('../assets/recipe-app-concept-3.jpg');
 const recipeAppConcept04 = require('../assets/recipe-app-concept-4.jpg');
 const recipeAppConcept05 = require('../assets/recipe-app-concept-5.jpg');
@@ -154,9 +154,9 @@ export const libraryBoards: LibraryBoard[] = [
       {
         id: 'ui-controls-4',
         kind: 'image',
-        label: 'Selection states',
-        previewColor: '#F5F2E9',
-        secondaryColor: '#CAA968',
+        label: 'Gather circles',
+        previewColor: '#B8E8BC',
+        secondaryColor: '#1F6B48',
         generationId: 'gen-soft-spatial-ui',
         imageUrl: softSpatialUi04,
         thumbUrl: softSpatialUi04,
@@ -395,23 +395,10 @@ export const libraryBoards: LibraryBoard[] = [
   {
     id: 'recipe-app-concept',
     promptTitle: 'Recipe App Concept',
-    itemCount: 4,
+    itemCount: 3,
     updatedAtLabel: 'Saved today',
     generationId: 'gen-recipe-app-concept',
     items: [
-      {
-        id: 'recipe-app-concept-1',
-        kind: 'image',
-        label: 'Gem grin',
-        previewColor: '#FF5C8A',
-        secondaryColor: '#FFC145',
-        generationId: 'gen-recipe-app-concept',
-        imageUrl: recipeAppConcept01,
-        thumbUrl: recipeAppConcept01,
-        alt: 'Close-up beauty image with colorful gems and playful styling',
-        source: 'gemini',
-        author: 'Direction 4',
-      },
       {
         id: 'recipe-app-concept-2',
         kind: 'image',
@@ -456,7 +443,7 @@ export const libraryBoards: LibraryBoard[] = [
   {
     id: 'nike-editorial-board',
     promptTitle: 'Nike Editorial',
-    itemCount: 5,
+    itemCount: 6,
     updatedAtLabel: 'Saved today',
     generationId: 'gen-nike-editorial',
     items: [
@@ -522,6 +509,19 @@ export const libraryBoards: LibraryBoard[] = [
         imageUrl: nikeEditorial05,
         thumbUrl: nikeEditorial05,
         alt: 'Poster-style campaign image with GET INTO IT typography and a model in yellow activewear',
+        source: 'gemini',
+        author: 'Direction 5',
+      },
+      {
+        id: 'nike-go-chartreuse-swoosh',
+        kind: 'image',
+        label: 'GO Swoosh energy',
+        previewColor: '#D4FF2E',
+        secondaryColor: '#111111',
+        generationId: 'gen-nike-editorial',
+        imageUrl: uiNikeGoChartreuseSwoosh,
+        thumbUrl: uiNikeGoChartreuseSwoosh,
+        alt: 'Nike swoosh on neon chartreuse with GO typography and ripple line energy',
         source: 'gemini',
         author: 'Direction 5',
       },

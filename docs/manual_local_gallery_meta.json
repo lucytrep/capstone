@@ -1,0 +1,266 @@
+{
+  "Direction 4/2.gif": {
+    "asset": "image_recipe_app_everything_orbit_motion",
+    "label": "Everything orbit motion",
+    "alt": "Animated collage of floating objects orbiting above a portrait",
+    "board": "local-direction4-motion"
+  },
+  "Direction 5/1.png": {
+    "asset": "image_headmark_portrait",
+    "label": "Headmark portrait",
+    "alt": "Yellow editorial portrait with oversized NIKE wordmark and blue hair",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/2.png": {
+    "asset": "image_city_tote_crop",
+    "label": "City tote crop",
+    "alt": "Low-angle fashion editorial with an oversized yellow tote in Times Square",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/3.png": {
+    "asset": "image_lime_motion_crop",
+    "label": "Lime motion crop",
+    "alt": "Low-angle crop of a neon yellow garment moving against a pale sky",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/4.png": {
+    "asset": "image_bold_wordmark",
+    "label": "Bold wordmark",
+    "alt": "Black condensed wordmark on a bright yellow field",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/5.png": {
+    "asset": "image_get_into_it_poster",
+    "label": "Get Into It poster",
+    "alt": "Poster-style yellow editorial with GET INTO IT typography and activewear styling",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/Color.jpg": {
+    "asset": "image_lime_motion_square",
+    "label": "Lime motion square",
+    "alt": "Square crop of neon yellow fashion motion against open sky",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/Color2.jpg": {
+    "asset": "image_wordmark_square",
+    "label": "Wordmark square",
+    "alt": "Square yellow wordmark lockup in bold black typography",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/Color5.jpg": {
+    "asset": "image_lime_motion_square",
+    "label": "Lime motion square",
+    "alt": "Square crop of neon yellow fashion motion against open sky",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/Color6.jpg": {
+    "asset": "image_get_into_it_cover",
+    "label": "Get Into It cover",
+    "alt": "Square cover crop of the GET INTO IT campaign poster in yellow activewear",
+    "board": "local-direction5-exports"
+  },
+  "Direction 5/Frame 11324.jpg": {
+    "asset": "image_city_tote_frame",
+    "label": "City tote frame",
+    "alt": "Framed crop of a yellow tote editorial shot in Times Square",
+    "board": "local-direction5-exports"
+  },
+  "home/color/01d292cfe0f40c332458500fe5baa4a6.jpg": {
+    "asset": "color_punch_red",
+    "label": "Punch red",
+    "alt": "Flat red color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/085c21fceff48e43b4f91c61cd87460f.jpg": {
+    "asset": "color_hot_pink_haze",
+    "label": "Hot pink haze",
+    "alt": "Soft hot pink color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/1bc7230c3c5558248764f89c218ff85f.jpg": {
+    "asset": "color_rose_pink",
+    "label": "Rose pink",
+    "alt": "Rose pink color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/52a084e01e96b33041377f2c3c928828.jpg": {
+    "asset": "color_melon_orange",
+    "label": "Melon orange",
+    "alt": "Warm melon orange color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/651ffc03b287d9724ff78ba524066961.jpg": {
+    "asset": "color_ultramarine_blur",
+    "label": "Ultramarine blur",
+    "alt": "Ultramarine blue swatch with soft ripple texture",
+    "board": "local-home-color"
+  },
+  "home/color/66b4f3e7f54f8f2e132147bc2842f754.jpg": {
+    "asset": "color_citrus_lime",
+    "label": "Citrus lime",
+    "alt": "Bright citrus lime color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/916c11b630b124012d5c8df498b78db7.jpg": {
+    "asset": "color_powder_blush",
+    "label": "Powder blush",
+    "alt": "Powder blush pink swatch",
+    "board": "local-home-color"
+  },
+  "home/color/a2e9ac54f3c9a4b01cf4fcc132d45542.jpg": {
+    "asset": "color_butter_cream",
+    "label": "Butter cream",
+    "alt": "Soft butter cream swatch",
+    "board": "local-home-color"
+  },
+  "home/color/abae2f92396abc123e2bdb12233f26b9.jpg": {
+    "asset": "color_teal_pool",
+    "label": "Teal pool",
+    "alt": "Teal pool color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/c9591b9040b55fdcfa2b42fe34668192.jpg": {
+    "asset": "color_magenta_beam",
+    "label": "Magenta beam",
+    "alt": "Magenta gradient beam swatch",
+    "board": "local-home-color"
+  },
+  "home/color/d3c3a85f1dbd788388f1adcca80b7f6d.jpg": {
+    "asset": "color_lavender_mist",
+    "label": "Lavender mist",
+    "alt": "Lavender mist color swatch",
+    "board": "local-home-color"
+  },
+  "home/color/download (1).png": {
+    "asset": "color_cobalt_pop",
+    "label": "Cobalt pop",
+    "alt": "Bright cobalt blue swatch",
+    "board": "local-home-color"
+  },
+  "home/color/download.png": {
+    "asset": "color_fuchsia_pop",
+    "label": "Fuchsia pop",
+    "alt": "Bright fuchsia pink swatch",
+    "board": "local-home-color"
+  },
+  "home/color/e828bca04ebc40c1eb4fc0153d2dbf71.jpg": {
+    "asset": "color_mulberry_bloom",
+    "label": "Mulberry bloom",
+    "alt": "Mulberry rose color swatch",
+    "board": "local-home-color"
+  },
+  "home/09_files/1baaf7109a4580eef678b0c89a02da99.jpg": {
+    "asset": "color_cream_mist",
+    "label": "Cream mist",
+    "alt": "Very light cream screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/09_files/4151a4492258292a736023553f41106a.jpg": {
+    "asset": "color_pale_butter",
+    "label": "Pale butter",
+    "alt": "Pale butter yellow screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/09_files/6dd7da6a0308f4597050174e293bd612.jpg": {
+    "asset": "color_yellow_glow",
+    "label": "Yellow glow",
+    "alt": "Soft yellow glow screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/09_files/977ab18e7187cb227f0159878dc4db13.jpg": {
+    "asset": "image_outdoor_selfie",
+    "label": "Outdoor selfie",
+    "alt": "Outdoor selfie portrait screen capture",
+    "board": "local-home-09"
+  },
+  "home/09_files/9d0c4d54f7f4261cbd5475bcec43c99d.jpg": {
+    "asset": "color_aqua_wash",
+    "label": "Aqua wash",
+    "alt": "Light aqua screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/09_files/b6f4308d036efb207bbee77a6b24c657.jpg": {
+    "asset": "color_electric_yellow",
+    "label": "Electric yellow",
+    "alt": "Electric yellow screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/09_files/dfc2eb70fae74a057db903cc4c37d3cf.jpg": {
+    "asset": "color_soft_vanilla",
+    "label": "Soft vanilla",
+    "alt": "Soft vanilla cream screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/09_files/e8a4c1573fb42c05816f59a0a3f7b408.jpg": {
+    "asset": "color_apricot_wash",
+    "label": "Apricot wash",
+    "alt": "Apricot yellow screen capture swatch",
+    "board": "local-home-09"
+  },
+  "home/imagery/Pinterest_files/03f005016bc9699a5578baf7183dd6c8.jpg": {
+    "asset": "image_pinterest_rolling_wildflower_hills",
+    "label": "Rolling wildflower hills",
+    "alt": "Painterly hills with bands of flowers under a blue sky",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/1baaf7109a4580eef678b0c89a02da99.jpg": {
+    "asset": "image_pinterest_soft_blank_field",
+    "label": "Soft blank field",
+    "alt": "Near-white minimal field with a soft cream tint",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/2694cd1ee19046c6da15306d1f174031.jpg": {
+    "asset": "image_pinterest_night_meadow_runner",
+    "label": "Night meadow runner",
+    "alt": "Figure running through a meadow at night with dramatic light",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/2b8feab52e9f837d3f5693d7e2bfd515.jpg": {
+    "asset": "image_pinterest_lily_pond_blur",
+    "label": "Lily pond blur",
+    "alt": "Soft blurred impression of a lily pond with warm highlights",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/46f53b7aee840f5438ea5ebb67ea8547.jpg": {
+    "asset": "image_pinterest_forest_contact_grid",
+    "label": "Forest contact grid",
+    "alt": "Grid collage of moody forest and waterfall scenes",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/6c01d4c1b917087491017c753f67003a.jpg": {
+    "asset": "image_pinterest_wildflower_meadow",
+    "label": "Wildflower meadow",
+    "alt": "Painterly field of orange and cream wildflowers",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/6f84b080b03f79de505deaab42715ad7.jpg": {
+    "asset": "image_pinterest_desert_dune_study",
+    "label": "Desert dune study",
+    "alt": "Minimal study of shadowed desert dunes under a cobalt sky",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/9085ee9414193c966eb0bc5ca4fa80df.jpg": {
+    "asset": "image_pinterest_butterfly_meadow",
+    "label": "Butterfly meadow",
+    "alt": "Blurry floral meadow with a butterfly drifting through frame",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/c312394818b6ee55e086c10bc4c9b969.jpg": {
+    "asset": "image_pinterest_dusk_lakeside",
+    "label": "Dusk lakeside",
+    "alt": "Dusky lakeside landscape framed by branches in soft pink light",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/d03dd04f768a309155a4888af983e0f9.jpg": {
+    "asset": "image_pinterest_bouquet_motion",
+    "label": "Bouquet motion",
+    "alt": "Floral bouquet motion blur around two figures in patterned clothing",
+    "board": "local-home-imagery-pinterest"
+  },
+  "home/imagery/Pinterest_files/e613d22186392e3e427c1c2bf08867bc.jpg": {
+    "asset": "image_pinterest_willow_light",
+    "label": "Willow light",
+    "alt": "Hazy willow grove reflecting soft light over water",
+    "board": "local-home-imagery-pinterest"
+  }
+}

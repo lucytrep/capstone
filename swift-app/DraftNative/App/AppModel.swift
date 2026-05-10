@@ -125,6 +125,22 @@ final class AppModel: ObservableObject {
         boards[idx] = LibraryBoard(id: board.id, promptTitle: board.promptTitle, itemCount: remaining.count, updatedAtLabel: "Just now", generationID: board.generationID, items: remaining)
     }
 
+    func addItem(_ item: LibraryItem, to boardID: String) {
+        guard let idx = boards.firstIndex(where: { $0.id == boardID }) else { return }
+        let board = boards[idx]
+        guard !board.items.contains(where: { $0.id == item.id }) else { return }
+
+        let merged = board.items + [item]
+        boards[idx] = LibraryBoard(
+            id: board.id,
+            promptTitle: board.promptTitle,
+            itemCount: merged.count,
+            updatedAtLabel: "Just now",
+            generationID: board.generationID,
+            items: merged
+        )
+    }
+
     func resetSession() {
         generationTask?.cancel()
         generationTask = nil

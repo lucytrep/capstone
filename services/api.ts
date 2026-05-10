@@ -5,6 +5,7 @@ import {
   PINTEREST_SERVICE_URL,
   UNSPLASH_ACCESS_KEY,
 } from '@/config/keys';
+import { filterPhotosThroughImageContentSensor } from '@/constants/image-content-sensor';
 import { getMatchingImageSearchTerms } from '@/constants/image-search-taxonomy';
 import { SEMANTIC_CORE, SEMANTIC_WEIGHTS } from '@/data/semantic-core';
 
@@ -811,7 +812,7 @@ async function getUnsplashPhotos(query: string, seed: number): Promise<PhotoItem
   }
 
   const page = (seed % 3) + 1;
-  const url = `${UNSPLASH_API_BASE}/search/photos?query=${encodeURIComponent(query)}&per_page=8&orientation=portrait&page=${page}`;
+  const url = `${UNSPLASH_API_BASE}/search/photos?query=${encodeURIComponent(query)}&per_page=8&orientation=portrait&page=${page}&content_filter=high`;
   const data = await fetchJson<UnsplashSearchResponse>(url, {
     headers: {
       Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
@@ -911,6 +912,7 @@ function buildGeminiImagePrompt(
     directionLine,
     'Generate distinct compositions with varied crops, strong lighting, and polished photography.',
     'Avoid color chips, palette cards, flat swatches, UI mockups, abstract gradients, and text overlays unless the user explicitly asked for them.',
+    'No nudity, sexualized poses, violence, gore, hate symbols, political protest, religious devotional imagery, memes, watermarks, or stereotyped cultural caricatures unless the user clearly asked for that exact subject.',
     'Images should feel suitable for a premium mobile moodboard.',
   ]
     .filter(Boolean)
@@ -1056,21 +1058,34 @@ function buildPhotoOptions(
   displayMode: PhotoDisplayMode
 ) {
   const seed = hashSeed(seedInput);
-  const filteredPexels = filterPhotosForFocus(dedupePhotos(pexelsPhotos), transcript);
-  const filteredUnsplash = filterPhotosForFocus(dedupePhotos(unsplashPhotos), transcript);
+  const stockAfterSensor = filterPhotosThroughImageContentSensor(pexelsPhotos, transcript);
+  const unsplashAfterSensor = filterPhotosThroughImageContentSensor(unsplashPhotos, transcript);
+  const geminiAfterSensor = {
+    editorial: filterPhotosThroughImageContentSensor(
+      geminiPhotosByDirection.editorial,
+      transcript
+    ),
+    clean: filterPhotosThroughImageContentSensor(geminiPhotosByDirection.clean, transcript),
+    experimental: filterPhotosThroughImageContentSensor(
+      geminiPhotosByDirection.experimental,
+      transcript
+    ),
+  };
+  const filteredPexels = filterPhotosForFocus(dedupePhotos(stockAfterSensor), transcript);
+  const filteredUnsplash = filterPhotosForFocus(dedupePhotos(unsplashAfterSensor), transcript);
   const shuffledPexels = shufflePhotos(filteredPexels, seed + 11);
   const shuffledUnsplash = shufflePhotos(filteredUnsplash, seed + 23);
   const shuffledGeminiByDirection = {
     editorial: shufflePhotos(
-      filterPhotosForFocus(dedupePhotos(geminiPhotosByDirection.editorial), transcript),
+      filterPhotosForFocus(dedupePhotos(geminiAfterSensor.editorial), transcript),
       seed + 31
     ),
     clean: shufflePhotos(
-      filterPhotosForFocus(dedupePhotos(geminiPhotosByDirection.clean), transcript),
+      filterPhotosForFocus(dedupePhotos(geminiAfterSensor.clean), transcript),
       seed + 37
     ),
     experimental: shufflePhotos(
-      filterPhotosForFocus(dedupePhotos(geminiPhotosByDirection.experimental), transcript),
+      filterPhotosForFocus(dedupePhotos(geminiAfterSensor.experimental), transcript),
       seed + 41
     ),
   };

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import {
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -25,103 +26,56 @@ const C = {
   border: 'rgba(255, 255, 255, 0.08)',
 };
 
+const SOFT_SPATIAL_UI_PREVIEW = {
+  hero: require('../../assets/soft-spatial-ui-1.png'),
+  wide: require('../../assets/soft-spatial-ui-2.png'),
+  narrow: require('../../assets/soft-spatial-ui-3.png'),
+  bottom: require('../../assets/soft-spatial-ui-4.png'),
+} as const;
+
 function SoftSpatialPreviewGrid() {
   return (
     <View style={styles.previewGrid}>
-      <View style={[styles.previewTile, styles.previewSlotHero]}>
-        <View style={[styles.uiPreviewCanvas, styles.uiPreviewCanvasFullBleed]}>
-          <View style={styles.uiPreviewAvatarRow}>
-            <View style={[styles.uiPreviewAvatar, { backgroundColor: '#7E5C44' }]}>
-              <Text style={styles.uiPreviewAvatarText}>M.R</Text>
-            </View>
-            <View style={[styles.uiPreviewAvatar, { backgroundColor: '#F7A62C' }]}>
-              <Text style={styles.uiPreviewAvatarText}>A.B</Text>
-            </View>
-            <View style={[styles.uiPreviewAvatar, { backgroundColor: '#8043DB' }]}>
-              <Text style={styles.uiPreviewAvatarText}>N.H</Text>
-            </View>
-            <View style={[styles.uiPreviewAvatar, { backgroundColor: '#90C4BC' }]}>
-              <Text style={styles.uiPreviewAvatarText}>S.B</Text>
-            </View>
-            <View style={[styles.uiPreviewAvatar, { backgroundColor: '#BB6B5A' }]}>
-              <Text style={styles.uiPreviewAvatarText}>I.V</Text>
-            </View>
-          </View>
-        </View>
+      <View style={[styles.previewTile, styles.previewSlotHero, styles.previewTileImage]}>
+        <ExpoImage
+          source={SOFT_SPATIAL_UI_PREVIEW.hero}
+          style={styles.previewPhotoImage}
+          contentFit="cover"
+          transition={120}
+        />
+        <View style={styles.previewPhotoOverlay} />
       </View>
 
       <View style={styles.previewMiddleRow}>
-        <View style={[styles.previewTile, styles.previewSlotWide]}>
-          <View style={[styles.uiPreviewCanvas, styles.uiPreviewCanvasFullBleed]}>
-            <View style={styles.uiPreviewCircleGrid}>
-              <View style={styles.uiPreviewCircleRow}>
-                <View style={[styles.uiPreviewCircle, { backgroundColor: '#7E5C44' }]}>
-                  <Text style={styles.uiPreviewCircleText}>M.R</Text>
-                </View>
-                <View style={[styles.uiPreviewCircle, { backgroundColor: '#F7A62C' }]}>
-                  <Text style={styles.uiPreviewCircleText}>A.B</Text>
-                </View>
-                <View style={[styles.uiPreviewCircle, { backgroundColor: '#8043DB' }]}>
-                  <Text style={styles.uiPreviewCircleText}>N.H</Text>
-                </View>
-              </View>
-              <View style={styles.uiPreviewCircleRowBottom}>
-                <View style={[styles.uiPreviewCircle, { backgroundColor: '#90C4BC' }]}>
-                  <Text style={styles.uiPreviewCircleText}>S.B</Text>
-                </View>
-                <View style={[styles.uiPreviewCircle, { backgroundColor: '#BB6B5A' }]}>
-                  <Text style={styles.uiPreviewCircleText}>I.V</Text>
-                </View>
-              </View>
-            </View>
-          </View>
+        <View style={[styles.previewTile, styles.previewSlotWide, styles.previewTileImage]}>
+          <ExpoImage
+            source={SOFT_SPATIAL_UI_PREVIEW.wide}
+            style={styles.previewPhotoImage}
+            contentFit="cover"
+            transition={120}
+          />
+          <View style={styles.previewPhotoOverlay} />
         </View>
 
-        <View style={[styles.previewTile, styles.previewSlotNarrow]}>
-          <View style={[styles.uiPreviewCanvas, styles.uiPreviewCanvasFullBleed]}>
-            <View style={styles.uiPreviewCircleCluster}>
-              <View style={[styles.uiPreviewClusterCircle, styles.uiPreviewClusterCircleTop, { backgroundColor: '#95B173' }]}>
-                <Text style={styles.uiPreviewClusterText}>M.R</Text>
-              </View>
-              <View style={[styles.uiPreviewClusterCircle, styles.uiPreviewClusterCircleMedium, styles.uiPreviewClusterCircleOne, { backgroundColor: '#D4D8DC' }]}>
-                <Text style={styles.uiPreviewClusterTextDark}>A.B</Text>
-              </View>
-              <View style={[styles.uiPreviewClusterCircle, styles.uiPreviewClusterCircleMedium, styles.uiPreviewClusterCircleTwo, { backgroundColor: '#A9C8E6' }]}>
-                <Text style={styles.uiPreviewClusterText}>N.H</Text>
-              </View>
-              <View style={[styles.uiPreviewClusterCircle, styles.uiPreviewClusterCircleMedium, styles.uiPreviewClusterCircleThree, { backgroundColor: '#9A7A64' }]}>
-                <Text style={styles.uiPreviewClusterText}>S.B</Text>
-              </View>
-              <View style={[styles.uiPreviewClusterCircle, styles.uiPreviewClusterCircleMedium, styles.uiPreviewClusterCircleFour, { backgroundColor: '#F6F3EC', borderWidth: 1, borderColor: '#DFDCD5' }]}>
-                <Text style={styles.uiPreviewClusterTextDark}>I.V</Text>
-              </View>
-            </View>
-          </View>
+        <View style={[styles.previewTile, styles.previewSlotNarrow, styles.previewTileImage]}>
+          <ExpoImage
+            source={SOFT_SPATIAL_UI_PREVIEW.narrow}
+            style={styles.previewPhotoImage}
+            contentFit="cover"
+            transition={120}
+          />
+          <View style={styles.previewPhotoOverlay} />
         </View>
       </View>
 
-      <View style={[styles.previewTile, styles.previewSlotBottom]}>
-        <View style={[styles.uiPreviewCanvas, styles.uiPreviewCanvasFullBleed]}>
-          <View style={styles.uiPreviewSelectionFrame}>
-            <View style={styles.uiPreviewSelectionSequence}>
-              <View style={[styles.uiPreviewSequenceDot, styles.uiPreviewSequenceDotLarge, { backgroundColor: '#7E5C44' }]}>
-                <Text style={styles.uiPreviewSequenceText}>M.R</Text>
-              </View>
-              <View style={[styles.uiPreviewSequenceDot, styles.uiPreviewSequenceDotSmall, { backgroundColor: '#F7A62C' }]}>
-                <Text style={styles.uiPreviewSequenceTextSmall}>A.B</Text>
-              </View>
-              <View style={[styles.uiPreviewSequenceDot, styles.uiPreviewSequenceDotLarge, { backgroundColor: '#8043DB' }]}>
-                <Text style={styles.uiPreviewSequenceText}>N.H</Text>
-              </View>
-              <View style={[styles.uiPreviewSequenceDot, styles.uiPreviewSequenceDotSmall, { backgroundColor: '#90C4BC' }]}>
-                <Text style={styles.uiPreviewSequenceTextSmall}>S.B</Text>
-              </View>
-              <View style={[styles.uiPreviewSequenceDot, styles.uiPreviewSequenceDotLarge, { backgroundColor: '#BB6B5A' }]}>
-                <Text style={styles.uiPreviewSequenceText}>I.V</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+      <View style={[styles.previewTile, styles.previewSlotBottom, styles.previewTileImage]}>
+        <ExpoImage
+          source={SOFT_SPATIAL_UI_PREVIEW.bottom}
+          style={styles.previewPhotoImage}
+          contentFit="cover"
+          transition={120}
+        />
+        <View style={styles.previewPhotoOverlay} />
       </View>
     </View>
   );
@@ -555,56 +509,23 @@ const styles = StyleSheet.create({
     bottom: 12,
     right: 8,
   },
-  uiPreviewCircleCluster: {
-    width: 68,
-    height: 68,
-    alignItems: 'center',
-    justifyContent: 'center',
+  selectionStatesGradientPreview: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  uiPreviewClusterCircle: {
+  selectionStatesPreviewLabels: {
     position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    left: 8,
+    top: 6,
+    gap: 3,
   },
-  uiPreviewClusterCircleTop: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    top: 4,
-    left: 24,
-  },
-  uiPreviewClusterCircleMedium: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  uiPreviewClusterCircleOne: {
-    left: 44,
-    top: 18,
-  },
-  uiPreviewClusterCircleTwo: {
-    left: 33,
-    top: 40,
-  },
-  uiPreviewClusterCircleThree: {
-    left: 11,
-    top: 40,
-  },
-  uiPreviewClusterCircleFour: {
-    left: 0,
-    top: 18,
-  },
-  uiPreviewClusterText: {
-    color: '#FFFFFF',
-    fontSize: 4,
-    lineHeight: 5,
+  selectionStatesPreviewTitle: {
+    fontSize: 9,
+    lineHeight: 11,
     fontWeight: '700',
-  },
-  uiPreviewClusterTextDark: {
-    color: '#555555',
-    fontSize: 4,
-    lineHeight: 5,
-    fontWeight: '700',
+    color: 'rgba(22, 38, 32, 0.9)',
   },
   uiPreviewSelectionFrame: {
     flex: 1,

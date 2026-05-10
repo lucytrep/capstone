@@ -1,0 +1,16 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/OutputView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Draft",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 61
+        }
+      }
+    ]
+  },
+  "version": 1
+}
