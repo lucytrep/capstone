@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import {
+  Animated,
   KeyboardAvoidingView,
   SafeAreaView,
   Platform,
@@ -35,6 +36,48 @@ const C = {
 
 const ONBOARDING_KEY = 'draft.onboarding.seen';
 
+/** Marketing lines + sample prompts (same rotation, same slot) so users see how to talk to the app. */
+const SLOGANS = [
+  'Speak things into existence.',
+  'Warm, editorial, like a Sunday farmers market in autumn...',
+  'Think it. Say it. Save it.',
+  'Your ideas, instantly materialized.',
+  'Clean and minimal, muted greens, feels like Aesop or Muji',
+  'From thought to artifact in seconds.',
+  'Catch it before it disappears.',
+  'Dark and moody, deep purples, luxury streetwear brand',
+  'Say it once. Keep it forever.',
+  'Voice in. Design out.',
+  'Bright and chaotic, Y2K, lots of contrast and attitude',
+  'The best designs begin out loud.',
+  'Nothing is lost in translation.',
+  'Soft and dreamy, pastels, like a Pinterest board from 2014',
+  'Release your moodboard.',
+  'Make it real.',
+  'Say the thing.',
+  'Speak. Create. Save.',
+  'Say it into shape.',
+];
+
+const SLOGAN_HOLD_MS = 3500;
+const TAGLINE_FADE_MS = 600;
+const FIXED_FADE_IN_MS = 300;
+const FIXED_HOLD_MS = 1000;
+
+function runTiming(value: Animated.Value, toValue: number, duration: number) {
+  return new Promise<void>((resolve) => {
+    Animated.timing(value, {
+      toValue,
+      duration,
+      useNativeDriver: true,
+    }).start(() => resolve());
+  });
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
 /** Web dev reload behavior differs; iOS/Android persist “seen” across tab visits and remounts. */
 const onboardingPersistsAcrossReload =
   Platform.OS === 'ios' || Platform.OS === 'android';
@@ -53,6 +96,12 @@ export default function HomeScreen() {
   const transcriptRef = useRef('');
   const inputRef = useRef<RNTextInput | null>(null);
   const insets = useSafeAreaInsets();
+
+  const [sloganLine, setSloganLine] = useState(SLOGANS[0]);
+  const sloganOpacity = useRef(new Animated.Value(1)).current;
+  const fixedTagOpacity = useRef(new Animated.Value(0)).current;
+  const centerIsPlaceholderRef = useRef(false);
+  const showOnboardingRef = useRef(false);
 
   const triggerGenerate = useCallback((value: string) => {
     const cleaned = value.trim();
@@ -179,6 +228,59 @@ export default function HomeScreen() {
     };
   }, [resetVoiceEngine]);
 
+  const centerIsPlaceholder = !text.trim() && !pressActive && !isListening;
+  centerIsPlaceholderRef.current = centerIsPlaceholder;
+  showOnboardingRef.current = showOnboarding;
+
+  useEffect(() => {
+    if (!centerIsPlaceholder || showOnboarding) {
+      sloganOpacity.stopAnimation();
+      fixedTagOpacity.stopAnimation();
+      return;
+    }
+
+    let cancelled = false;
+    const shouldStop = () =>
+      cancelled || !centerIsPlaceholderRef.current || showOnboardingRef.current;
+
+    const runTaglines = async () => {
+      let sloganIdx = 0;
+      setSloganLine(SLOGANS[sloganIdx]);
+      sloganOpacity.setValue(1);
+      fixedTagOpacity.setValue(0);
+
+      while (!shouldStop()) {
+        await sleep(SLOGAN_HOLD_MS);
+        if (shouldStop()) break;
+
+        await runTiming(sloganOpacity, 0, TAGLINE_FADE_MS);
+        if (shouldStop()) break;
+
+        await runTiming(fixedTagOpacity, 1, FIXED_FADE_IN_MS);
+        if (shouldStop()) break;
+
+        await sleep(FIXED_HOLD_MS);
+        if (shouldStop()) break;
+
+        sloganIdx = (sloganIdx + 1) % SLOGANS.length;
+        setSloganLine(SLOGANS[sloganIdx]);
+
+        await Promise.all([
+          runTiming(fixedTagOpacity, 0, TAGLINE_FADE_MS),
+          runTiming(sloganOpacity, 1, TAGLINE_FADE_MS),
+        ]);
+      }
+    };
+
+    runTaglines();
+
+    return () => {
+      cancelled = true;
+      sloganOpacity.stopAnimation();
+      fixedTagOpacity.stopAnimation();
+    };
+  }, [centerIsPlaceholder, showOnboarding]);
+
   const handleHoldStart = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (showOnboarding) {
@@ -243,9 +345,7 @@ export default function HomeScreen() {
       ? text.trim()
       : pressActive || isListening
         ? 'Listening....'
-        : 'Press and hold\nto dictate';
-
-  const centerIsPlaceholder = !text.trim() && !pressActive && !isListening;
+        : '';
 
   return (
     <View style={styles.container}>
@@ -300,14 +400,30 @@ export default function HomeScreen() {
             <View style={styles.dictationBottomFlex} />
 
             <View style={styles.instructionColumn}>
-              <Text
-                style={[
-                  styles.centerText,
-                  centerIsPlaceholder ? styles.centerPlaceholder : styles.centerListeningSlot,
-                ]}
-              >
-                {centerMainText}
-              </Text>
+              {centerIsPlaceholder && !showOnboarding ? (
+                <View
+                  style={styles.taglineStack}
+                  accessibilityRole="text"
+                  accessibilityLabel={`${sloganLine} Press and hold to dictate`}
+                >
+                  <Animated.View
+                    style={[styles.taglineSloganWrap, { opacity: sloganOpacity }]}
+                  >
+                    <Text style={styles.taglineSlogan}>{sloganLine}</Text>
+                  </Animated.View>
+                  <Animated.View
+                    style={[styles.taglineFixedWrap, { opacity: fixedTagOpacity }]}
+                  >
+                    <Text style={styles.taglineFixed}>Press & hold to dictate</Text>
+                  </Animated.View>
+                </View>
+              ) : centerIsPlaceholder && showOnboarding ? (
+                <View style={styles.taglineStack} />
+              ) : (
+                <Text style={[styles.centerText, styles.centerListeningSlot]}>
+                  {centerMainText}
+                </Text>
+              )}
 
               {voiceError ? <Text style={styles.errorText}>{voiceError}</Text> : null}
 
@@ -419,10 +535,41 @@ const styles = StyleSheet.create({
     maxWidth: '92%',
     minHeight: 56,
   },
-  centerPlaceholder: {
+  taglineStack: {
+    width: '100%',
+    minHeight: 88,
+    maxWidth: '92%',
+    alignSelf: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  taglineSloganWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  taglineFixedWrap: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  taglineSlogan: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontFamily: getSFProRoundedFontFamily('300'),
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+  },
+  taglineFixed: {
     fontSize: 20,
+    lineHeight: 26,
     fontFamily: getSFProRoundedFontFamily('500'),
-    opacity: 0.95,
+    color: 'rgba(255, 255, 255, 0.95)',
+    textAlign: 'center',
   },
   centerListeningSlot: {
     fontSize: 20,

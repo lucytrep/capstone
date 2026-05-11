@@ -32,6 +32,7 @@
 		A10000000000000000000018 /* LocalSecrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* LocalSecrets.plist */; };
 		A10000000000000000000019 /* LocalGalleryImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* LocalGalleryImports.swift */; };
 		A1000000000000000000001D /* LibraryBundledPhotoMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */; };
+		A1000000000000000000001E /* DraftExportSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* DraftExportSupport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +63,7 @@
 		A2000000000000000000001A /* LocalSecrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/LocalSecrets.plist; sourceTree = "<group>"; };
 		A2000000000000000000001B /* LocalGalleryImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalGalleryImports.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBundledPhotoMixer.swift; sourceTree = "<group>"; };
+		A2000000000000000000001D /* DraftExportSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftExportSupport.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +155,7 @@
 				A2000000000000000000000A /* GenerationFlowView.swift */,
 				A2000000000000000000000B /* GeneratingView.swift */,
 				A2000000000000000000000C /* OutputView.swift */,
+				A2000000000000000000001D /* DraftExportSupport.swift */,
 				A2000000000000000000000D /* LibraryView.swift */,
 				A20000000000000000000013 /* LibraryBoardDetailView.swift */,
 				A20000000000000000000014 /* LibraryCollectionDetailView.swift */,
@@ -247,6 +250,7 @@
 				A1000000000000000000000A /* GenerationFlowView.swift in Sources */,
 				A1000000000000000000000B /* GeneratingView.swift in Sources */,
 				A1000000000000000000000C /* OutputView.swift in Sources */,
+				A1000000000000000000001E /* DraftExportSupport.swift in Sources */,
 				A1000000000000000000000D /* LibraryView.swift in Sources */,
 				A10000000000000000000011 /* LibraryBoardDetailView.swift in Sources */,
 				A10000000000000000000012 /* LibraryCollectionDetailView.swift in Sources */,

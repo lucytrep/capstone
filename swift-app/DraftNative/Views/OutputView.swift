@@ -5,6 +5,7 @@ import WebKit
 struct OutputView: View {
     @EnvironmentObject private var appModel: AppModel
     @State private var selection = 0
+    @State private var showExportSheet = false
 
     private var payload: ArtifactPayload {
         ArtifactPayloadParser.parse(html: appModel.artifactHTML)
@@ -13,6 +14,15 @@ struct OutputView: View {
     var body: some View {
         artifactShell
             .background(Color(hex: 0x141414).ignoresSafeArea())
+            .sheet(isPresented: $showExportSheet) {
+                DraftExportSheet(
+                    artifactHTML: appModel.artifactHTML,
+                    payload: payload,
+                    directionIndex: selection
+                )
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Color(hex: 0x1A1A1A))
+            }
     }
 
     private var shellSubtitle: String {
@@ -70,6 +80,9 @@ struct OutputView: View {
             Spacer()
 
             HStack(spacing: 12) {
+                shellAction(systemName: "square.and.arrow.up", accessibilityLabel: "Export draft") {
+                    showExportSheet = true
+                }
                 shellAction(systemName: "xmark", accessibilityLabel: "Discard") { appModel.resetSession() }
                 shellAction(systemName: "checkmark", accessibilityLabel: "Done") { appModel.dismissFlow() }
             }

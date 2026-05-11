@@ -621,6 +621,26 @@
 			<key>catalogPath</key>
 			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
 			<key>objcSymbol</key>
+			<string>ACImageNameIconProfile</string>
+			<key>relativePath</key>
+			<string>./icon-profile.imageset</string>
+			<key>swiftSymbol</key>
+			<string>iconProfile</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameIconUser</string>
+			<key>relativePath</key>
+			<string>./icon-user.imageset</string>
+			<key>swiftSymbol</key>
+			<string>iconUser</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
 			<string>ACImageNameImageBoldWordmark</string>
 			<key>relativePath</key>
 			<string>./image_bold_wordmark.imageset</string>
@@ -841,6 +861,46 @@
 			<key>catalogPath</key>
 			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
 			<key>objcSymbol</key>
+			<string>ACImageNameLogoDmark</string>
+			<key>relativePath</key>
+			<string>./logo-dmark.imageset</string>
+			<key>swiftSymbol</key>
+			<string>logoDmark</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameNavLibrary</string>
+			<key>relativePath</key>
+			<string>./nav-library.imageset</string>
+			<key>swiftSymbol</key>
+			<string>navLibrary</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameNavMic</string>
+			<key>relativePath</key>
+			<string>./nav-mic.imageset</string>
+			<key>swiftSymbol</key>
+			<string>navMic</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameNavSoundwaves</string>
+			<key>relativePath</key>
+			<string>./nav-soundwaves.imageset</string>
+			<key>swiftSymbol</key>
+			<string>navSoundwaves</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
 			<string>ACImageNameNikeEditorial1</string>
 			<key>relativePath</key>
 			<string>./nike-editorial-1.imageset</string>
@@ -966,16 +1026,6 @@
 			<string>./open-court-8.imageset</string>
 			<key>swiftSymbol</key>
 			<string>openCourt8</string>
-		</dict>
-		<dict>
-			<key>catalogPath</key>
-			<string>/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Resources/Assets.xcassets</string>
-			<key>objcSymbol</key>
-			<string>ACImageNameRecipeAppConcept1</string>
-			<key>relativePath</key>
-			<string>./recipe-app-concept-1.imageset</string>
-			<key>swiftSymbol</key>
-			<string>recipeAppConcept1</string>
 		</dict>
 		<dict>
 			<key>catalogPath</key>

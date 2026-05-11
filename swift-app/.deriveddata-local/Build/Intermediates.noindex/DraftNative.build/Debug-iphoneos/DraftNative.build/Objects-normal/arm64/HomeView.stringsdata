@@ -7,7 +7,7 @@
         "key": "Draft",
         "location": {
           "startingColumn": 14,
-          "startingLine": 161
+          "startingLine": 281
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "Dictation",
         "location": {
           "startingColumn": 33,
-          "startingLine": 175
+          "startingLine": 295
         }
       },
       {
@@ -23,7 +23,23 @@
         "key": "Press and hold to speak your prompt",
         "location": {
           "startingColumn": 32,
-          "startingLine": 176
+          "startingLine": 296
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ Press and hold to dictate",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 365
+        }
+      },
+      {
+        "comment": "",
+        "key": "Press & hold\nto dictate",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 355
         }
       },
       {
@@ -31,7 +47,7 @@
         "key": "Generate from text",
         "location": {
           "startingColumn": 22,
-          "startingLine": 263
+          "startingLine": 375
         }
       },
       {
@@ -39,7 +55,7 @@
         "key": "Welcome to",
         "location": {
           "startingColumn": 30,
-          "startingLine": 344
+          "startingLine": 460
         }
       },
       {
@@ -47,7 +63,7 @@
         "key": "Think it.",
         "location": {
           "startingColumn": 30,
-          "startingLine": 348
+          "startingLine": 464
         }
       },
       {
@@ -55,7 +71,7 @@
         "key": "Say it.",
         "location": {
           "startingColumn": 30,
-          "startingLine": 353
+          "startingLine": 469
         }
       },
       {
@@ -63,7 +79,7 @@
         "key": "Draft it.",
         "location": {
           "startingColumn": 30,
-          "startingLine": 357
+          "startingLine": 473
         }
       },
       {
@@ -71,7 +87,7 @@
         "key": "Start",
         "location": {
           "startingColumn": 18,
-          "startingLine": 387
+          "startingLine": 503
         }
       },
       {
@@ -79,7 +95,7 @@
         "key": "›››",
         "location": {
           "startingColumn": 22,
-          "startingLine": 395
+          "startingLine": 511
         }
       }
     ]

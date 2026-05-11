@@ -6,16 +6,16 @@
         "comment": "",
         "key": "Drafts",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 263
+          "startingColumn": 38,
+          "startingLine": 267
         }
       },
       {
         "comment": "",
         "key": "All items",
         "location": {
-          "startingColumn": 42,
-          "startingLine": 277
+          "startingColumn": 38,
+          "startingLine": 281
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "%lld items",
         "location": {
           "startingColumn": 22,
-          "startingLine": 439
+          "startingLine": 448
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "Item Actions",
         "location": {
           "startingColumn": 29,
-          "startingLine": 816
+          "startingLine": 827
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "Add to Board",
         "location": {
           "startingColumn": 20,
-          "startingLine": 817
+          "startingLine": 828
         }
       },
       {
@@ -47,7 +47,7 @@
         "key": "Choose what you want to do with this item.",
         "location": {
           "startingColumn": 18,
-          "startingLine": 821
+          "startingLine": 832
         }
       },
       {
@@ -55,7 +55,7 @@
         "key": "Collections",
         "location": {
           "startingColumn": 18,
-          "startingLine": 1042
+          "startingLine": 1062
         }
       },
       {
@@ -63,7 +63,7 @@
         "key": "No other boards available",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1051
+          "startingLine": 1071
         }
       },
       {
@@ -71,7 +71,7 @@
         "key": "This item is already saved in every board.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1054
+          "startingLine": 1074
         }
       },
       {
@@ -79,7 +79,7 @@
         "key": "%lld item%@",
         "location": {
           "startingColumn": 46,
-          "startingLine": 1077
+          "startingLine": 1097
         }
       },
       {
@@ -87,7 +87,7 @@
         "key": "Done",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1106
+          "startingLine": 1126
         }
       }
     ]

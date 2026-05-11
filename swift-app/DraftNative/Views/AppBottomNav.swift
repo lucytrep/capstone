@@ -14,7 +14,7 @@ struct AppBottomNav: View {
     var body: some View {
         HStack(spacing: 20) {
             Button(action: onSelectCreate) {
-                navIcon(assetName: "nav-soundwaves", active: selectedTab == .create, iconSize: 26)
+                navIcon(assetName: "nav-mic", active: selectedTab == .create, iconSize: 26)
             }
             .buttonStyle(.plain)
             .contentShape(Rectangle())

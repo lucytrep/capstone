@@ -232,7 +232,7 @@ enum ArtifactPayloadParser {
         return payload.options
     }
 
-    private static func scriptJSON(html: String, scriptID: String) -> Data? {
+    static func scriptJSON(html: String, scriptID: String) -> Data? {
         let escapedID = NSRegularExpression.escapedPattern(for: scriptID)
         let pattern = #"<script id=\""# + escapedID + #"\" type=\"application/json\">([\s\S]*?)</script>"#
 
@@ -248,5 +248,19 @@ enum ArtifactPayloadParser {
         }
 
         return html[range].data(using: .utf8)
+    }
+
+    /// Pretty-printed JSON from the first embedded draft payload script, when present.
+    static func primaryEmbeddedJSONString(html: String) -> String? {
+        let scriptIDs = ["draft-palette-options", "draft-photo-options", "draft-ui-options"]
+        for scriptID in scriptIDs {
+            guard let data = scriptJSON(html: html, scriptID: scriptID) else { continue }
+            if let obj = try? JSONSerialization.jsonObject(with: data, options: []),
+               let pretty = try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys, .prettyPrinted]) {
+                return String(data: pretty, encoding: .utf8)
+            }
+            return String(data: data, encoding: .utf8)
+        }
+        return nil
     }
 }

@@ -10,6 +10,10 @@ struct HomeView: View {
     @State private var rippleVisualIntensity: CGFloat = 0
     @State private var autoGenerateTask: Task<Void, Never>?
     @State private var lastAutoSubmittedPrompt = ""
+    /// Rotating prompts (parity with Expo `SLOGANS` + crossfade to fixed dictate line).
+    @State private var sloganLine = Self.idleSlogans[0]
+    @State private var sloganOpacity: Double = 1
+    @State private var fixedTagOpacity: Double = 0
     let onSelectCreate: () -> Void
     let onSelectLibrary: () -> Void
     @AppStorage("draft.native.onboarding.seen") private var hasSeenOnboarding = false
@@ -19,17 +23,50 @@ struct HomeView: View {
     /// Lifts dictation copy away from the tab bar (~3rem at 16px).
     private static let instructionLiftFromNav: CGFloat = 48
 
+    /// Marketing lines + sample prompts — same list as `capstone/app/(tabs)/index.tsx` `SLOGANS`.
+    private static let idleSlogans: [String] = [
+        "Speak things into existence.",
+        "Warm, editorial, like a Sunday farmers market in autumn...",
+        "Think it. Say it. Save it.",
+        "Your ideas, instantly materialized.",
+        "Clean and minimal, muted greens, feels like Aesop or Muji",
+        "From thought to artifact in seconds.",
+        "Catch it before it disappears.",
+        "Dark and moody, deep purples, luxury streetwear brand",
+        "Say it once. Keep it forever.",
+        "Voice in. Design out.",
+        "Bright and chaotic, Y2K, lots of contrast and attitude",
+        "The best designs begin out loud.",
+        "Nothing is lost in translation.",
+        "Soft and dreamy, pastels, like a Pinterest board from 2014",
+        "Release your moodboard.",
+        "Make it real.",
+        "Say the thing.",
+        "Speak. Create. Save.",
+        "Say it into shape.",
+    ]
+
+    private static let sloganHoldNanoseconds: UInt64 = 3_500_000_000
+    private static let taglineFadeSeconds: Double = 0.6
+    private static let fixedFadeInSeconds: Double = 0.3
+    private static let fixedHoldNanoseconds: UInt64 = 1_000_000_000
+
     private var centerDisplayText: String {
         let trimmed = appModel.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         if holdGestureActive || speechRecognizer.isListening {
             return trimmed.isEmpty ? "Listening...." : trimmed
         }
-        return "Press and hold\nto dictate"
+        return ""
     }
 
     private var centerTextIsPlaceholder: Bool {
         let trimmed = appModel.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty && !holdGestureActive && !speechRecognizer.isListening
+    }
+
+    /// When true, run the same idle copy rotation as the legacy Expo home screen.
+    private var shouldRunIdleTaglineCycle: Bool {
+        hasSeenOnboarding && centerTextIsPlaceholder && !appModel.isFlowPresented
     }
 
     private var showTypedFallback: Bool {
@@ -113,6 +150,48 @@ struct HomeView: View {
             GenerationFlowView()
                 .environmentObject(appModel)
         }
+        .task(id: shouldRunIdleTaglineCycle) {
+            guard shouldRunIdleTaglineCycle else { return }
+            await runIdleTaglineCycle()
+        }
+    }
+
+    @MainActor
+    private func runIdleTaglineCycle() async {
+        var sloganIdx = 0
+        sloganLine = Self.idleSlogans[sloganIdx]
+        sloganOpacity = 1
+        fixedTagOpacity = 0
+
+        while !Task.isCancelled {
+            guard shouldRunIdleTaglineCycle else { break }
+            try? await Task.sleep(nanoseconds: Self.sloganHoldNanoseconds)
+            guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
+
+            withAnimation(.easeInOut(duration: Self.taglineFadeSeconds)) {
+                sloganOpacity = 0
+            }
+            try? await Task.sleep(for: .seconds(Self.taglineFadeSeconds))
+            guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
+
+            withAnimation(.easeInOut(duration: Self.fixedFadeInSeconds)) {
+                fixedTagOpacity = 1
+            }
+            try? await Task.sleep(for: .seconds(Self.fixedFadeInSeconds))
+            guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
+
+            try? await Task.sleep(nanoseconds: Self.fixedHoldNanoseconds)
+            guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
+
+            sloganIdx = (sloganIdx + 1) % Self.idleSlogans.count
+            sloganLine = Self.idleSlogans[sloganIdx]
+
+            withAnimation(.easeInOut(duration: Self.taglineFadeSeconds)) {
+                fixedTagOpacity = 0
+                sloganOpacity = 1
+            }
+            try? await Task.sleep(for: .seconds(Self.taglineFadeSeconds))
+        }
     }
 
     private func scheduleAutoGenerateIfNeeded(for value: String) {
@@ -165,26 +244,32 @@ struct HomeView: View {
             let idlePulse   = CGFloat(0.5 + 0.5 * sin(t * 0.85))
             let listenPulse = CGFloat(0.5 + 0.5 * sin(t * 1.4))
             let p = rippleVisualIntensity
-            let opacity = (1 - p) * (0.82 + 0.12 * idlePulse) + p * (1.0 + 0.0 * listenPulse)
+
+            // Idle: dim + slow pulse. Active: blaze full at 1.3 with faster flicker.
+            let opacity = (1 - p) * (0.50 + 0.14 * idlePulse) + p * (1.15 + 0.12 * listenPulse)
+            // Scale: gentle idle swell → dramatic screen-fill on press (1.0 → 1.75)
+            let pressScale: CGFloat = 1.0 + p * 0.75
+            // Blur softens when idle, sharpens/intensifies on press
+            let blurRadius: CGFloat = 36 - p * 10
 
             GeometryReader { geo in
                 let w = geo.size.width
                 let h = geo.size.height
-                // Slightly wider than tall, matching reference screenshot
                 EllipticalGradient(
                     stops: [
-                        .init(color: .clear,                              location: 0),
-                        .init(color: .clear,                              location: 0.18),
-                        .init(color: Color(hex: 0xC86820).opacity(0.40),  location: 0.34),
-                        .init(color: Color(hex: 0xE07820).opacity(0.85),  location: 0.52),
-                        .init(color: Color(hex: 0xC86820).opacity(0.55),  location: 0.68),
-                        .init(color: Color(hex: 0x904010).opacity(0.18),  location: 0.86),
-                        .init(color: .clear,                              location: 1)
+                        .init(color: .clear,                                              location: 0),
+                        .init(color: .clear,                                              location: 0.14),
+                        .init(color: Color(hex: 0xC86820).opacity(0.35 + p * 0.40),      location: 0.30),
+                        .init(color: Color(hex: 0xE07820).opacity(0.80 + p * 0.20),      location: 0.50),
+                        .init(color: Color(hex: 0xC86820).opacity(0.50 + p * 0.30),      location: 0.66),
+                        .init(color: Color(hex: 0x904010).opacity(0.14 + p * 0.26),      location: 0.84),
+                        .init(color: .clear,                                              location: 1)
                     ]
                 )
                 .frame(width: w * 0.96, height: w * 0.92)
-                .blur(radius: 36)
+                .blur(radius: blurRadius)
                 .opacity(Double(opacity))
+                .scaleEffect(pressScale)
                 .position(x: w / 2, y: h * 0.46)
             }
             .scaleEffect(glowIdlePulse ? 1.03 : 0.98)
@@ -232,13 +317,21 @@ struct HomeView: View {
 
     private var centerCopy: some View {
         VStack(spacing: 10) {
-            Text(centerDisplayText)
-                .font(.system(size: centerTextIsPlaceholder ? 20 : 18, weight: centerTextIsPlaceholder ? .medium : .regular, design: .rounded))
-                .foregroundStyle(Color.white.opacity(centerTextIsPlaceholder ? 0.95 : 0.92))
-                .multilineTextAlignment(.center)
-                .lineSpacing(3)
-                .padding(.horizontal, 12)
-                .frame(minHeight: 56, alignment: .center)
+            if !centerTextIsPlaceholder {
+                Text(centerDisplayText)
+                    .font(.system(size: 20, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.92))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 56, alignment: .center)
+            } else if hasSeenOnboarding {
+                idleTaglineStack
+            } else {
+                Color.clear
+                    .frame(minHeight: 88)
+                    .accessibilityHidden(true)
+            }
 
             if !speechRecognizer.errorMessage.isEmpty {
                 Text(speechRecognizer.errorMessage)
@@ -248,6 +341,28 @@ struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var idleTaglineStack: some View {
+        VStack(alignment: .center, spacing: 10) {
+            Text(sloganLine)
+                .font(.system(size: 17, weight: .light, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .opacity(sloganOpacity)
+
+            Text("Press & hold\nto dictate")
+                .font(.system(size: 20, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.95))
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .opacity(fixedTagOpacity)
+        }
+        .padding(.horizontal, 12)
+        .frame(minHeight: 88, alignment: .center)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(sloganLine) Press and hold to dictate")
     }
 
     private var typedFallbackSection: some View {

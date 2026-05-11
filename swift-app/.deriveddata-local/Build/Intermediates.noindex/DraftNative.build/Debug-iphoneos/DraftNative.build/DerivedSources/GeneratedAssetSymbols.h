@@ -192,6 +192,12 @@ static NSString * const ACImageNameHomeWhispersUi AC_SWIFT_PRIVATE = @"home-whis
 /// The "home-woman" asset catalog image resource.
 static NSString * const ACImageNameHomeWoman AC_SWIFT_PRIVATE = @"home-woman";
 
+/// The "icon-profile" asset catalog image resource.
+static NSString * const ACImageNameIconProfile AC_SWIFT_PRIVATE = @"icon-profile";
+
+/// The "icon-user" asset catalog image resource.
+static NSString * const ACImageNameIconUser AC_SWIFT_PRIVATE = @"icon-user";
+
 /// The "image_bold_wordmark" asset catalog image resource.
 static NSString * const ACImageNameImageBoldWordmark AC_SWIFT_PRIVATE = @"image_bold_wordmark";
 
@@ -258,6 +264,18 @@ static NSString * const ACImageNameImageRecipeAppEverythingOrbitMotion AC_SWIFT_
 /// The "image_wordmark_square" asset catalog image resource.
 static NSString * const ACImageNameImageWordmarkSquare AC_SWIFT_PRIVATE = @"image_wordmark_square";
 
+/// The "logo-dmark" asset catalog image resource.
+static NSString * const ACImageNameLogoDmark AC_SWIFT_PRIVATE = @"logo-dmark";
+
+/// The "nav-library" asset catalog image resource.
+static NSString * const ACImageNameNavLibrary AC_SWIFT_PRIVATE = @"nav-library";
+
+/// The "nav-mic" asset catalog image resource.
+static NSString * const ACImageNameNavMic AC_SWIFT_PRIVATE = @"nav-mic";
+
+/// The "nav-soundwaves" asset catalog image resource.
+static NSString * const ACImageNameNavSoundwaves AC_SWIFT_PRIVATE = @"nav-soundwaves";
+
 /// The "nike-editorial-1" asset catalog image resource.
 static NSString * const ACImageNameNikeEditorial1 AC_SWIFT_PRIVATE = @"nike-editorial-1";
 
@@ -296,9 +314,6 @@ static NSString * const ACImageNameOpenCourt7 AC_SWIFT_PRIVATE = @"open-court-7"
 
 /// The "open-court-8" asset catalog image resource.
 static NSString * const ACImageNameOpenCourt8 AC_SWIFT_PRIVATE = @"open-court-8";
-
-/// The "recipe-app-concept-1" asset catalog image resource.
-static NSString * const ACImageNameRecipeAppConcept1 AC_SWIFT_PRIVATE = @"recipe-app-concept-1";
 
 /// The "recipe-app-concept-2" asset catalog image resource.
 static NSString * const ACImageNameRecipeAppConcept2 AC_SWIFT_PRIVATE = @"recipe-app-concept-2";

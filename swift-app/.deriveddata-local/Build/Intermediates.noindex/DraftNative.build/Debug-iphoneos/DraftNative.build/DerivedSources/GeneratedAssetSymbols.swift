@@ -205,6 +205,12 @@ extension DeveloperToolsSupport.ImageResource {
     /// The "home-woman" asset catalog image resource.
     static let homeWoman = DeveloperToolsSupport.ImageResource(name: "home-woman", bundle: resourceBundle)
 
+    /// The "icon-profile" asset catalog image resource.
+    static let iconProfile = DeveloperToolsSupport.ImageResource(name: "icon-profile", bundle: resourceBundle)
+
+    /// The "icon-user" asset catalog image resource.
+    static let iconUser = DeveloperToolsSupport.ImageResource(name: "icon-user", bundle: resourceBundle)
+
     /// The "image_bold_wordmark" asset catalog image resource.
     static let imageBoldWordmark = DeveloperToolsSupport.ImageResource(name: "image_bold_wordmark", bundle: resourceBundle)
 
@@ -271,6 +277,18 @@ extension DeveloperToolsSupport.ImageResource {
     /// The "image_wordmark_square" asset catalog image resource.
     static let imageWordmarkSquare = DeveloperToolsSupport.ImageResource(name: "image_wordmark_square", bundle: resourceBundle)
 
+    /// The "logo-dmark" asset catalog image resource.
+    static let logoDmark = DeveloperToolsSupport.ImageResource(name: "logo-dmark", bundle: resourceBundle)
+
+    /// The "nav-library" asset catalog image resource.
+    static let navLibrary = DeveloperToolsSupport.ImageResource(name: "nav-library", bundle: resourceBundle)
+
+    /// The "nav-mic" asset catalog image resource.
+    static let navMic = DeveloperToolsSupport.ImageResource(name: "nav-mic", bundle: resourceBundle)
+
+    /// The "nav-soundwaves" asset catalog image resource.
+    static let navSoundwaves = DeveloperToolsSupport.ImageResource(name: "nav-soundwaves", bundle: resourceBundle)
+
     /// The "nike-editorial-1" asset catalog image resource.
     static let nikeEditorial1 = DeveloperToolsSupport.ImageResource(name: "nike-editorial-1", bundle: resourceBundle)
 
@@ -309,9 +327,6 @@ extension DeveloperToolsSupport.ImageResource {
 
     /// The "open-court-8" asset catalog image resource.
     static let openCourt8 = DeveloperToolsSupport.ImageResource(name: "open-court-8", bundle: resourceBundle)
-
-    /// The "recipe-app-concept-1" asset catalog image resource.
-    static let recipeAppConcept1 = DeveloperToolsSupport.ImageResource(name: "recipe-app-concept-1", bundle: resourceBundle)
 
     /// The "recipe-app-concept-2" asset catalog image resource.
     static let recipeAppConcept2 = DeveloperToolsSupport.ImageResource(name: "recipe-app-concept-2", bundle: resourceBundle)
