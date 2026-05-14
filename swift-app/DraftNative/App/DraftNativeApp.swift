@@ -10,6 +10,7 @@ struct DraftNativeApp: App {
             ZStack {
                 RootTabView()
                     .environmentObject(appModel)
+                    .allowsHitTesting(!showLaunchOverlay)
 
                 if showLaunchOverlay {
                     LaunchLoadingOverlay {

@@ -1,0 +1,96 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/HomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Draft",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 314
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dictation",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 328
+        }
+      },
+      {
+        "comment": "",
+        "key": "Press and hold to speak your prompt",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 407
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate from text",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 417
+        }
+      },
+      {
+        "comment": "",
+        "key": "Welcome to",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 502
+        }
+      },
+      {
+        "comment": "",
+        "key": "Think it.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 506
+        }
+      },
+      {
+        "comment": "",
+        "key": "Say it.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 511
+        }
+      },
+      {
+        "comment": "",
+        "key": "Draft it.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 515
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 545
+        }
+      },
+      {
+        "comment": "",
+        "key": "›››",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 553
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -14,7 +14,14 @@ final class AppModel: ObservableObject {
     @Published var generationState: GenerationState = .idle
     @Published var isFlowPresented = false
     @Published var pendingLibraryNavigation = false
+    /// After saving a draft from the output flow: switch to Drafts tab and scroll grids to the newest content.
+    @Published var pendingLibrarySelectDraftsTab = false
+    @Published var pendingLibraryScrollDraftsToBottom = false
+    @Published var pendingLibraryScrollAllItemsToBottom = false
+    @Published var pendingLibraryScrollIndividualViewToBottom = false
     @Published var boards: [LibraryBoard] = LibrarySeedData.boards
+    /// Home rotating suggestions already used (exact line persisted).
+    @Published private(set) var consumedIdlePromptLines: Set<String> = []
 
     private let sessionStore: SessionStoring
     private let generator: ArtifactGenerating
@@ -28,6 +35,7 @@ final class AppModel: ObservableObject {
         self.generator = generator
         self.transcript = sessionStore.loadTranscript()
         self.artifactHTML = sessionStore.loadArtifactHTML()
+        self.consumedIdlePromptLines = Self.loadConsumedIdlePromptLines()
 
         if !artifactHTML.isEmpty {
             generationState = .ready
@@ -43,8 +51,18 @@ final class AppModel: ObservableObject {
         sessionStore.saveTranscript(value)
     }
 
-    func startFlow() {
+    func startFlow(consumingIdlePromptLine: String? = nil) {
         guard canGenerate, !isFlowPresented else { return }
+        let trimmedPrompt = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let suggestion = consumingIdlePromptLine?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !suggestion.isEmpty,
+           trimmedPrompt.caseInsensitiveCompare(suggestion) == .orderedSame {
+            var next = consumedIdlePromptLines
+            if next.insert(suggestion).inserted {
+                consumedIdlePromptLines = next
+                Self.saveConsumedIdlePromptLines(next)
+            }
+        }
         generationTask?.cancel()
         artifactHTML = ""
         sessionStore.saveArtifactHTML("")
@@ -90,6 +108,49 @@ final class AppModel: ObservableObject {
         isFlowPresented = false
         sessionStore.saveTranscript("")
         sessionStore.saveArtifactHTML("")
+    }
+
+    /// Saves the current artifact as a new board (end of Drafts), then dismisses the flow and focuses the library.
+    func saveGeneratedDraftToLibrary(directionIndex: Int) {
+        let prompt = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let html = artifactHTML.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !html.isEmpty, let board = GeneratedDraftLibraryImport.makeBoard(prompt: prompt, html: html, directionIndex: directionIndex) else {
+            dismissFlow()
+            return
+        }
+        boards.append(board)
+        pendingLibraryNavigation = true
+        pendingLibrarySelectDraftsTab = true
+        pendingLibraryScrollDraftsToBottom = true
+        pendingLibraryScrollAllItemsToBottom = true
+        pendingLibraryScrollIndividualViewToBottom = true
+        dismissFlow()
+    }
+
+    /// Removes a user-saved draft board and strips the same item IDs from every other board (and All items).
+    func removeUserSavedBoard(id: String) {
+        guard id.hasPrefix("user-saved-"), let snapshot = boards.first(where: { $0.id == id }) else { return }
+        let ids = Set(snapshot.items.map(\.id))
+        boards.removeAll { $0.id == id }
+        removeItemsFromAllBoards(itemIDs: ids)
+    }
+
+    /// Removes any library item with these ids from **all** boards (e.g. after unsaving a draft whose assets were duplicated).
+    func removeItemsFromAllBoards(itemIDs: Set<String>) {
+        guard !itemIDs.isEmpty else { return }
+        for idx in boards.indices {
+            let b = boards[idx]
+            let remaining = b.items.filter { !itemIDs.contains($0.id) }
+            guard remaining.count != b.items.count else { continue }
+            boards[idx] = LibraryBoard(
+                id: b.id,
+                promptTitle: b.promptTitle,
+                itemCount: remaining.count,
+                updatedAtLabel: "Just now",
+                generationID: b.generationID,
+                items: remaining
+            )
+        }
     }
 
     func dismissFlowToLibrary() {
@@ -149,5 +210,21 @@ final class AppModel: ObservableObject {
         generationState = .idle
         isFlowPresented = false
         sessionStore.clear()
+    }
+
+    private static let consumedIdlePromptLinesKey = "draft.native.consumedIdlePromptLines"
+
+    private static func loadConsumedIdlePromptLines() -> Set<String> {
+        guard let data = UserDefaults.standard.data(forKey: consumedIdlePromptLinesKey),
+              let decoded = try? JSONDecoder().decode([String].self, from: data) else {
+            return []
+        }
+        return Set(decoded)
+    }
+
+    private static func saveConsumedIdlePromptLines(_ lines: Set<String>) {
+        let sorted = lines.sorted()
+        guard let data = try? JSONEncoder().encode(sorted) else { return }
+        UserDefaults.standard.set(data, forKey: consumedIdlePromptLinesKey)
     }
 }

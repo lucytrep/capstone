@@ -1,4 +1,18 @@
+import CoreGraphics
 import Foundation
+
+/// Shared layout constants for native library UI (SwiftUI `continuous` rounded rects).
+enum LibraryVisualMetrics {
+    /// Matches board detail tiles (`LibraryBoardDetailView`) — masonry and board detail use this radius.
+    static let itemContainerCornerRadius: CGFloat = 24
+    /// Drafts tab 2×2 board collage — less rounded than board detail / All items tiles.
+    static let draftsBoardShellCornerRadius: CGFloat = 14
+    static let draftsBoardCellCornerRadius: CGFloat = 10
+    /// Add-to-collection sheet (`ItemBoardPickerSheet`): full-width board rows and 72pt preview stack.
+    static let collectionPickerBoardRowCornerRadius: CGFloat = 14
+    static let collectionPickerPreviewTileCornerRadius: CGFloat = 7
+    static let collectionPickerPreviewClipCornerRadius: CGFloat = 10
+}
 
 enum LibraryItemKind: String, Hashable {
     case palette
@@ -73,7 +87,18 @@ struct LibraryBoard: Identifiable, Hashable {
         }
         return "Saved inspiration"
     }
-    var previewItems: [LibraryItem] { Array(items.prefix(4)) }
+    /// First four slots for mosaic previews (Drafts 2×2, horizontal cards). Repeats items when a board has fewer than four so no empty cells.
+    var previewItems: [LibraryItem] {
+        guard !items.isEmpty else { return [] }
+        if items.count >= 4 { return Array(items.prefix(4)) }
+        var result: [LibraryItem] = []
+        var i = 0
+        while result.count < 4 {
+            result.append(items[i % items.count])
+            i += 1
+        }
+        return result
+    }
 }
 
 struct LibraryCollection: Identifiable, Hashable {
@@ -102,20 +127,6 @@ enum LibrarySeedData {
                 .init(id: "desert-4", kind: .image, label: "Solar gesture", previewColorHex: 0xC65A1B, secondaryColorHex: 0xFFB14C, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-4", alt: "Silhouetted hands against a radiant amber background", source: nil, author: "Direction 1"),
                 .init(id: "desert-4a", kind: .palette, label: "Frost moth", previewColorHex: 0xC65A1B, secondaryColorHex: 0xFFB14C, generationID: "gen-desert-dreams"),
                 .init(id: "desert-5", kind: .image, label: "Quiet horizon", previewColorHex: 0xD3A184, secondaryColorHex: 0xF0D1C1, generationID: "gen-desert-dreams", bundleImageName: "desert-dreams-5", alt: "Solitary figure overlooking a pastel desert expanse", source: nil, author: "Direction 1"),
-            ]
-        ),
-        LibraryBoard(
-            id: "neon-signals-board",
-            promptTitle: "Neon Signals",
-            itemCount: 5,
-            updatedAtLabel: "Saved today",
-            generationID: "gen-neon-signals",
-            items: [
-                .init(id: "neon-1", kind: .image, label: "ArcMatrix", previewColorHex: 0x70E010, secondaryColorHex: 0xA8FF50, generationID: "gen-neon-signals", bundleImageName: "home-arcmatrix", alt: "Lime green halftone abstract", source: nil, author: "Saved"),
-                .init(id: "neon-3", kind: .image, label: "Grid flower", previewColorHex: 0x1840E0, secondaryColorHex: 0x4070FF, generationID: "gen-neon-signals", bundleImageName: "home-grid-flower", alt: "Electric blue pixel grid flower", source: nil, author: "Saved"),
-                .init(id: "neon-4", kind: .palette, label: "Burnt amber", previewColorHex: 0xC45A22, secondaryColorHex: 0xE48244, generationID: "gen-neon-signals"),
-                .init(id: "neon-5", kind: .image, label: "Aura glow", previewColorHex: 0xC06020, secondaryColorHex: 0xE89050, generationID: "gen-neon-signals", bundleImageName: "home-aura-orange", alt: "Warm orange aura gradient", source: nil, author: "Saved"),
-                .init(id: "neon-6", kind: .palette, label: "Sunset clay", previewColorHex: 0xB35238, secondaryColorHex: 0xD8785A, generationID: "gen-neon-signals"),
             ]
         ),
         LibraryBoard(
@@ -212,10 +223,12 @@ enum LibrarySeedData {
         LibraryBoard(
             id: "ui-controls-board",
             promptTitle: "Soft Spatial UI",
-            itemCount: 1,
+            itemCount: 3,
             updatedAtLabel: "Saved today",
             generationID: "gen-soft-spatial-ui",
             items: [
+                .init(id: "ui-controls-spatial-2", kind: .image, label: "Marketplace card", previewColorHex: 0xF0EBE0, secondaryColorHex: 0xE07030, generationID: "gen-soft-spatial-ui", bundleImageName: "soft-spatial-ui-2", alt: "Floating marketplace card UI with editorial composition", source: nil, author: "Draft"),
+                .init(id: "ui-controls-spatial-3", kind: .image, label: "Interest picker", previewColorHex: 0xE8E4DE, secondaryColorHex: 0xC4B8A0, generationID: "gen-soft-spatial-ui", bundleImageName: "soft-spatial-ui-3", alt: "Circle interest picker onboarding UI", source: nil, author: "Draft"),
                 .init(id: "ui-controls-4", kind: .image, label: "Teal gradient", previewColorHex: 0xB8E8BC, secondaryColorHex: 0x1F6B48, generationID: "gen-soft-spatial-ui", alt: "Minimal onboarding card with selected and empty states in a floating spatial layout", source: nil, author: "Draft"),
             ]
         ),
@@ -250,16 +263,14 @@ enum LibrarySeedData {
         LibraryBoard(
             id: "warm-kitchen-palette",
             promptTitle: "Warm Kitchen Palette",
-            itemCount: 6,
+            itemCount: 4,
             updatedAtLabel: "Saved today",
             generationID: "gen-kitchen-palette",
             items: [
                 .init(id: "kitchen-1", kind: .palette, label: "Butter yellow", previewColorHex: 0xC8873A, secondaryColorHex: 0xE6BC65, generationID: "gen-kitchen-palette"),
                 .init(id: "kitchen-2", kind: .palette, label: "Soft cream", previewColorHex: 0xE8D2A5, secondaryColorHex: 0xF3E7CA, generationID: "gen-kitchen-palette"),
-                .init(id: "kitchen-3", kind: .image, label: "Tile reference", previewColorHex: 0x8A6F52, secondaryColorHex: 0xB2936B, generationID: "gen-kitchen-palette", imageURL: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80", thumbnailURL: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80", alt: "Warm kitchen interior with natural wood and stone surfaces", source: .unsplash, author: "Unsplash"),
-                .init(id: "kitchen-4", kind: .image, label: "Cabinet detail", previewColorHex: 0x6E5B43, secondaryColorHex: 0x8F7A5F, generationID: "gen-kitchen-palette", imageURL: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&q=80", thumbnailURL: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=600&q=80", alt: "Kitchen cabinetry detail with warm wood tones", source: .unsplash, author: "Unsplash"),
+                .init(id: "kitchen-4", kind: .palette, label: "Terracotta", previewColorHex: 0x9E5A42, secondaryColorHex: 0xC47A5C, generationID: "gen-kitchen-palette"),
                 .init(id: "kitchen-5", kind: .palette, label: "Olive accent", previewColorHex: 0x6F7152, secondaryColorHex: 0x8C8E6A, generationID: "gen-kitchen-palette"),
-                .init(id: "kitchen-6", kind: .image, label: "Lighting", previewColorHex: 0xAF8454, secondaryColorHex: 0xD6A36A, generationID: "gen-kitchen-palette", imageURL: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80", thumbnailURL: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80", alt: "Kitchen pendant lighting over a warm interior", source: .unsplash, author: "Unsplash"),
             ]
         ),
         LibraryBoard(
@@ -383,3 +394,4 @@ enum LibrarySeedData {
         collections.first(where: { $0.id == id })
     }
 }
+

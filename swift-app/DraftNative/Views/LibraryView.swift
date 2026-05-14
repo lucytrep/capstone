@@ -9,6 +9,7 @@ enum LibraryRoute: Hashable {
     case board(String)
     case item(String)
     case settings
+    case collection(String)
 }
 
 struct LibraryView: View {
@@ -58,8 +59,23 @@ struct LibraryView: View {
             }
         }
 
-        return mixed
+        return mixed.filter { item in
+            guard !Self.suppressedLibraryItemIDs.contains(item.id) else { return false }
+            if let b = item.bundleImageName, Self.suppressedLibraryBundles.contains(b) { return false }
+            return true
+        }
     }
+
+    /// Items removed from All items / detail carousel (e.g. deprecated seed assets).
+    private static let suppressedLibraryItemIDs: Set<String> = [
+        "ui-controls-spatial-1",
+        "local-home-09-004",
+    ]
+
+    private static let suppressedLibraryBundles: Set<String> = [
+        "soft-spatial-ui-1",
+        "image_outdoor_selfie",
+    ]
 
     private func isUIItem(_ item: LibraryItem) -> Bool {
         item.id.hasPrefix("ui-") || item.generationID.hasPrefix("gen-ui-")
@@ -237,84 +253,134 @@ struct LibraryView: View {
         return (left, right)
     }
 
+    /// Top bar lives in `safeAreaInset` so its height stays compact and consistent while scrolling (no tall “resting” strip).
+    private var libraryTopBar: some View {
+        HStack(alignment: .center) {
+            Button {
+                haptic.impactOccurred()
+                haptic.prepare()
+                onSelectCreate()
+            } label: {
+                Image("logo-dmark")
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 25)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            HStack(spacing: 18) {
+                Button {
+                    haptic.impactOccurred()
+                    haptic.prepare()
+                    contentTab = .drafts
+                } label: {
+                    Text("Drafts")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(contentTab == .drafts ? 1 : 0.38))
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    haptic.impactOccurred()
+                    haptic.prepare()
+                    contentTab = .allItems
+                } label: {
+                    Text("All items")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(contentTab == .allItems ? 1 : 0.38))
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+
+            Button {
+                haptic.impactOccurred()
+                haptic.prepare()
+                navPath.append(LibraryRoute.settings)
+            } label: {
+                Image("icon-user")
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Settings")
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 10)
+        // Extra bottom inset so total bar height matches the looser pre–safeAreaInset “resting” strip.
+        .padding(.bottom, 18)
+        .background(Color(hex: 0x141414))
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack(path: $navPath) {
-                VStack(spacing: 0) {
-                    // Sticky header
-                    HStack {
-                        Button {
-                            haptic.impactOccurred()
-                            haptic.prepare()
-                            onSelectCreate()
-                        } label: {
-                            Image("logo-dmark")
-                                .resizable()
-                                .renderingMode(.template)
-                                .foregroundStyle(.white)
-                                .frame(width: 28, height: 32)
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-
-                        HStack(spacing: 18) {
-                            Button {
-                                haptic.impactOccurred()
-                                haptic.prepare()
-                                contentTab = .drafts
-                            } label: {
-                                Text("Drafts")
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.white.opacity(contentTab == .drafts ? 1 : 0.38))
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 6)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                haptic.impactOccurred()
-                                haptic.prepare()
-                                contentTab = .allItems
-                            } label: {
-                                Text("All items")
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.white.opacity(contentTab == .allItems ? 1 : 0.38))
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 6)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Spacer()
-
-                        NavigationLink(value: LibraryRoute.settings) {
-                            Image("icon-user")
-                                .resizable()
-                                .renderingMode(.template)
-                                .foregroundStyle(.white)
-                                .frame(width: 28, height: 25)
-                        }
-                        .buttonStyle(.plain)
-                        .simultaneousGesture(TapGesture().onEnded {
-                            haptic.impactOccurred()
-                            haptic.prepare()
-                        })
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 34)
-                    .padding(.bottom, 8)
-                    .background(Color(hex: 0x141414))
-
+                ScrollViewReader { proxy in
                     ScrollView {
-                        if contentTab == .allItems {
-                            allItemsGrid
-                        } else {
-                            draftsContent
+                        Group {
+                            if contentTab == .allItems {
+                                allItemsGrid
+                                Color.clear.frame(width: 1, height: 1).id("libraryAllItemsScrollBottom")
+                            } else {
+                                draftsContent
+                                Color.clear.frame(width: 1, height: 1).id("libraryDraftsScrollBottom")
+                            }
                         }
                     }
+                    .onChange(of: appModel.pendingLibrarySelectDraftsTab) { _, should in
+                        guard should else { return }
+                        contentTab = .drafts
+                        appModel.pendingLibrarySelectDraftsTab = false
+                    }
+                    .onChange(of: appModel.pendingLibraryScrollDraftsToBottom) { _, should in
+                        guard should, contentTab == .drafts else { return }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(120))
+                            withAnimation(.easeOut(duration: 0.35)) {
+                                proxy.scrollTo("libraryDraftsScrollBottom", anchor: .bottom)
+                            }
+                            appModel.pendingLibraryScrollDraftsToBottom = false
+                        }
+                    }
+                    .onChange(of: appModel.pendingLibraryScrollAllItemsToBottom) { _, should in
+                        guard should else { return }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(120))
+                            if contentTab == .allItems {
+                                withAnimation(.easeOut(duration: 0.35)) {
+                                    proxy.scrollTo("libraryAllItemsScrollBottom", anchor: .bottom)
+                                }
+                                appModel.pendingLibraryScrollAllItemsToBottom = false
+                            }
+                        }
+                    }
+                    .onChange(of: contentTab) { _, tab in
+                        guard tab == .allItems, appModel.pendingLibraryScrollAllItemsToBottom else { return }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(80))
+                            withAnimation(.easeOut(duration: 0.35)) {
+                                proxy.scrollTo("libraryAllItemsScrollBottom", anchor: .bottom)
+                            }
+                            appModel.pendingLibraryScrollAllItemsToBottom = false
+                        }
+                    }
+                }
+                // Keeps the bar height stable and compact (nav-style) instead of a tall resting block above the scroll.
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    libraryTopBar
                 }
                 .background(Color(hex: 0x141414).ignoresSafeArea())
                 .navigationBarHidden(true)
@@ -326,6 +392,8 @@ struct LibraryView: View {
                         LibraryItemDetailView(items: allItems, selectedItemID: id)
                     case .settings:
                         SettingsView()
+                    case .collection(let id):
+                        LibraryCollectionDetailView(collectionID: id)
                     }
                 }
             }
@@ -333,24 +401,27 @@ struct LibraryView: View {
             .onAppear { haptic.prepare() }
 
             if navPath.isEmpty {
-                VStack(spacing: 0) {
-                    Spacer()
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: Color(hex: 0x141414).opacity(0.35), location: 0.30),
-                            .init(color: Color(hex: 0x141414).opacity(0.72), location: 0.60),
-                            .init(color: Color(hex: 0x141414), location: 0.88),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 320)
+                if contentTab == .allItems {
+                    VStack(spacing: 0) {
+                        Spacer()
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: Color(hex: 0x141414).opacity(0.08), location: 0.42),
+                                .init(color: Color(hex: 0x141414).opacity(0.38), location: 0.68),
+                                .init(color: Color(hex: 0x141414).opacity(0.82), location: 0.9),
+                                .init(color: Color(hex: 0x141414), location: 1.0),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 120)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea(edges: .bottom)
+                    .allowsHitTesting(false)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea(edges: .bottom)
-                .allowsHitTesting(false)
 
                 libraryBottomNav
             }
@@ -405,7 +476,16 @@ struct LibraryView: View {
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
+                .contextMenu {
+                    if board.id.hasPrefix("user-saved-") {
+                        Button(role: .destructive) {
+                            appModel.removeUserSavedBoard(id: board.id)
+                        } label: {
+                            Label("Remove from library", systemImage: "trash")
+                        }
+                    }
+                }
             }
         }
         .padding(.horizontal, 8)
@@ -434,9 +514,9 @@ private struct BoardHCard: View {
         VStack(alignment: .leading, spacing: 3) {
             PreviewGrid(items: board.previewItems, height: 170 * 0.85)
                 .frame(width: cardWidth)
-                .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous)
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
 
@@ -454,15 +534,17 @@ private struct BoardHCard: View {
     }
 }
 
-// Full-width vertical card for the Drafts grid — 2×2 photo collage (no aura overlay).
+// Full-width vertical card for the Drafts grid — 2×2 photo collage with tighter corners than board detail.
 private struct BoardVCard: View {
     let board: LibraryBoard
 
+    private let corner = LibraryVisualMetrics.draftsBoardShellCornerRadius
+    private let gap: CGFloat = 6
+
     var body: some View {
         let items = board.previewItems
-        let gap: CGFloat = 6
 
-        Color.black
+        Color(hex: 0x141414)
             .aspectRatio(3.0/4.0, contentMode: .fit)
             .overlay(
                 GeometryReader { geo in
@@ -472,16 +554,20 @@ private struct BoardVCard: View {
                     VStack(spacing: gap) {
                         HStack(spacing: gap) {
                             BoardGridCell(item: items[safe: 0], width: cellW, height: cellH)
+                                .id("\(board.id)-draft-0-\(items[safe: 0]?.id ?? "nil")")
                             BoardGridCell(item: items[safe: 1], width: cellW, height: cellH)
+                                .id("\(board.id)-draft-1-\(items[safe: 1]?.id ?? "nil")")
                         }
                         HStack(spacing: gap) {
                             BoardGridCell(item: items[safe: 2], width: cellW, height: cellH)
+                                .id("\(board.id)-draft-2-\(items[safe: 2]?.id ?? "nil")")
                             BoardGridCell(item: items[safe: 3], width: cellW, height: cellH)
+                                .id("\(board.id)-draft-3-\(items[safe: 3]?.id ?? "nil")")
                         }
                     }
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
             .frame(maxWidth: .infinity)
     }
 }
@@ -493,7 +579,14 @@ private struct BoardGridCell: View {
     let height: CGFloat
 
     var body: some View {
-        LibraryTile(item: item, width: width, height: height, compactPreview: true, cornerRadius: 10)
+        LibraryTile(
+            item: item,
+            width: width,
+            height: height,
+            compactPreview: true,
+            cornerRadius: LibraryVisualMetrics.draftsBoardCellCornerRadius,
+            showsEdgeStroke: false
+        )
     }
 }
 
@@ -504,12 +597,12 @@ private struct ItemGridTile: View {
 
     var body: some View {
         GeometryReader { geo in
-            LibraryTile(item: item, width: geo.size.width, height: height, cornerRadius: 16)
+            LibraryTile(item: item, width: geo.size.width, height: height, cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius)
         }
         .frame(height: height)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous)
                 .fill(Color(hex: item.previewColorHex).opacity(0.32))
                 .blur(radius: 14)
                 .offset(y: 4)
@@ -522,6 +615,8 @@ private struct ItemGridTile: View {
 struct PreviewGrid: View {
     let items: [LibraryItem]
     let height: CGFloat
+    /// Corner radius for mini tiles inside the preview (defaults to masonry/board card radius).
+    var cellCornerRadius: CGFloat = LibraryVisualMetrics.itemContainerCornerRadius
 
     var body: some View {
         GeometryReader { proxy in
@@ -531,14 +626,18 @@ struct PreviewGrid: View {
             let tilePool = height - gap * 2
 
             VStack(spacing: gap) {
-                LibraryTile(item: items[safe: 0], width: fullWidth, height: tilePool * (37.0 / 84.0), compactPreview: true)
+                LibraryTile(item: items[safe: 0], width: fullWidth, height: tilePool * (37.0 / 84.0), compactPreview: true, cornerRadius: cellCornerRadius)
+                    .id("preview-row0-\(items[safe: 0]?.id ?? "nil")")
 
                 HStack(spacing: gap) {
-                    LibraryTile(item: items[safe: 1], width: fullWidth * 0.57, height: tilePool * (29.0 / 84.0), compactPreview: true)
-                    LibraryTile(item: items[safe: 2], width: fullWidth * 0.40, height: tilePool * (29.0 / 84.0), compactPreview: true)
+                    LibraryTile(item: items[safe: 1], width: fullWidth * 0.57, height: tilePool * (29.0 / 84.0), compactPreview: true, cornerRadius: cellCornerRadius)
+                        .id("preview-row1a-\(items[safe: 1]?.id ?? "nil")")
+                    LibraryTile(item: items[safe: 2], width: fullWidth * 0.40, height: tilePool * (29.0 / 84.0), compactPreview: true, cornerRadius: cellCornerRadius)
+                        .id("preview-row1b-\(items[safe: 2]?.id ?? "nil")")
                 }
 
-                LibraryTile(item: items[safe: 3], width: fullWidth, height: tilePool * (18.0 / 84.0), compactPreview: true)
+                LibraryTile(item: items[safe: 3], width: fullWidth, height: tilePool * (18.0 / 84.0), compactPreview: true, cornerRadius: cellCornerRadius)
+                    .id("preview-row2-\(items[safe: 3]?.id ?? "nil")")
             }
         }
         .frame(height: height)
@@ -560,16 +659,21 @@ struct LibraryTile: View {
     let width: CGFloat?
     let height: CGFloat
     var compactPreview: Bool = false
-    var cornerRadius: CGFloat = 2
+    var cornerRadius: CGFloat = LibraryVisualMetrics.itemContainerCornerRadius
+    /// When false, no hairline stroke (e.g. draft board 2×2 mosaic reads as one surface).
+    var showsEdgeStroke: Bool = true
 
     var body: some View {
-        ZStack(alignment: compactPreview ? .center : .bottomLeading) {
+        ZStack(alignment: compactPreview ? .center : .topLeading) {
             if let item {
-                if item.kind == .image {
-                    imageLayer(item: item)
-                } else {
-                    paletteLayer(item: item)
+                Group {
+                    if item.kind == .image {
+                        imageLayer(item: item)
+                    } else {
+                        paletteLayer(item: item)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(Color.white.opacity(0.03))
@@ -577,10 +681,12 @@ struct LibraryTile: View {
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
+        .overlay {
+            if showsEdgeStroke {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            }
+        }
     }
 
     @ViewBuilder
@@ -590,24 +696,42 @@ struct LibraryTile: View {
         } else if item.id == "ui-controls-4" {
             selectionStatesGradientFill(item: item, showCatalogHeader: !compactPreview)
         } else if let name = item.bundleImageName, let uiImage = UIImage(named: name) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .overlay(Color.black.opacity(0.06))
-                .overlay(alignment: .topLeading) {
-                    solidColorSwatchCaption(item: item)
+            ZStack(alignment: .topLeading) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+                Color.black.opacity(0.06)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .topLeading) {
+                if !compactPreview, item.kind == .image, shouldShowSwatchCaption(for: item) {
+                    paletteSwatchCaptionStack(item: item)
                 }
+            }
         } else if let thumbnailURL = item.thumbnailURL ?? item.imageURL {
             AsyncImage(url: thumbnailURL) { phase in
                 switch phase {
                 case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .overlay(Color.black.opacity(0.06))
-                        .overlay(alignment: .topLeading) {
-                            solidColorSwatchCaption(item: item)
+                    ZStack(alignment: .topLeading) {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                        Color.black.opacity(0.06)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .allowsHitTesting(false)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay(alignment: .topLeading) {
+                        if !compactPreview, item.kind == .image, shouldShowSwatchCaption(for: item) {
+                            paletteSwatchCaptionStack(item: item)
                         }
+                    }
                 default:
                     gradientPlaceholder(item: item)
                 }
@@ -617,21 +741,45 @@ struct LibraryTile: View {
         }
     }
 
-    /// Bundled imports that render flat color chips (`color_*` assets); photos and UI mocks stay unlabeled.
-    private func isBundledSolidColorSwatch(_ item: LibraryItem) -> Bool {
-        item.bundleImageName?.hasPrefix("color_") == true
+    /// Same notion as `isPaletteLike` in this file: flat `color_*` chips and the near-white Pinterest field tile.
+    private func shouldShowSwatchCaption(for item: LibraryItem) -> Bool {
+        guard let b = item.bundleImageName, !b.isEmpty else { return false }
+        if b.hasPrefix("color_") { return true }
+        if b == "image_pinterest_soft_blank_field" { return true }
+        return false
     }
 
+    private var swatchCaptionHexSize: CGFloat {
+        if height < 118 { return 10 }
+        if height < 175 { return 12 }
+        return 13
+    }
+
+    private var swatchCaptionPadding: CGFloat {
+        if height < 118 { return 8 }
+        return min(16, height * 0.085)
+    }
+
+    /// Extra bottom inset so labels clear the tile curve, FAB, and short masonry heights.
+    private var swatchCaptionBottomInset: CGFloat {
+        max(swatchCaptionPadding, min(18, height * 0.11))
+    }
+
+    /// Hex-only caption for palette tiles and bundled `color_*` chips (library grid / previews).
     @ViewBuilder
-    private func solidColorSwatchCaption(item: LibraryItem) -> some View {
-        if !compactPreview, item.kind == .image, isBundledSolidColorSwatch(item) {
-            Text(String(format: "#%06X", item.previewColorHex))
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(textColor(for: item.previewColorHex))
-                .padding(12)
-        } else {
-            EmptyView()
+    private func paletteSwatchCaptionStack(item: LibraryItem) -> some View {
+        let fg = textColor(for: item.previewColorHex)
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 0)
+            Text(String(format: "%06X", item.previewColorHex))
+                .font(.system(size: swatchCaptionHexSize, weight: .semibold, design: .monospaced))
+                .foregroundStyle(fg.opacity(0.95))
         }
+        .padding(.top, swatchCaptionPadding)
+        .padding(.horizontal, swatchCaptionPadding)
+        .padding(.bottom, swatchCaptionBottomInset)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .shadow(color: .black.opacity(0.55), radius: 8, x: 0, y: 2)
     }
 
     private var uiPickerPreview: some View {
@@ -684,16 +832,12 @@ struct LibraryTile: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        .overlay(alignment: .bottomLeading) {
-            if !compactPreview, item.kind == .image, isBundledSolidColorSwatch(item) {
-                Text(String(format: "#%06X", item.previewColorHex))
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(textColor(for: item.previewColorHex))
-                    .padding(12)
-            } else {
-                EmptyView()
+        .overlay(alignment: .topLeading) {
+            if !compactPreview, item.kind == .image, shouldShowSwatchCaption(for: item) {
+                paletteSwatchCaptionStack(item: item)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func paletteLayer(item: LibraryItem) -> some View {
@@ -705,14 +849,12 @@ struct LibraryTile: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        .overlay(alignment: compactPreview ? .center : .topLeading) {
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topLeading) {
             if compactPreview {
                 EmptyView()
             } else {
-                Text(String(format: "#%06X", item.previewColorHex))
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(textColor(for: item.previewColorHex))
-                    .padding(12)
+                paletteSwatchCaptionStack(item: item)
             }
         }
     }
@@ -737,7 +879,9 @@ struct LibraryItemDetailView: View {
     @State private var currentItemID: String
     @State private var showBoardPicker = false
     @State private var savedBoardName: String?
-    @State private var showMoreActions = false
+    @State private var shareSheetPayload: DraftShareSheetPayload?
+
+    private let itemPageHaptics = UISelectionFeedbackGenerator()
 
     init(items: [LibraryItem], selectedItemID: String) {
         self.items = items
@@ -784,8 +928,8 @@ struct LibraryItemDetailView: View {
                     .safeAreaInset(edge: .top) {
                         detailTopBar(item: item)
                             .padding(.horizontal, 14)
-                            .padding(.top, 4)
-                            .padding(.bottom, 10)
+                            .padding(.top, 14)
+                            .padding(.bottom, 12)
                     }
                     .safeAreaInset(edge: .bottom) {
                         VStack(spacing: 10) {
@@ -795,12 +939,12 @@ struct LibraryItemDetailView: View {
                                     insertion: .opacity.combined(with: .move(edge: .trailing)),
                                     removal: .opacity.combined(with: .move(edge: .leading))
                                 ))
-                            detailActionBar(item: item)
+                            detailActionBar()
                                 .id("actions-\(currentItemID)")
                                 .transition(.opacity)
                         }
                             .padding(.horizontal, 18)
-                            .padding(.top, 12)
+                            .padding(.top, 18)
                             .padding(.bottom, 10)
                     }
                 } else {
@@ -809,6 +953,13 @@ struct LibraryItemDetailView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            itemPageHaptics.prepare()
+        }
+        .onChange(of: currentItemID) { _, _ in
+            itemPageHaptics.selectionChanged()
+            itemPageHaptics.prepare()
+        }
         .sheet(isPresented: $showBoardPicker) {
             ItemBoardPickerSheet(
                 boards: availableBoards,
@@ -819,17 +970,13 @@ struct LibraryItemDetailView: View {
                     showBoardPicker = false
                 }
             )
-            .presentationDetents([.height(430)])
+            .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(30)
             .presentationBackground(Color(hex: 0x1A1A1A))
         }
-        .confirmationDialog("Item Actions", isPresented: $showMoreActions, titleVisibility: .visible) {
-            Button("Add to Board") {
-                showBoardPicker = true
-            }
-        } message: {
-            Text("Choose what you want to do with this item.")
+        .sheet(item: $shareSheetPayload) { payload in
+            ActivityView(activityItems: payload.activityItems)
         }
     }
 
@@ -867,18 +1014,21 @@ struct LibraryItemDetailView: View {
         }
     }
 
-    @ViewBuilder
     private func topShareButton(item: LibraryItem) -> some View {
-        if let shareURL = item.imageURL ?? item.thumbnailURL {
-            ShareLink(item: shareURL) {
-                chromeCircleLabel(systemName: "square.and.arrow.up")
+        Button {
+            presentShareSheet(for: item)
+        } label: {
+            chromeCircleLabel(systemName: "square.and.arrow.up")
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func presentShareSheet(for item: LibraryItem) {
+        Task {
+            let items = await LibraryShareImageFactory.activityItems(forItem: item)
+            await MainActor.run {
+                shareSheetPayload = DraftShareSheetPayload(activityItems: items)
             }
-            .buttonStyle(.plain)
-        } else {
-            ShareLink(item: item.alt ?? item.label) {
-                chromeCircleLabel(systemName: "square.and.arrow.up")
-            }
-            .buttonStyle(.plain)
         }
     }
 
@@ -940,10 +1090,9 @@ struct LibraryItemDetailView: View {
         .padding(.vertical, 8)
     }
 
-    private func detailActionBar(item: LibraryItem) -> some View {
-        HStack(spacing: 18) {
-            topShareButton(item: item)
-
+    private func detailActionBar() -> some View {
+        HStack {
+            Spacer(minLength: 0)
             Button {
                 showBoardPicker = true
             } label: {
@@ -959,10 +1108,7 @@ struct LibraryItemDetailView: View {
                 )
             }
             .buttonStyle(.plain)
-
-            chromeCircleButton(systemName: "ellipsis") {
-                showMoreActions = true
-            }
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
     }
@@ -1053,18 +1199,14 @@ private struct ItemBoardPickerSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule(style: .continuous)
-                .fill(Color.white.opacity(0.14))
-                .frame(width: 52, height: 6)
-                .padding(.top, 10)
-                .padding(.bottom, 18)
-
+            // Rely on `presentationDragIndicator(.visible)` only — a custom grabber stacked with it read as two overlapping top bars.
             Text("Collections")
                 .font(.system(size: 15, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.46))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
-                .padding(.bottom, 10)
+                .padding(.top, 22)
+                .padding(.bottom, 26)
 
             if boards.isEmpty {
                 VStack(spacing: 10) {
@@ -1085,9 +1227,21 @@ private struct ItemBoardPickerSheet: View {
                                 onSelect(board)
                             } label: {
                                 HStack(spacing: 14) {
-                                    PreviewGrid(items: board.previewItems, height: 72)
+                                    PreviewGrid(
+                                        items: board.previewItems,
+                                        height: 72,
+                                        cellCornerRadius: LibraryVisualMetrics.collectionPickerPreviewTileCornerRadius
+                                    )
                                         .frame(width: 72)
-                                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                        .clipShape(
+                                            UnevenRoundedRectangle(
+                                                topLeadingRadius: 0,
+                                                bottomLeadingRadius: LibraryVisualMetrics.collectionPickerPreviewClipCornerRadius,
+                                                bottomTrailingRadius: LibraryVisualMetrics.collectionPickerPreviewClipCornerRadius,
+                                                topTrailingRadius: 0,
+                                                style: .continuous
+                                            )
+                                        )
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(board.promptTitle)
@@ -1108,7 +1262,7 @@ private struct ItemBoardPickerSheet: View {
                                 .padding(.horizontal, 18)
                                 .frame(height: 102)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                    RoundedRectangle(cornerRadius: LibraryVisualMetrics.collectionPickerBoardRowCornerRadius, style: .continuous)
                                         .fill(Color.white.opacity(0.08))
                                 )
                             }

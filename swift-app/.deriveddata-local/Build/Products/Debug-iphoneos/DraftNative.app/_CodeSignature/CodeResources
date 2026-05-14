@@ -16,6 +16,10 @@
 		<data>
 		7deH6MyWUcu31OuDE6Z3FmmXpNk=
 		</data>
+		<key>Final.mp4</key>
+		<data>
+		wkqz7B4tzek/eQ9byvADrnd/SQk=
+		</data>
 		<key>Info.plist</key>
 		<data>
 		8G5XcUlsM5FlhcopB5VU5H2FNlY=
@@ -26,7 +30,7 @@
 		</data>
 		<key>Logo.mov</key>
 		<data>
-		CoNTHPX/fwz7eBX8YJp6WBRTYOw=
+		E2o3TVkiWLPpbrAtbckNtI/H8J8=
 		</data>
 		<key>PkgInfo</key>
 		<data>
@@ -35,6 +39,10 @@
 		<key>embedded.mobileprovision</key>
 		<data>
 		qB7vWsojfpsXRG8ZGQA7uPPow/w=
+		</data>
+		<key>logo.mp4</key>
+		<data>
+		UXBGXKpg5as+BIX4d9OISCLCff8=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -60,6 +68,13 @@
 			i8i8bWftMkBLg+D7BOSUm9fpT02ZXlTji5dx/vJhteU=
 			</data>
 		</dict>
+		<key>Final.mp4</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			W45H/X9aY4pfZSCzRRkk9/kGcs/jSoQAqIBk7uHlAks=
+			</data>
+		</dict>
 		<key>LocalSecrets.plist</key>
 		<dict>
 			<key>hash2</key>
@@ -71,7 +86,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ike3CVPR2aaGPoGdYgFaXLDA8VyWxjExc+/XT8pUGyE=
+			bwq7WXauTS208tgBdDVxvkY3f8FGZvmdj4Yi3RylP7U=
 			</data>
 		</dict>
 		<key>embedded.mobileprovision</key>
@@ -79,6 +94,13 @@
 			<key>hash2</key>
 			<data>
 			RCsUI823i7eBoy9XF/qOsudH99jgLcLOfCbXiQ/IBjg=
+			</data>
+		</dict>
+		<key>logo.mp4</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			UHSXs3nrPKUgkE64Srs+eLtsGPcwcrL7lJ1MISo8dlA=
 			</data>
 		</dict>
 	</dict>

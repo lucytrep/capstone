@@ -8,6 +8,7 @@ struct LibraryBoardDetailView: View {
     @State private var isSelectMode = false
     @State private var selectedItemIDs: Set<String> = []
     @State private var showActionSheet = false
+    @State private var shareBoardPayload: DraftShareSheetPayload?
 
     private var board: LibraryBoard? {
         appModel.boards.first(where: { $0.id == boardID })
@@ -100,6 +101,9 @@ struct LibraryBoardDetailView: View {
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.82), value: isSelectMode)
         .preferredColorScheme(.dark)
+        .sheet(item: $shareBoardPayload) { payload in
+            ActivityView(activityItems: payload.activityItems)
+        }
         .sheet(isPresented: $showActionSheet) {
             BoardActionSheet(
                 boardID: boardID,
@@ -114,6 +118,15 @@ struct LibraryBoardDetailView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(hex: 0x181818))
+        }
+    }
+
+    private func presentBoardShare(board: LibraryBoard) {
+        Task {
+            let items = await LibraryShareImageFactory.activityItems(forBoard: board)
+            await MainActor.run {
+                shareBoardPayload = DraftShareSheetPayload(activityItems: items)
+            }
         }
     }
 
@@ -166,6 +179,9 @@ struct LibraryBoardDetailView: View {
                 Spacer(minLength: 0)
 
                 HStack(spacing: 10) {
+                    glassButton(systemName: "square.and.arrow.up") {
+                        presentBoardShare(board: board)
+                    }
                     glassButton(systemName: "checkmark.circle") {
                         withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
                             isSelectMode = true
@@ -184,11 +200,11 @@ struct LibraryBoardDetailView: View {
         ZStack(alignment: .topTrailing) {
             LibraryTile(item: item, width: w, height: h, compactPreview: false)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous)
                         .stroke(Color.accentColor, lineWidth: isSelectMode && isSelected ? 3 : 0)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous)
                         .fill(isSelectMode && isSelected ? Color.accentColor.opacity(0.14) : .clear)
                 )
                 .scaleEffect(isSelectMode && isSelected ? 0.97 : 1.0)
@@ -197,7 +213,7 @@ struct LibraryBoardDetailView: View {
                 selectionBadge(isSelected: isSelected)
             }
         }
-        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous))
         .overlay {
             if !isSelectMode, let item {
                 NavigationLink(value: LibraryRoute.item(item.id)) { Color.clear }
@@ -448,21 +464,7 @@ private struct BoardActionSheet: View {
         .background(Color(hex: 0x181818))
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    showBoardPicker = false
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Back")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundStyle(.white.opacity(0.8))
-                }
-            }
-        }
+        // Rely on NavigationStack's system back control only (custom leading Back duplicated it).
     }
 
     private func actionRow(icon: String, label: String, subtitle: String, destructive: Bool = false, action: @escaping () -> Void) -> some View {

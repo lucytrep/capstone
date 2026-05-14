@@ -264,3 +264,144 @@ enum ArtifactPayloadParser {
         return nil
     }
 }
+
+// MARK: - Persist generated artifact as a library board
+
+enum GeneratedDraftLibraryImport {
+    /// Builds a user-saved board appended at the end of the library list. Returns `nil` if nothing could be stored.
+    static func makeBoard(prompt: String, html: String, directionIndex: Int) -> LibraryBoard? {
+        let payload = ArtifactPayloadParser.parse(html: html)
+        let runId = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12).lowercased()
+        let title = boardTitle(from: prompt)
+        let genID = "gen-user-saved"
+
+        switch payload {
+        case .photos(let options):
+            guard options.indices.contains(directionIndex) else { return nil }
+            let photos = options[directionIndex].photos
+            guard !photos.isEmpty else { return nil }
+            let items = photos.enumerated().map { idx, photo in
+                libraryItem(from: photo, runId: String(runId), index: idx, generationID: genID)
+            }
+            return LibraryBoard(
+                id: "user-saved-\(runId)",
+                promptTitle: title,
+                itemCount: items.count,
+                updatedAtLabel: "Just now",
+                generationID: genID,
+                items: items
+            )
+
+        case .palette(let options):
+            guard options.indices.contains(directionIndex) else { return nil }
+            let swatches = options[directionIndex].swatches
+            guard !swatches.isEmpty else { return nil }
+            let items: [LibraryItem] = swatches.enumerated().map { idx, sw in
+                let hx = hexUInt(sw.hex)
+                return LibraryItem(
+                    id: "saved-\(runId)-pal-\(idx)",
+                    kind: .palette,
+                    label: sw.name,
+                    previewColorHex: hx,
+                    secondaryColorHex: hx ^ 0x1A1A1A,
+                    generationID: genID,
+                    alt: "\(sw.name) \(sw.hex)"
+                )
+            }
+            return LibraryBoard(
+                id: "user-saved-\(runId)",
+                promptTitle: title,
+                itemCount: items.count,
+                updatedAtLabel: "Just now",
+                generationID: genID,
+                items: items
+            )
+
+        case .ui(let options):
+            guard options.indices.contains(directionIndex) else { return nil }
+            let ui = options[directionIndex]
+            let p = hexUInt(ui.accent)
+            let s = hexUInt(ui.background)
+            let items = [
+                LibraryItem(
+                    id: "saved-\(runId)-ui",
+                    kind: .palette,
+                    label: ui.productName,
+                    previewColorHex: p,
+                    secondaryColorHex: s,
+                    generationID: genID,
+                    alt: ui.headline
+                ),
+            ]
+            return LibraryBoard(
+                id: "user-saved-\(runId)",
+                promptTitle: title,
+                itemCount: 1,
+                updatedAtLabel: "Just now",
+                generationID: genID,
+                items: items
+            )
+
+        case .web:
+            return nil
+        }
+    }
+
+    private static func boardTitle(from prompt: String) -> String {
+        let t = prompt
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { return "Saved draft" }
+        if t.count <= 56 { return t }
+        return String(t.prefix(53)) + "…"
+    }
+
+    private static func libraryItem(from photo: PhotoItemPayload, runId: String, index: Int, generationID: String) -> LibraryItem {
+        let id = "saved-\(runId)-img-\(index)-\(photo.id)"
+        let (preview, secondary) = previewHexPair(from: photo.imageUrl)
+        return LibraryItem(
+            id: id,
+            kind: .image,
+            label: photo.alt,
+            previewColorHex: preview,
+            secondaryColorHex: secondary,
+            generationID: generationID,
+            imageURL: photo.imageUrl,
+            thumbnailURL: photo.thumbUrl,
+            bundleImageName: photo.bundleImageName,
+            alt: photo.alt,
+            source: librarySource(from: photo.source),
+            author: photo.author
+        )
+    }
+
+    private static func librarySource(from source: PhotoSource) -> LibrarySource? {
+        switch source {
+        case .pexels: return .pexels
+        case .unsplash: return .unsplash
+        case .pinterest: return .pinterest
+        case .arena: return .arena
+        case .google: return .google
+        case .mixed: return nil
+        }
+    }
+
+    private static func hexUInt(_ hex: String) -> UInt {
+        var c = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "").uppercased()
+        if c.count == 3 {
+            c = c.map { chr in String(repeating: chr, count: 2) }.joined()
+        }
+        guard c.count == 6, let v = UInt32(c, radix: 16) else { return 0x5C4A38 }
+        return UInt(v)
+    }
+
+    private static func previewHexPair(from string: String) -> (UInt, UInt) {
+        var h = 5381
+        for u in string.utf8 {
+            h = ((h << 5) &+ h) &+ Int(u)
+        }
+        let a = UInt((h & 0xFFFFFF) | 0x303030)
+        let b = UInt(((h >> 12) & 0xFFFFFF) | 0x202020)
+        return (a, b)
+    }
+}

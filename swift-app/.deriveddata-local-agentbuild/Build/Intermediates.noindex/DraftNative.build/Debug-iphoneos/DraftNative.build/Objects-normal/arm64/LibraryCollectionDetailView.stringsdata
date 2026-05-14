@@ -1,0 +1,16 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryCollectionDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%lld items • %@",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 84
+        }
+      }
+    ]
+  },
+  "version": 1
+}

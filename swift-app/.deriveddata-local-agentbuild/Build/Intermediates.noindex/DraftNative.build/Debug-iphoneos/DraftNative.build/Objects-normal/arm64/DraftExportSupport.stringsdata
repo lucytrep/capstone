@@ -1,0 +1,112 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/DraftExportSupport.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Export draft",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 578
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open in %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 488
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open in…",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 505
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copies the best format for that destination, then opens the site (or the app via a universal link). Paste in Figma with ⌘V on desktop, or into the chat field on mobile.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 507
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export as PNG…",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 514
+        }
+      },
+      {
+        "comment": "",
+        "key": "Share image references…",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 522
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 526
+        }
+      },
+      {
+        "comment": "",
+        "key": "PNG opens in the iOS share sheet — save to Photos, AirDrop, or drop into Figma.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 528
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copy",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 552
+        }
+      },
+      {
+        "comment": "",
+        "key": "Share HTML file…",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 564
+        }
+      },
+      {
+        "comment": "",
+        "key": "Advanced",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 567
+        }
+      },
+      {
+        "comment": "",
+        "key": "Copied: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 572
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 582
+        }
+      }
+    ]
+  },
+  "version": 1
+}

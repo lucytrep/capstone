@@ -64,6 +64,8 @@ type PhotoOption = {
   photos: PhotoItem[];
 };
 
+type UIFeatureKind = 'toggles' | 'buttons' | 'picker' | 'cards';
+
 type UiOption = {
   id: string;
   direction: 'editorial' | 'minimal' | 'bold';
@@ -79,6 +81,9 @@ type UiOption = {
   mutedSurface: string;
   text: string;
   mutedText: string;
+  featureKind: UIFeatureKind;
+  featureTitle: string;
+  featureItems: string[];
 };
 
 type PexelsPhotoItem = PhotoItem & { source: 'pexels' };
@@ -271,35 +276,7 @@ function rankPhotosForDirection(
 
 const SYSTEM_PROMPT = `You are a design artifact generator. The user will describe a design idea. You must ALWAYS respond with only valid HTML and CSS - never text, never questions, never explanations. This app supports exactly 3 board types: UI boards, photo boards, and color boards. Always return a complete, beautiful, self-contained HTML document with embedded CSS. Never ask for clarification. Just build it. Start your response directly with <!DOCTYPE html> and nothing else.
 
-When the user asks for a UI, app screen, interface, product concept, or visual design mock, you MUST follow this exact product-shell pattern:
-
-UI SHELL RULES:
-- Background must be pure black: #000000
-- Title area at top-left must always say "Draft" on line 1 and "UI" on line 2
-- Top-right must include two circular action buttons with an "x" and a check mark
-- Show exactly 3 swipeable screen options laid out horizontally
-- The HTML itself must support horizontal swipe using CSS scroll snapping
-- Each option must be sized for a single iPhone screen and fill the available width without shrinking
-- Under the cards, show 3 pagination dots with the active dot elongated
-- Do not include a bottom navigation bar; the app chrome is provided outside the generated UI
-- The aesthetic should match the reference you provided: bold, high-contrast, polished, phone-mock presentation
-
-CONTENT RULES FOR EACH UI OPTION:
-- Each option should show the SAME product idea interpreted in 3 distinct visual directions
-- Each option should include a large rounded feature card centered in the phone shell
-- The card can contain imagery, gradients, typography, charts, controls, or product UI depending on the prompt
-- Preserve the same overall structure across all 3 options; only the visual direction/content should change
-- Use strong spacing, large rounded corners, and mobile-first sizing
-- Never output a tiny desktop webpage inside the phone frame
-
-Use a mobile-first document with this structure:
-- outer black app canvas
-- header row with title on left and 2 circular buttons on right
-- horizontally scrollable track with 3 snap-aligned option screens
-- pagination dots row
-
-The result must be a complete self-contained HTML document with embedded CSS and optional inline SVG only. Do not rely on external assets.
-You MUST label the three swipeable options clearly in the markup using data-ui-option="1", data-ui-option="2", and data-ui-option="3" on the 3 top-level option containers.
+When the user asks for a UI, app screen, or interface concept, the Draft mobile app renders native UI from embedded JSON (not from HTML you return here). Follow any JSON instructions in the user message when present.
 
 When the user asks for a color palette, you MUST follow this exact template — no exceptions:
 
@@ -350,6 +327,9 @@ Use this exact HTML structure for the palette:
 </div>
   </body>
 </html>`;
+
+const CLAUDE_UI_JSON_SYSTEM_PROMPT =
+  'You are a product design writer. Respond with exactly one JSON object and nothing else: no markdown fences, no commentary, no HTML. The response must be parseable JSON.';
 
 const PALETTE_KEYWORDS: Record<string, string> = {
   earthy: '#7B5B45',
@@ -1253,9 +1233,28 @@ function inferUiSubject(transcript: string) {
   return cleaned || 'digital experience';
 }
 
+function inferUiFeatureForTranscript(transcript: string): {
+  kind: UIFeatureKind;
+  title: string;
+  items: string[];
+} {
+  const lowered = transcript.toLowerCase();
+  if (/(toggle|toggles|switch|switches|selection states?)/i.test(lowered)) {
+    return { kind: 'toggles', title: 'Control States', items: ['Enabled', 'Muted', 'Focused'] };
+  }
+  if (/(picker|segment|segmented|tab|tabs|filter|chip|chips|dropdown)/i.test(lowered)) {
+    return { kind: 'picker', title: 'Selection System', items: ['For You', 'Popular', 'Saved'] };
+  }
+  if (/(button|buttons|cta|call to action)/i.test(lowered)) {
+    return { kind: 'buttons', title: 'Action Set', items: ['Primary', 'Secondary', 'Ghost'] };
+  }
+  return { kind: 'cards', title: 'Feature Modules', items: ['Overview', 'Details', 'Saved'] };
+}
+
 function buildUiOptions(transcript: string): UiOption[] {
   const productName = buildUiConceptName(transcript);
   const subject = inferUiSubject(transcript);
+  const feature = inferUiFeatureForTranscript(transcript);
 
   return [
     {
@@ -1264,7 +1263,8 @@ function buildUiOptions(transcript: string): UiOption[] {
       label: 'Editorial',
       productName,
       headline: `A dramatic ${subject} with layered storytelling`,
-      supportingText: 'Strong hierarchy, image-led composition, and premium pacing built for a first-impression concept.',
+      supportingText:
+        'Strong hierarchy, image-led composition, and premium pacing built for a first-impression concept.',
       primaryCta: 'Explore concept',
       secondaryCta: 'View story',
       accent: '#D98752',
@@ -1273,6 +1273,9 @@ function buildUiOptions(transcript: string): UiOption[] {
       mutedSurface: '#EEDBC5',
       text: '#1D120A',
       mutedText: 'rgba(29,18,10,0.62)',
+      featureKind: feature.kind,
+      featureTitle: feature.title,
+      featureItems: [...feature.items],
     },
     {
       id: 'ui-2',
@@ -1280,7 +1283,8 @@ function buildUiOptions(transcript: string): UiOption[] {
       label: 'Minimal',
       productName,
       headline: `A clear ${subject} system with calm spacing`,
-      supportingText: 'Minimal framing, crisp modules, and a quieter visual rhythm for a refined polished direction.',
+      supportingText:
+        'Minimal framing, crisp modules, and a quieter visual rhythm for a refined polished direction.',
       primaryCta: 'See layout',
       secondaryCta: 'Read details',
       accent: '#6D8CFF',
@@ -1289,6 +1293,9 @@ function buildUiOptions(transcript: string): UiOption[] {
       mutedSurface: '#E1E9FF',
       text: '#111827',
       mutedText: 'rgba(17,24,39,0.62)',
+      featureKind: feature.kind,
+      featureTitle: feature.title,
+      featureItems: [...feature.items],
     },
     {
       id: 'ui-3',
@@ -1296,7 +1303,8 @@ function buildUiOptions(transcript: string): UiOption[] {
       label: 'Bold',
       productName,
       headline: `A high-energy ${subject} with punchy motion cues`,
-      supportingText: 'Asymmetry, larger moments, and brighter contrast for a more expressive concept direction.',
+      supportingText:
+        'Asymmetry, larger moments, and brighter contrast for a more expressive concept direction.',
       primaryCta: 'Launch idea',
       secondaryCta: 'See modules',
       accent: '#F46FA9',
@@ -1305,6 +1313,9 @@ function buildUiOptions(transcript: string): UiOption[] {
       mutedSurface: '#2A2A2A',
       text: '#FFFFFF',
       mutedText: 'rgba(255,255,255,0.62)',
+      featureKind: feature.kind,
+      featureTitle: feature.title,
+      featureItems: [...feature.items],
     },
   ];
 }
@@ -1475,7 +1486,8 @@ async function requestClaudeArtifact(
   transcript: string,
   extraInstruction?: string,
   maxTokens = 2400,
-  timeoutMs = 20000
+  timeoutMs = 20000,
+  requestOptions?: { systemPrompt?: string; treatResponseAsHtml?: boolean }
 ): Promise<string> {
   if (!ANTHROPIC_API_KEY.trim()) {
     throw new Error('Anthropic API key is missing.');
@@ -1484,6 +1496,9 @@ async function requestClaudeArtifact(
   const userContent = extraInstruction
     ? `${transcript}\n\nAdditional hard requirements:\n${extraInstruction}`
     : transcript;
+
+  const system = requestOptions?.systemPrompt ?? SYSTEM_PROMPT;
+  const treatResponseAsHtml = requestOptions?.treatResponseAsHtml ?? true;
 
   const response = await withTimeout(
     fetch('https://api.anthropic.com/v1/messages', {
@@ -1496,7 +1511,7 @@ async function requestClaudeArtifact(
       body: JSON.stringify({
         model: CLAUDE_MODEL,
         max_tokens: maxTokens,
-        system: SYSTEM_PROMPT,
+        system,
         messages: [{ role: 'user', content: userContent }],
       }),
     }),
@@ -1523,35 +1538,124 @@ async function requestClaudeArtifact(
 
   let cleaned = text
     .replace(/^```html\s*/i, '')
+    .replace(/^```json\s*/i, '')
     .replace(/^```\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim();
 
-  const firstTag = cleaned.indexOf('<');
-  if (firstTag > 0) {
-    cleaned = cleaned.slice(firstTag);
+  if (treatResponseAsHtml) {
+    const firstTag = cleaned.indexOf('<');
+    if (firstTag > 0) {
+      cleaned = cleaned.slice(firstTag);
+    }
   }
 
-  console.log('[Claude cleaned HTML — first 300 chars]', cleaned.slice(0, 300));
+  console.log('[Claude cleaned response — first 300 chars]', cleaned.slice(0, 300));
 
   return cleaned;
 }
 
-function validateUiArtifact(html: string) {
-  const optionMatches = html.match(/data-ui-option="([123])"/g) ?? [];
-  const hasScrollSnap =
-    /scroll-snap-type/i.test(html) ||
-    /snap-aligned/i.test(html) ||
-    /overflow-x:\s*(auto|scroll)/i.test(html);
-  const hasDraftUiHeader = /Draft/i.test(html) && />\s*UI\s*</i.test(html);
-  const tagCount = (html.match(/<div\b|<section\b|<button\b|<main\b|<article\b/gi) ?? []).length;
-  const hasRichStructure =
-    /border-radius/i.test(html) &&
-    /display:\s*(flex|grid)/i.test(html) &&
-    tagCount >= 12;
+const UI_JSON_DIRECTIONS = ['editorial', 'minimal', 'bold'] as const;
 
-  return optionMatches.length >= 3 && hasScrollSnap && hasDraftUiHeader && hasRichStructure;
+function pickUiString(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') return fallback;
+  const v = value.trim();
+  return v.length ? v : fallback;
 }
+
+function normalizeUiDirection(value: unknown, index: number): 'editorial' | 'minimal' | 'bold' {
+  const s = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (s === 'editorial' || s === 'minimal' || s === 'bold') return s;
+  return UI_JSON_DIRECTIONS[index] ?? 'editorial';
+}
+
+function normalizeUiFeatureKind(value: unknown, fallback: UIFeatureKind): UIFeatureKind {
+  const s = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (s === 'toggles' || s === 'buttons' || s === 'picker' || s === 'cards') return s;
+  return fallback;
+}
+
+function mergeUiOptionsFromClaude(
+  dtos: Partial<UiOption>[],
+  template: UiOption[]
+): UiOption[] | null {
+  if (!Array.isArray(dtos) || dtos.length !== 3 || template.length !== 3) return null;
+  return dtos.map((c, i) => {
+    const t = template[i];
+    let items = Array.isArray(c.featureItems)
+      ? c.featureItems.map((x) => String(x).trim()).filter(Boolean).slice(0, 3)
+      : [];
+    const tItems = t.featureItems;
+    while (items.length < 3) {
+      items.push(tItems[items.length] ?? `Module ${items.length + 1}`);
+    }
+    return {
+      id: pickUiString(c.id, t.id),
+      direction: normalizeUiDirection(c.direction, i),
+      label: pickUiString(c.label, t.label),
+      productName: pickUiString(c.productName, t.productName),
+      headline: pickUiString(c.headline, t.headline),
+      supportingText: pickUiString(c.supportingText, t.supportingText),
+      primaryCta: pickUiString(c.primaryCta, t.primaryCta),
+      secondaryCta: pickUiString(c.secondaryCta, t.secondaryCta),
+      accent: pickUiString(c.accent, t.accent),
+      background: pickUiString(c.background, t.background),
+      surface: pickUiString(c.surface, t.surface),
+      mutedSurface: pickUiString(c.mutedSurface, t.mutedSurface),
+      text: pickUiString(c.text, t.text),
+      mutedText: pickUiString(c.mutedText, t.mutedText),
+      featureKind: normalizeUiFeatureKind(c.featureKind, t.featureKind),
+      featureTitle: pickUiString(c.featureTitle, t.featureTitle),
+      featureItems: items,
+    };
+  });
+}
+
+function tryParseClaudeUiOptionsJson(raw: string, transcript: string): UiOption[] | null {
+  const cleaned = raw
+    .replace(/^```json\s*/i, '')
+    .replace(/^```html\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  let parsed: { kind?: string; options?: Partial<UiOption>[] };
+  try {
+    parsed = JSON.parse(cleaned.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+  if (String(parsed.kind ?? '').toLowerCase() !== 'ui-options' || !Array.isArray(parsed.options) || parsed.options.length !== 3) {
+    return null;
+  }
+  const template = buildUiOptions(transcript);
+  return mergeUiOptionsFromClaude(parsed.options, template);
+}
+
+async function generateClaudeStructuredUiOptions(transcript: string): Promise<UiOption[] | null> {
+  const uiInstructions = [
+    'Return ONLY a single JSON object (no markdown code fences, no text before or after) with this shape:',
+    '{ "kind": "ui-options", "options": [ { ... }, { ... }, { ... } ] }',
+    'Include exactly 3 objects in "options". Each object MUST have these keys:',
+    'id, direction, label, productName, headline, supportingText, primaryCta, secondaryCta,',
+    'accent, background, surface, mutedSurface, text, mutedText, featureKind, featureTitle, featureItems',
+    '- direction must be lowercase: editorial, minimal, or bold (use all three once, in that order).',
+    '- featureKind must be lowercase: toggles, buttons, picker, or cards.',
+    '- featureItems must be an array of exactly 3 short strings.',
+    '- Colors: use #RRGGBB for solid fills; mutedText may be rgba(...) if needed.',
+    '- The three options must be genuinely different creative directions—not the same structure with only color changes.',
+  ].join('\n');
+
+  const augmented = buildSemanticPromptAugmentation(transcript, 'UI');
+  const raw = await requestClaudeArtifact(augmented, uiInstructions, 2800, 22000, {
+    systemPrompt: CLAUDE_UI_JSON_SYSTEM_PROMPT,
+    treatResponseAsHtml: false,
+  });
+  return tryParseClaudeUiOptionsJson(raw, transcript);
+}
+
 /**
  * Send a text transcript to Claude and get back a self-contained HTML design artifact.
  */
@@ -1574,46 +1678,17 @@ export async function generateArtifact(transcript: string): Promise<string> {
     }
   }
 
-  if (boardType === 'ui' && isUiPrompt(transcript)) {
+  if (boardType === 'ui') {
+    try {
+      const fromClaude = await generateClaudeStructuredUiOptions(transcript);
+      if (fromClaude && fromClaude.length === 3) {
+        return buildUiArtifactHtml(fromClaude);
+      }
+    } catch (error) {
+      console.error('Claude UI JSON failed, using local template.', error);
+    }
     return buildUiArtifactHtml(buildUiOptions(transcript));
   }
 
-  const semanticCategory: SemanticCategory = 'UI';
-  const semanticTranscript = buildSemanticPromptAugmentation(transcript, semanticCategory);
-  const uiInstructions = [
-    'Return exactly 3 swipeable UI options.',
-    'Each option container must include data-ui-option="1", data-ui-option="2", and data-ui-option="3".',
-    'Make the 3 options genuinely distinct directions, not minor color tweaks.',
-    'The three directions must differ in layout, hierarchy, composition, and component structure.',
-    'Changing only color is invalid.',
-    'Use a clear trio such as editorial, minimal, and experimental, or another equally distinct set of directions.',
-    'Use horizontal scroll snapping so the user can land on one option at a time.',
-    'Keep the Draft / UI header, top-right action buttons, and pagination dots.',
-    'Do not include a bottom navigation bar; app chrome is already provided outside the generated UI.',
-  ].join('\n');
-
-  let artifact = '';
-
-  try {
-    artifact = await requestClaudeArtifact(
-      semanticTranscript,
-      isUiPrompt(transcript) ? uiInstructions : undefined,
-      isUiPrompt(transcript) ? 2600 : 2400,
-      isUiPrompt(transcript) ? 18000 : 16000
-    );
-
-    if (isUiPrompt(transcript) && !validateUiArtifact(artifact)) {
-      console.warn('Claude returned malformed UI HTML, using local fallback.');
-      artifact = buildUiFallbackArtifactHtml(transcript);
-    }
-  } catch (error) {
-    console.error('UI generation failed, using local fallback.', error);
-    artifact = buildUiFallbackArtifactHtml(transcript);
-  }
-
-  if (!artifact.trim()) {
-    return buildUiFallbackArtifactHtml(transcript);
-  }
-
-  return artifact;
+  return buildUiFallbackArtifactHtml(transcript);
 }

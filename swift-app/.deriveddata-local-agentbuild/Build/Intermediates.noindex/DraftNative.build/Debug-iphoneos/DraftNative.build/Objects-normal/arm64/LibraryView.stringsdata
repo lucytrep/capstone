@@ -1,0 +1,88 @@
+{
+  "source": "/Users/lucytrepanier/Code/capstone/swift-app/DraftNative/Views/LibraryView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
+        "key": "Drafts",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 265
+        }
+      },
+      {
+        "comment": "",
+        "key": "All items",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove from library",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 470
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld items",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 513
+        }
+      },
+      {
+        "comment": "",
+        "key": "Collections",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1159
+        }
+      },
+      {
+        "comment": "",
+        "key": "No other boards available",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1169
+        }
+      },
+      {
+        "comment": "",
+        "key": "This item is already saved in every board.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1172
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld item%@",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1203
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1232
+        }
+      }
+    ]
+  },
+  "version": 1
+}

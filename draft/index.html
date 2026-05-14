@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Draft — AI-powered creative brief tool for iOS">
+  <title>Draft — AI-powered creative brief tool</title>
+  <link rel="icon" type="image/png" href="assets/favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <style>
+    @font-face { font-family: 'SF Pro Rounded'; src: url('assets/fonts/SF-Pro-Rounded-Regular.otf'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'SF Pro Rounded'; src: url('assets/fonts/SF-Pro-Rounded-Medium.otf'); font-weight: 500; font-display: swap; }
+    @font-face { font-family: 'SF Pro Rounded'; src: url('assets/fonts/SF-Pro-Rounded-Semibold.otf'); font-weight: 600; font-display: swap; }
+    @font-face { font-family: 'SF Pro Rounded'; src: url('assets/fonts/SF-Pro-Rounded-Bold.otf'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'SF Pro Rounded'; src: url('assets/fonts/SF-Pro-Rounded-Heavy.otf'); font-weight: 800; font-display: swap; }
+    @font-face { font-family: 'SF Pro Rounded'; src: url('assets/fonts/SF-Pro-Rounded-Black.otf'); font-weight: 900; font-display: swap; }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'SF Pro Rounded', ui-rounded, -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 24px;
+      padding-top: calc(40px + env(safe-area-inset-top));
+    }
+
+    .nav-logo {
+      height: 30px;
+      filter: drop-shadow(0 0 10px rgba(0,0,0,0.7));
+    }
+
+    .hamburger {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: #fff;
+      border-radius: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      transform-origin: center;
+    }
+
+    .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* Full-screen menu — SF Pro (system), not SF Pro Rounded; regular weight */
+    .nav-menu {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-weight: 400;
+    }
+
+    .nav-menu.open { opacity: 1; pointer-events: all; }
+
+    .nav-menu a {
+      font-size: clamp(32px, 8vw, 56px);
+      font-weight: 400;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s;
+    }
+
+    .nav-menu a:hover,
+    .nav-menu a:active { color: #fff; }
+
+    .nav-menu-close {
+      position: absolute;
+      top: calc(28px + env(safe-area-inset-top));
+      right: 24px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      font-weight: 400;
+      cursor: pointer;
+      padding: 8px;
+      line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Carousel ── */
+    .carousel-section {
+      position: relative;
+      margin-top: clamp(-44px, -12vw, -22px);
+      padding: 0 0 44px;
+      overflow-x: clip;
+      overflow-y: visible;
+    }
+
+    .carousel-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .carousel-viewport {
+      width: 100%;
+      padding: 0 0 8px;
+    }
+
+    .carousel-track {
+      display: flex;
+      gap: 8px;
+      will-change: transform;
+    }
+
+    .carousel-card {
+      flex: none;
+      height: min(30svh, 200px);
+      aspect-ratio: 3 / 4;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+      transition: transform 0.45s cubic-bezier(0.34, 1.4, 0.64, 1),
+                  box-shadow 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
+      z-index: 0;
+    }
+
+    /* Only the resting / centered card scales — applied while paused between slides */
+    .carousel-card.is-center {
+      transform: scale(1.18);
+      box-shadow:
+        0 18px 52px rgba(0,0,0,0.75),
+        0 0 0 1px rgba(255,255,255,0.14),
+        0 0 44px rgba(255,255,255,0.08);
+      z-index: 2;
+    }
+
+    .carousel-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      display: block;
+    }
+
+    /* Color swatches keep label art pinned to the corner */
+    .carousel-card img[src*="library/color-"] {
+      object-position: top left;
+    }
+
+    /* ── Above-fold: everything that fits on one screen ── */
+    .above-fold {
+      height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    /* ── Hero wrapper ── */
+    .hero-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      max-height: 60svh;
+      overflow: hidden;
+      /* Above .hero-desc-section (z-index 10) so its ::before fade cannot paint over the phone on iOS Safari */
+      z-index: 11;
+    }
+
+    /* Background image — flipped vertically, dimmed */
+    .hero-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: -5% 0;
+      background-image: url('assets/gradient-bg.png');
+      background-size: cover;
+      background-position: center 70%;
+      transform: scaleY(-1);
+      opacity: 0.72;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* fades the photo background to #000 at the seam — z-index 1 stays under .hero (2) so it never stacks over the phone PNG */
+    .hero-wrapper::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: min(78%, 320px);
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent 18%,
+        rgba(0, 0, 0, 0.08) 32%,
+        rgba(0, 0, 0, 0.22) 48%,
+        rgba(0, 0, 0, 0.48) 64%,
+        rgba(0, 0, 0, 0.72) 78%,
+        rgba(0, 0, 0, 0.9) 90%,
+        #000 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 24px;
+      padding-top: calc(28px + env(safe-area-inset-top));
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 12px 16px 0;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: rgba(255,255,255,0.62);
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .hero-headline {
+      font-size: clamp(40px, 11.5vw, 160px);
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      line-height: 1;
+      color: #fff;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hl-line {
+      display: block;
+      white-space: nowrap;
+    }
+
+    @keyframes phoneRise {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Phone hero (real PNG mockup) ── */
+    .phone-hero {
+      position: relative;
+      z-index: 2;
+      width: min(64vw, 280px);
+      margin-top: auto;
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 0;
+      padding-top: 22px;
+      display: block;
+      filter: drop-shadow(0px -4px 10px rgba(0,0,0,0.28));
+      animation: phoneRise 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+    }
+
+    .phone-hero img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* second screen layered on top — JS drives opacity; top matches .phone-hero padding so both PNGs share the same origin (inset:0 + height:100% misaligned vs first img) */
+    .phone-img-2 {
+      position: absolute;
+      top: 22px;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: auto;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    /* invisible tap zones over the Drafts / All items tab bar */
+    .phone-tabs {
+      position: absolute;
+      top: 16%;
+      left: 8%;
+      right: 8%;
+      height: 7%;
+      display: flex;
+      z-index: 10;
+      cursor: pointer;
+    }
+
+    .phone-tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Hero description (below phone, above carousel) ── */
+    .hero-desc-section {
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+      /* Tight bottom padding — carousel has margin-top pull + scaled card uses overflow-y: visible on section */
+      padding: calc(24px + 1rem) 40px 0;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    /* Softens the cut between the hero (clipped phone + bg) and solid black */
+    .hero-desc-section::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 100%;
+      height: clamp(180px, 52svh, 380px);
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0) 26%,
+        rgba(0, 0, 0, 0.03) 40%,
+        rgba(0, 0, 0, 0.1) 54%,
+        rgba(0, 0, 0, 0.22) 68%,
+        rgba(0, 0, 0, 0.42) 80%,
+        rgba(0, 0, 0, 0.65) 90%,
+        rgba(0, 0, 0, 0.88) 97%,
+        #000 100%
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-desc-section > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-desc {
+      font-size: clamp(18px, 4.5vw, 32px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      color: rgba(255,255,255,0.85);
+      max-width: 540px;
+      margin: 0 auto;
+      padding: clamp(10px, 2.5vw, 20px) 0 0;
+      text-align: center;
+    }
+
+    .hero-desc strong {
+      font-weight: 700;
+      color: #fff;
+    }
+    .hero-desc .char {
+      opacity: 0.15;
+    }
+
+    /* ── Tagline section (below carousel) ── */
+    .tagline-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 64px 28px 72px;
+    }
+
+    .phone-hero-frame {
+      width: 100%;
+      aspect-ratio: 393 / 852;
+      background: #111;
+      border-radius: 13.5% / 6.2%;
+      border: 1.5px solid rgba(255,255,255,0.18);
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 5px #1e1e1e,
+        0 0 0 6.5px rgba(255,255,255,0.08);
+    }
+
+    /* dynamic island */
+    .phone-hero-frame::before {
+      content: '';
+      position: absolute;
+      top: 3.2%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28%;
+      height: 3.8%;
+      background: #000;
+      border-radius: 20px;
+      z-index: 5;
+    }
+
+    .phone-hero-screen {
+      position: absolute;
+      inset: 1.5%;
+      border-radius: 12% / 5.5%;
+      background: #050505;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+    }
+
+    .phone-hero-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* top-left cell spans both rows for the large card */
+    .phone-hero-screen img:first-child {
+      grid-row: span 2;
+    }
+
+    /* status bar overlay */
+    .phone-hero-screen::before {
+      content: '9:41';
+      position: absolute;
+      top: 7%;
+      left: 6%;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      z-index: 4;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-sub {
+      font-size: 15px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.65);
+      max-width: 320px;
+      margin-bottom: 28px;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 0;
+      padding: 0.62em 1.5em;
+      min-height: 44px;
+      border: none;
+      border-radius: 100px;
+      font-size: clamp(17px, 4.2vw, 30px);
+      font-weight: 500;
+      font-family: inherit;
+      color: #fff;
+      letter-spacing: -0.02em;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      /* Near-black glass: dark body + tight specular (crisp iOS-style) */
+      background-color: rgba(10, 10, 12, 0.82);
+      background-image: linear-gradient(
+        168deg,
+        rgba(255, 255, 255, 0.62) -8%,
+        rgba(255, 255, 255, 0.16) 14%,
+        rgba(255, 255, 255, 0.05) 30%,
+        rgba(255, 255, 255, 0) 48%
+      );
+      backdrop-filter: blur(28px) saturate(1.35);
+      -webkit-backdrop-filter: blur(28px) saturate(1.35);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
+      transition:
+        transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1),
+        box-shadow 0.22s ease,
+        background-color 0.22s ease;
+    }
+
+    .cta-btn:active {
+      transform: scale(0.97);
+      box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .cta-arrow { display: inline-block; font-size: 0.85em; opacity: 1; font-weight: 400; }
+
+    @media (hover: hover) {
+      .cta-btn:hover {
+        background-color: rgba(18, 18, 22, 0.88);
+        background-image: linear-gradient(
+          168deg,
+          rgba(255, 255, 255, 0.72) -6%,
+          rgba(255, 255, 255, 0.22) 14%,
+          rgba(255, 255, 255, 0.07) 30%,
+          rgba(255, 255, 255, 0) 48%
+        );
+        box-shadow:
+          0 14px 44px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      }
+    }
+
+    /* ── Reel video ── */
+    .reel-section {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      margin-bottom: clamp(40px, 7vw, 88px);
+    }
+
+    .reel-section video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      position: relative;
+      z-index: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      /* Soft vignette on sides + hairline so frame edges read against black (top/bottom still use section overlays) */
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 32px 0 48px -10px rgba(0, 0, 0, 0.38),
+        inset -32px 0 48px -10px rgba(0, 0, 0, 0.38);
+    }
+
+    .reel-section video:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.55);
+      outline-offset: 4px;
+    }
+
+    /* Sit above the video (otherwise ::before paints underneath and disappears) */
+    .reel-section::before,
+    .reel-section::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: clamp(64px, 17vw, 104px);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .reel-section::before {
+      top: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.58) 0%,
+        rgba(0, 0, 0, 0.28) 38%,
+        rgba(0, 0, 0, 0.08) 72%,
+        rgba(0, 0, 0, 0) 100%
+      );
+    }
+
+    .reel-section::after {
+      bottom: 0;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.72) 0%,
+        rgba(0, 0, 0, 0.3) 42%,
+        rgba(0, 0, 0, 0) 100%
+      );
+    }
+
+    /* ── Problem statement (pull quote between reel and features) ── */
+    .problem-statement {
+      background: #000;
+      padding: 120px clamp(20px, 5vw, 48px);
+      text-align: center;
+    }
+
+    .problem-statement__label {
+      margin: 0 0 clamp(28px, 4vw, 44px);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: rgba(255, 255, 255, 0.62);
+      font-family: inherit;
+    }
+
+    .problem-statement__quote {
+      margin: 0 auto;
+      max-width: min(42rem, calc(100vw - 40px));
+      font-size: clamp(26px, 5.2vw, 96px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.12;
+      color: #fff;
+      font-family: inherit;
+      text-wrap: balance;
+    }
+
+    .problem-statement__line {
+      display: block;
+      text-wrap: balance;
+    }
+
+    .problem-statement__line + .problem-statement__line {
+      margin-top: 0.08em;
+    }
+
+    @media (min-width: 900px) {
+      .problem-statement__line {
+        white-space: nowrap;
+      }
+    }
+
+    /* ── Section headings (unified large titles — Product Video, What it does, etc.) ── */
+    .section-heading {
+      background: #000;
+      text-align: center;
+    }
+
+    .section-heading__title {
+      margin: 0;
+      font-size: clamp(22px, 5.2vw, 34px);
+      font-weight: 600;
+      letter-spacing: -0.032em;
+      line-height: 1.1;
+      color: #fff;
+      font-family: inherit;
+      text-wrap: balance;
+    }
+
+    .section-heading__sub {
+      margin: 0.55em 0 0;
+      font-size: clamp(15px, 3.5vw, 18px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.5);
+      max-width: 22em;
+      margin-left: auto;
+      margin-right: auto;
+      font-family: inherit;
+    }
+
+    .section-heading__sub strong {
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.96);
+    }
+
+    .section-heading--reel {
+      padding: clamp(28px, 5vw, 56px) clamp(20px, 5vw, 40px) clamp(36px, 5.5vw, 64px);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .section-heading--features {
+      padding: clamp(20px, 4vw, 40px) 16px 12px;
+      max-width: 560px;
+      margin: 0 auto;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .section-heading--accordion-head {
+      padding: 0 0 14px;
+      max-width: 540px;
+      margin-left: auto;
+      margin-right: auto;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .section-heading--about {
+      margin: 0;
+      padding: 0 clamp(8px, 3vw, 16px);
+    }
+
+    /* ── Features — iOS grouped cards ── */
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 16px 64px;
+      background: #000;
+    }
+
+    .feature {
+      background: rgba(255,255,255,0.06);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 18px 20px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .feature h3 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+
+    .feature p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.45);
+      font-weight: 400;
+    }
+
+    /* ── Tagline ── */
+    .tagline-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 56px 28px 60px;
+      gap: 20px;
+    }
+
+    .tagline-section .hero-sub {
+      font-size: 15px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+      max-width: 300px;
+      margin: 0;
+    }
+
+    /* ── Demo modal ── */
+    .demo-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .demo-modal.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .demo-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .demo-modal-content {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      transform: translateY(24px);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .demo-modal.open .demo-modal-content {
+      transform: translateY(0);
+    }
+
+    .demo-modal-content video {
+      width: 100%;
+      border-radius: 16px;
+      display: block;
+      background: #000;
+    }
+
+    .demo-close {
+      position: absolute;
+      top: -44px;
+      right: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+
+    .demo-close:active { background: rgba(255,255,255,0.3); }
+
+    @media (hover: hover) {
+      .demo-close:hover { background: rgba(255,255,255,0.25); }
+    }
+
+    /* ── Footer ── */
+    footer {
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 28px 24px;
+      padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    }
+
+    footer p { font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 0.02em; font-weight: 400; }
+
+    /* ── Tablet+ ── */
+    @media (min-width: 540px) {
+      .nav-logo { height: 26px; }
+      .phone-hero { width: min(58vw, 360px); }
+      .hero-sub { font-size: 16px; max-width: 380px; }
+      .hero-desc-section { padding: calc(28px + 1rem) 40px 0; gap: 32px; }
+      .carousel-section { margin-top: clamp(-52px, -11vw, -28px); padding: 0 0 52px; }
+      .carousel-viewport { padding: 0 0 8px; }
+      .carousel-track { gap: 10px; }
+      .carousel-card {
+        height: min(40svh, 284px);
+        border-radius: 20px;
+      }
+      .carousel-card.is-center {
+        transform: scale(1.22);
+        box-shadow:
+          0 22px 60px rgba(0,0,0,0.78),
+          0 0 0 1px rgba(255,255,255,0.15),
+          0 0 48px rgba(255,255,255,0.09);
+      }
+      .feature { padding: 48px 36px; }
+      .feature h3 { font-size: 18px; }
+    }
+
+    @media (min-width: 860px) {
+      .nav-logo { height: 28px; }
+      .phone-hero { width: min(40vw, 460px); }
+      .hero-sub { font-size: 17px; max-width: 480px; }
+      .carousel-track { gap: 14px; }
+      .features { grid-template-columns: repeat(3, 1fr); }
+      .feature { padding: 60px 44px; }
+      .feature h3 { font-size: 19px; }
+      .feature-num { font-size: 11px; margin-bottom: 28px; }
+    }
+
+    /* ── Floating cards around features section ── */
+    .features-float-scene {
+      position: relative;
+      min-height: 480px;
+    }
+
+    .float-anchor {
+      position: absolute;
+      will-change: transform;
+    }
+
+    .float-card-img {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.6);
+      animation: bobFloat var(--bob-dur, 4s) ease-in-out var(--bob-delay, 0s) infinite;
+    }
+    .float-card-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+    @keyframes bobFloat {
+      0%, 100% { translate: 0 0px; }
+      50% { translate: 0 -11px; }
+    }
+    @keyframes floatIn {
+      from { opacity: 0; translate: -24px 0; }
+      to   { opacity: 1; translate: 0 0; }
+    }
+    @keyframes floatInRight {
+      from { opacity: 0; translate: 24px 0; }
+      to   { opacity: 1; translate: 0 0; }
+    }
+
+    .float-anchor.fl-left  { animation: floatIn 0.9s cubic-bezier(0.22,1,0.36,1) var(--enter-delay,0s) both; }
+    .float-anchor.fl-right { animation: floatInRight 0.9s cubic-bezier(0.22,1,0.36,1) var(--enter-delay,0s) both; }
+
+    .fc-1 .float-card-img { rotate: -4deg; }
+    .fc-2 .float-card-img { rotate: -3deg; }
+    .fc-3 .float-card-img { rotate: -5deg; }
+    .fc-4 .float-card-img { rotate: 4deg; }
+    .fc-5 .float-card-img { rotate: 3deg; }
+    .fc-6 .float-card-img { rotate: 5deg; }
+
+    /* ── Built with ── */
+    .built-section {
+      padding: 64px 28px 72px;
+      background: #000;
+      text-align: center;
+    }
+
+    .built-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 36px;
+    }
+
+    .built-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px 12px;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .built-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.92);
+      transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .built-card.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .built-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 0.5px solid rgba(255,255,255,0.12);
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        inset 0 -1px 0 rgba(0,0,0,0.2);
+    }
+
+    .built-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 18px;
+    }
+
+    /* Figma asset has extra inset canvas — scale so the logo fills the tile */
+    .built-icon--figma img {
+      transform: scale(1.28);
+      transform-origin: center center;
+    }
+
+    .built-name {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: -0.01em;
+      font-family: inherit;
+    }
+
+    /* ── About the designer ── */
+    .about-section {
+      padding: 72px 28px 80px;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 28px;
+    }
+
+    .about-photo-scene {
+      position: relative;
+      width: 148px;
+      height: 148px;
+      overflow: visible;
+    }
+
+    .about-photo-ring {
+      width: 148px;
+      height: 148px;
+      border-radius: 50%;
+      padding: 3px;
+      background: conic-gradient(from 0deg, #FF8C6B, #D4945A, #C2E8C0, #A9A9FF, #C3B1A0, #FF8C6B);
+      position: relative;
+      z-index: 1;
+    }
+
+    .about-photo-ring img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center 18%;
+      display: block;
+    }
+
+    .about-sticker {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      z-index: 3;
+    }
+
+    .about-sticker-blob {
+      width: 50px;
+      top: -8px;
+      left: -16px;
+    }
+
+    .about-sticker-star {
+      width: 48px;
+      bottom: -8px;
+      right: -14px;
+    }
+
+    .about-tag {
+      position: absolute;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      padding: 7px 16px;
+      border-radius: 100px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      z-index: 2;
+    }
+
+    .about-tag-amber {
+      background: linear-gradient(135deg, #E8A050 0%, #A85F10 100%);
+      color: #fff;
+      top: 14px;
+      right: -48px;
+      transform: rotate(-5deg);
+      box-shadow: 0 2px 12px rgba(168, 95, 16, 0.4);
+    }
+
+    .about-tag-glass {
+      background: linear-gradient(135deg, #3E6B4E 0%, #1A3828 100%);
+      border: 0.5px solid rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.9);
+      bottom: 22px;
+      left: -68px;
+      transform: rotate(3deg);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .about-name {
+      font-size: clamp(26px, 6.5vw, 52px);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      color: #fff;
+      line-height: 1;
+      margin: 0;
+      padding: 0 clamp(8px, 3vw, 16px);
+    }
+
+    .about-bio {
+      font-size: clamp(16px, 3.8vw, 22px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.62);
+      max-width: min(34em, 520px);
+      margin: 0 auto;
+      padding: 0 clamp(24px, 7vw, 56px);
+      text-wrap: pretty;
+    }
+
+    .about-bio strong {
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    /* ── Accordion section ── */
+    .accordion-section {
+      padding: 0 20px 72px;
+      background: #000;
+    }
+
+    .accordion-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+    .accordion-item {
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .accordion-label-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      font-family: inherit;
+    }
+    .acc-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .acc-chevron {
+      color: rgba(255,255,255,0.4);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      flex-shrink: 0;
+    }
+    .accordion-item.open .acc-chevron { transform: rotate(180deg); }
+    .accordion-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .accordion-item.open .accordion-body { max-height: 220px; }
+    .accordion-content {
+      padding: 0 18px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.45);
+      font-family: inherit;
+    }
+
+    /* ── Scroll-reveal: features + accordion ── */
+
+    /* Float cards: paused until scene is revealed */
+    .float-anchor.fl-left  { animation-play-state: paused; }
+    .float-anchor.fl-right { animation-play-state: paused; }
+    .features-float-scene.revealed .float-anchor { animation-play-state: running; }
+
+    .features-float-scene.revealed .section-heading--features {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Feature cards */
+    .feature {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .features-float-scene.revealed .feature:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.1s; }
+    .features-float-scene.revealed .feature:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.24s; }
+    .features-float-scene.revealed .feature:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.38s; }
+
+    .accordion-section.revealed .section-heading--accordion-head { opacity: 1; transform: none; }
+
+    .accordion-item {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .accordion-section.revealed .accordion-item:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.06s; }
+    .accordion-section.revealed .accordion-item:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.16s; }
+    .accordion-section.revealed .accordion-item:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.26s; }
+    .accordion-section.revealed .accordion-item:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.36s; }
+  </style>
+</head>
+<body>
+
+  <div class="nav-menu" id="navMenu">
+    <button class="nav-menu-close" id="menuClose" aria-label="Close menu">✕</button>
+    <a href="https://lucytrep.com/case-studies/">Work</a>
+    <a href="https://lucytrep.com/about/">About</a>
+    <a href="https://lucytrep.com/archive/">Archive</a>
+    <a href="https://lucytrep.com/contact/">Contact</a>
+  </div>
+
+  <div class="above-fold">
+
+    <div class="hero-wrapper">
+      <nav>
+        <img src="assets/logo.png" alt="Draft" class="nav-logo">
+        <button class="hamburger" id="menuOpen" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+      </nav>
+
+      <section class="hero">
+        <p class="eyebrow">Native iOS app · Voice-first design tool</p>
+        <h1 class="hero-headline"><span class="hl-line">Think it. Say it.</span><span class="hl-line">Draft it.</span></h1>
+
+        <div class="phone-hero" id="phoneHero">
+          <img src="assets/phone-mock.png" alt="Draft — All items view">
+          <img src="assets/phone-mock-2.png" alt="Draft — Drafts view" class="phone-img-2" id="phoneMock2">
+          <div class="phone-tabs" aria-hidden="true">
+            <button class="phone-tab-btn" id="tabDrafts"></button>
+            <button class="phone-tab-btn" id="tabAllItems"></button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="hero-desc-section">
+      <p class="hero-desc">Draft is a voice-first tool for designers who <strong>think out loud.</strong> Say the feeling, the vibe, get <strong>three directions</strong> back instantly. <strong>Thought starters,</strong> not finished files.</p>
+      <button type="button" class="cta-btn" id="scrollToReel">Watch the demo <span class="cta-arrow">→</span></button>
+    </section>
+
+  </div>
+
+  <section class="carousel-section">
+    <div class="carousel-viewport">
+      <div class="carousel-track" id="carouselTrack"></div>
+    </div>
+  </section>
+
+  <main>
+
+    <header class="section-heading section-heading--reel">
+      <h2 class="section-heading__title">Product Video</h2>
+      <p class="section-heading__sub">Think it. Say it. <strong>Draft</strong> it.</p>
+    </header>
+
+    <section class="reel-section" id="reelSection">
+      <video id="reelInlineVideo" autoplay muted loop playsinline preload="metadata" tabindex="0" aria-label="Open demo video larger">
+        <source src="assets/LucyTrepanier_VideoDemo.mp4" type="video/mp4">
+      </video>
+    </section>
+
+    <section class="problem-statement" aria-labelledby="problem-label">
+      <p class="problem-statement__label" id="problem-label">The problem</p>
+      <p class="problem-statement__quote">
+        <span class="problem-statement__line">Most design tools wait for you to know what you want.</span>
+        <span class="problem-statement__line">Draft works before that moment.</span>
+      </p>
+    </section>
+
+    <div class="features-float-scene" id="featuresScene">
+
+      <!-- Left floating cards — bleed off left edge -->
+      <div class="float-anchor fl-left fc-1" style="top:4%;left:-28px;--bob-dur:4.2s;--enter-delay:0.1s;--bob-delay:0s;">
+        <div class="float-card-img" style="width:96px;height:96px;">
+          <img src="assets/float/image_aura_blue_014.jpg" alt="" loading="lazy">
+        </div>
+      </div>
+      <div class="float-anchor fl-left fc-2" style="top:37%;left:-22px;--bob-dur:3.7s;--enter-delay:0.22s;--bob-delay:0.5s;">
+        <div class="float-card-img" style="width:108px;height:80px;">
+          <img src="assets/float/image_halftone_004.jpg" alt="" loading="lazy">
+        </div>
+      </div>
+      <div class="float-anchor fl-left fc-3" style="top:64%;left:-26px;--bob-dur:4.6s;--enter-delay:0.38s;--bob-delay:1s;">
+        <div class="float-card-img" style="width:88px;height:112px;">
+          <img src="assets/float/image_athlete_red_015.jpg" alt="" loading="lazy">
+        </div>
+      </div>
+
+      <!-- Right floating cards — bleed off right edge -->
+      <div class="float-anchor fl-right fc-4" style="top:6%;right:-28px;--bob-dur:3.9s;--enter-delay:0.08s;--bob-delay:0.3s;">
+        <div class="float-card-img" style="width:100px;height:76px;">
+          <img src="assets/float/image_aura_orange_013.jpg" alt="" loading="lazy">
+        </div>
+      </div>
+      <div class="float-anchor fl-right fc-5" style="top:39%;right:-24px;--bob-dur:4.3s;--enter-delay:0.28s;--bob-delay:0.8s;">
+        <div class="float-card-img" style="width:112px;height:80px;">
+          <img src="assets/float/image_nike_rhythm_003.jpg" alt="" loading="lazy">
+        </div>
+      </div>
+      <div class="float-anchor fl-right fc-6" style="top:66%;right:-26px;--bob-dur:3.6s;--enter-delay:0.44s;--bob-delay:1.2s;">
+        <div class="float-card-img" style="width:90px;height:116px;">
+          <img src="assets/float/image_silhouettes_001.jpg" alt="" loading="lazy">
+        </div>
+      </div>
+
+      <header class="section-heading section-heading--features">
+        <h2 class="section-heading__title">What it does</h2>
+      </header>
+      <section class="features">
+        <div class="feature">
+          <h3>Say the idea out loud</h3>
+          <p>Draft is listening. Speak the feeling, the reference, the half-thought — and it turns into something real.</p>
+        </div>
+        <div class="feature">
+          <h3>Three directions, instantly</h3>
+          <p>Every prompt comes back as three distinct creative directions. Pick one, combine them, or start over.</p>
+        </div>
+        <div class="feature">
+          <h3>Built for how designers actually think</h3>
+          <p>Not a blank canvas. Not a prompt box. A native iOS tool that works the way your brain does.</p>
+        </div>
+      </section>
+
+    </div><!-- /features-float-scene -->
+
+  </main>
+
+  <section class="accordion-section">
+    <header class="section-heading section-heading--accordion-head">
+      <h2 class="section-heading__title">What Draft creates</h2>
+    </header>
+    <div class="accordion-list">
+
+      <div class="accordion-item" data-acc>
+        <button class="accordion-header" aria-expanded="false">
+          <span class="accordion-label-row">
+            <span class="acc-dot" style="background:#C2E8C0;"></span>
+            Color
+          </span>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <p class="accordion-content">Palette suggestions pulled from your brief — earthy, electric, muted, or bold. Always tied back to the mood you described.</p>
+        </div>
+      </div>
+
+      <div class="accordion-item" data-acc>
+        <button class="accordion-header" aria-expanded="false">
+          <span class="accordion-label-row">
+            <span class="acc-dot" style="background:#A9A9FF;"></span>
+            UI
+          </span>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <p class="accordion-content">Interface references that match your direction — typography, layout, and interaction patterns from real apps that feel like what you're building.</p>
+        </div>
+      </div>
+
+      <div class="accordion-item" data-acc>
+        <button class="accordion-header" aria-expanded="false">
+          <span class="accordion-label-row">
+            <span class="acc-dot" style="background:#FF8C6B;"></span>
+            Images
+          </span>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <p class="accordion-content">Photography, illustration, and texture pulled to match the feeling — not just keywords. Draft finds images that capture the vibe, not just the subject.</p>
+        </div>
+      </div>
+
+      <div class="accordion-item" data-acc>
+        <button class="accordion-header" aria-expanded="false">
+          <span class="accordion-label-row">
+            <span class="acc-dot" style="background:#D4945A;"></span>
+            Moodboard
+          </span>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <p class="accordion-content">Everything pulled together into one shareable board. Color, UI, imagery — formatted and ready to present to a client or kick off a design sprint.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="built-section" id="builtSection">
+    <p class="built-eyebrow">Built with</p>
+    <div class="built-grid">
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/swift.png" alt="Swift"></div>
+        <span class="built-name">Swift</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/xcode.png" alt="Xcode"></div>
+        <span class="built-name">Xcode</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/codex.png" alt="Claude Code"></div>
+        <span class="built-name">Claude Code</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/claude-ai.png" alt="Claude"></div>
+        <span class="built-name">Claude</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon built-icon--figma"><img src="assets/tools/figma.webp" alt="Figma"></div>
+        <span class="built-name">Figma</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/cursor.webp" alt="Cursor"></div>
+        <span class="built-name">Cursor</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/unsplash.png" alt="Unsplash"></div>
+        <span class="built-name">Unsplash</span>
+      </div>
+      <div class="built-card">
+        <div class="built-icon"><img src="assets/tools/pexels.png" alt="Pexels"></div>
+        <span class="built-name">Pexels</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section">
+    <header class="section-heading section-heading--about">
+      <h2 class="section-heading__title">About the designer</h2>
+    </header>
+    <div class="about-photo-scene">
+      <img src="assets/sticker-blob.png" class="about-sticker about-sticker-blob" alt="">
+      <img src="assets/sticker-star.png" class="about-sticker about-sticker-star" alt="">
+      <div class="about-photo-ring">
+        <img src="assets/about-photo.jpg" alt="Lucy Trepanier">
+      </div>
+      <span class="about-tag about-tag-amber">MPS '26</span>
+      <span class="about-tag about-tag-glass">Product Designer</span>
+    </div>
+    <p class="about-name">Lucy Trepanier</p>
+    <p class="about-bio">Lucy Trepanier is a Communication Design student at Parsons School of Design in NYC. Dyslexic by nature, she's always thought in images and feelings before words. <strong>Draft</strong> is the tool she wished had existed all along.</p>
+  </section>
+
+  <footer>
+    <p>© 2026 Draft &nbsp;·&nbsp; A capstone project by Lucy Trepanier</p>
+  </footer>
+
+  <script>
+    // ── Go-stop carousel — triple-set seamless infinite loop ──
+    (function () {
+      /* Bump when replacing any file under assets/library/ so browsers pick up new art (same filename). */
+      const LIBRARY_ASSET_VERSION = '20260514b';
+      const PNGS = new Set(['soft-spatial-ui-2', 'soft-spatial-ui-3', 'soft-spatial-ui-4']);
+      const images = [
+        'desert-dreams-1','desert-dreams-2','desert-dreams-3',
+        'desert-dreams-4','color-coral','desert-dreams-5','home-orange-car',
+        /* Slide uses assets/library/ui-viriability.jpg — replace that file (or rename your export to match) */
+        'ui-viriability','home-jumping','home-neon-rays','home-desert-art',
+        'color-black-cherry','home-athlete-red','open-court-1','open-court-2',
+        'color-pistachio','ui-skill-rate','open-court-3','open-court-4','open-court-5',
+        'color-osage','open-court-6','open-court-7','dir3-athletic','dir3-track','home-stadium'
+      ];
+
+      const track = document.getElementById('carouselTrack');
+      const SLIDE_MS = 520;
+      const PAUSE_MS = 1900;
+      const N = images.length;
+
+      function makeCard(name) {
+        const ext = PNGS.has(name) ? 'png' : 'jpg';
+        const div = document.createElement('div');
+        div.className = 'carousel-card';
+        const img = document.createElement('img');
+        img.src = 'assets/library/' + encodeURIComponent(name) + '.' + ext + '?v=' + LIBRARY_ASSET_VERSION;
+        img.alt = name;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        div.appendChild(img);
+        return div;
+      }
+
+      // Triple the cards: [A, B, C] — always stay in the middle set B
+      [...images, ...images, ...images].forEach(n => track.appendChild(makeCard(n)));
+
+      const allCards = [...track.querySelectorAll('.carousel-card')];
+
+      // idx always lives in the middle set: N .. 2N-1
+      let idx = N;
+
+      function cw() {
+        const gap = parseFloat(getComputedStyle(track).gap) || 10;
+        return allCards[0].getBoundingClientRect().width + gap;
+      }
+
+      function offsetFor(i) {
+        const vw = track.parentElement.offsetWidth;
+        const cardW = allCards[0].getBoundingClientRect().width;
+        return (vw / 2 - cardW / 2) - i * cw();
+      }
+
+      function setPos(i, animated) {
+        track.style.transition = animated
+          ? `transform ${SLIDE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          : 'none';
+        track.style.transform = `translateX(${offsetFor(i)}px)`;
+      }
+
+      function highlight(i) {
+        allCards.forEach(c => c.classList.remove('is-center'));
+        if (allCards[i]) allCards[i].classList.add('is-center');
+      }
+
+      // Init: sit at first card of middle set, highlight it
+      setPos(idx, false);
+      setTimeout(() => {
+        highlight(idx);
+        setTimeout(step, PAUSE_MS);
+      }, 100);
+
+      function step() {
+        allCards[idx].classList.remove('is-center');
+        idx++;
+
+        // Always animate forward — even into the third set
+        setPos(idx, true);
+
+        setTimeout(() => {
+          // After the slide lands: if we entered the third set,
+          // silently snap back to the equivalent card in the middle set.
+          // Both positions show the same image so the jump is invisible.
+          if (idx >= 2 * N) {
+            track.style.transition = 'none';
+            idx -= N;
+            track.style.transform = `translateX(${offsetFor(idx)}px)`;
+            track.offsetHeight; // force reflow
+          }
+
+          highlight(idx);
+          setTimeout(step, PAUSE_MS);
+        }, SLIDE_MS + 16);
+      }
+    })();
+  </script>
+
+  <script>
+    // ── Phone mock crossfade ──
+    (function () {
+      const mock2 = document.getElementById('phoneMock2');
+      let showing2 = false;
+      let autoTimer = null;
+
+      function showMock2() {
+        mock2.style.opacity = '1';
+        showing2 = true;
+      }
+      function showMock1() {
+        mock2.style.opacity = '0';
+        showing2 = false;
+      }
+
+      // auto: show mock2 at 3s, back to mock1 at 8s, then repeat
+      function scheduleAuto() {
+        autoTimer = setTimeout(() => {
+          showMock2();
+          autoTimer = setTimeout(() => {
+            showMock1();
+            scheduleAuto();
+          }, 5000);
+        }, 3000);
+      }
+      scheduleAuto();
+
+      // tap Drafts tab → mock2 (Drafts active); tap All items → mock1
+      document.getElementById('tabDrafts').addEventListener('click', () => {
+        clearTimeout(autoTimer);
+        showMock2();
+        autoTimer = setTimeout(() => { showMock1(); scheduleAuto(); }, 5000);
+      });
+      document.getElementById('tabAllItems').addEventListener('click', () => {
+        clearTimeout(autoTimer);
+        showMock1();
+        scheduleAuto();
+      });
+    })();
+  </script>
+
+  <script>
+    // ── Nav scroll blur ──
+    const navEl = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 10) {
+        navEl.style.background = 'rgba(0,0,0,0.6)';
+        navEl.style.backdropFilter = 'blur(20px)';
+        navEl.style.webkitBackdropFilter = 'blur(20px)';
+        navEl.style.borderBottom = '0.5px solid rgba(255,255,255,0.08)';
+      } else {
+        navEl.style.background = '';
+        navEl.style.backdropFilter = '';
+        navEl.style.webkitBackdropFilter = '';
+        navEl.style.borderBottom = '';
+      }
+    }, { passive: true });
+  </script>
+
+  <script>
+    // ── Hamburger menu ──
+    const menu    = document.getElementById('navMenu');
+    const openBtn = document.getElementById('menuOpen');
+    const closeBtn = document.getElementById('menuClose');
+
+    openBtn.addEventListener('click', () => {
+      menu.classList.add('open');
+      openBtn.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+
+    [closeBtn, ...menu.querySelectorAll('a')].forEach(el => {
+      el.addEventListener('click', () => {
+        menu.classList.remove('open');
+        openBtn.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+  </script>
+
+  <!-- ── Demo video modal ── -->
+  <div class="demo-modal" id="demoModal" aria-modal="true" role="dialog" aria-label="Demo video">
+    <div class="demo-modal-backdrop" id="demoBackdrop"></div>
+    <div class="demo-modal-content">
+      <button class="demo-close" id="demoClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 2L14 14M14 2L2 14" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <video id="demoVideo" src="assets/LucyTrepanier_VideoDemo.mp4" controls playsinline preload="none"></video>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const modal       = document.getElementById('demoModal');
+      const video       = document.getElementById('demoVideo');
+      const closeBtn    = document.getElementById('demoClose');
+      const backdrop    = document.getElementById('demoBackdrop');
+      const cta         = document.getElementById('scrollToReel');
+      const inlineReel  = document.getElementById('reelInlineVideo');
+
+      function openModal(opts) {
+        opts = opts || {};
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        if (inlineReel) inlineReel.pause();
+        if (opts.syncFromInline && inlineReel) {
+          try { video.currentTime = inlineReel.currentTime; } catch (e) {}
+        } else {
+          video.currentTime = 0;
+        }
+        video.play().catch(function () { /* strict autoplay / decode */ });
+      }
+
+      function closeModal() {
+        var t = video.currentTime;
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+        video.pause();
+        video.currentTime = 0;
+        if (inlineReel) {
+          try { inlineReel.currentTime = t; } catch (e) {}
+          inlineReel.play().catch(function () {});
+        }
+      }
+
+      if (cta) {
+        cta.addEventListener('click', function () {
+          openModal({});
+        });
+      }
+
+      if (inlineReel) {
+        inlineReel.addEventListener('click', function (e) {
+          e.preventDefault();
+          openModal({ syncFromInline: true });
+        });
+        inlineReel.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openModal({ syncFromInline: true });
+          }
+        });
+      }
+
+      closeBtn.addEventListener('click', closeModal);
+      backdrop.addEventListener('click', closeModal);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    })();
+  </script>
+
+  <script>
+    // ── Accordion ──
+    document.querySelectorAll('[data-acc]').forEach(item => {
+      item.querySelector('.accordion-header').addEventListener('click', () => {
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('[data-acc].open').forEach(i => {
+          i.classList.remove('open');
+          i.querySelector('.accordion-header').setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          item.classList.add('open');
+          item.querySelector('.accordion-header').setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  </script>
+
+  <script>
+    // ── Scroll-linked typewriter reveal for .hero-desc ──
+    (function () {
+      const para = document.querySelector('.hero-desc');
+      if (!para) return;
+
+      const chars = [];
+
+      function wrapTextNode(node) {
+        const frag = document.createDocumentFragment();
+        for (const ch of node.textContent) {
+          const span = document.createElement('span');
+          span.className = 'char';
+          span.textContent = ch;
+          chars.push(span);
+          frag.appendChild(span);
+        }
+        node.parentNode.replaceChild(frag, node);
+      }
+
+      function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          wrapTextNode(node);
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          [...node.childNodes].forEach(processNode);
+        }
+      }
+
+      processNode(para);
+
+      const total = chars.length;
+      let lastReveal = 0;
+      let ticking = false;
+
+      function update() {
+        const rect = para.getBoundingClientRect();
+        const vh = window.innerHeight;
+        const progress = Math.max(0, Math.min(1, (vh * 0.9 - rect.top) / (vh * 0.7)));
+        const revealTo = Math.floor(progress * total);
+
+        if (revealTo === lastReveal) return;
+
+        if (revealTo > lastReveal) {
+          for (let i = lastReveal; i < revealTo; i++) chars[i].style.opacity = '1';
+        } else {
+          for (let i = revealTo; i < lastReveal; i++) chars[i].style.opacity = '0.15';
+        }
+        lastReveal = revealTo;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => { update(); ticking = false; });
+          ticking = true;
+        }
+      }, { passive: true });
+
+      update();
+    })();
+  </script>
+
+  <script>
+    // ── Features + accordion scroll reveal ──
+    (function () {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+
+      const featuresScene = document.getElementById('featuresScene');
+      const accordionSection = document.querySelector('.accordion-section');
+      if (featuresScene) io.observe(featuresScene);
+      if (accordionSection) io.observe(accordionSection);
+    })();
+  </script>
+
+  <script>
+    // ── Built with — staggered scroll reveal ──
+    (function () {
+      const cards = document.querySelectorAll('.built-card');
+      const section = document.getElementById('builtSection');
+      if (!section || !cards.length) return;
+
+      const io = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          cards.forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 90);
+          });
+          io.disconnect();
+        }
+      }, { threshold: 0.15 });
+
+      io.observe(section);
+    })();
+  </script>
+
+</body>
+</html>

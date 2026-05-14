@@ -28,11 +28,19 @@
 		A10000000000000000000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* Assets.xcassets */; };
 		A10000000000000000000015 /* ArtifactPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ArtifactPayload.swift */; };
 		A10000000000000000000016 /* Logo.mov in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* Logo.mov */; };
+		A1000000000000000000001F /* Final.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* Final.mp4 */; };
+		A10000000000000000000023 /* LogoAnimation.apng in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* LogoAnimation.apng */; };
+		A10000000000000000000024 /* LogoFrames in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* LogoFrames */; };
+		A10000000000000000000020 /* logo.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* logo.mp4 */; };
+		A10000000000000000000022 /* logo.mov in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* logo.mov */; };
+		A10000000000000000000025 /* LogoLaunch.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* LogoLaunch.mp4 */; };
+		A10000000000000000000026 /* FinalLogoVideo.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* FinalLogoVideo.mp4 */; };
 		A10000000000000000000017 /* LaunchLoadingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* LaunchLoadingOverlay.swift */; };
 		A10000000000000000000018 /* LocalSecrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* LocalSecrets.plist */; };
 		A10000000000000000000019 /* LocalGalleryImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* LocalGalleryImports.swift */; };
 		A1000000000000000000001D /* LibraryBundledPhotoMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */; };
 		A1000000000000000000001E /* DraftExportSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* DraftExportSupport.swift */; };
+		A10000000000000000000021 /* IdlePromptSuggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* IdlePromptSuggestions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,11 +67,19 @@
 		A20000000000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000017 /* ArtifactPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactPayload.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* Logo.mov */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/Logo.mov; sourceTree = "<group>"; };
+		A2000000000000000000001E /* Final.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/Final.mp4; sourceTree = "<group>"; };
+		A20000000000000000000023 /* LogoAnimation.apng */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Resources/LogoAnimation.apng; sourceTree = "<group>"; };
+		A20000000000000000000024 /* LogoFrames */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/LogoFrames; sourceTree = "<group>"; };
+		A20000000000000000000020 /* logo.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/logo.mp4; sourceTree = "<group>"; };
+		A20000000000000000000022 /* logo.mov */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/logo.mov; sourceTree = "<group>"; };
+		A20000000000000000000025 /* LogoLaunch.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/LogoLaunch.mp4; sourceTree = "<group>"; };
+		A20000000000000000000026 /* FinalLogoVideo.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/FinalLogoVideo.mp4; sourceTree = "<group>"; };
 		A20000000000000000000019 /* LaunchLoadingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchLoadingOverlay.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* LocalSecrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/LocalSecrets.plist; sourceTree = "<group>"; };
 		A2000000000000000000001B /* LocalGalleryImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalGalleryImports.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBundledPhotoMixer.swift; sourceTree = "<group>"; };
 		A2000000000000000000001D /* DraftExportSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftExportSupport.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* IdlePromptSuggestions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdlePromptSuggestions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +111,13 @@
 				A40000000000000000000008 /* Views */,
 				A20000000000000000000016 /* Assets.xcassets */,
 				A20000000000000000000018 /* Logo.mov */,
+				A2000000000000000000001E /* Final.mp4 */,
+				A20000000000000000000023 /* LogoAnimation.apng */,
+				A20000000000000000000024 /* LogoFrames */,
+				A20000000000000000000020 /* logo.mp4 */,
+				A20000000000000000000022 /* logo.mov */,
+				A20000000000000000000025 /* LogoLaunch.mp4 */,
+				A20000000000000000000026 /* FinalLogoVideo.mp4 */,
 				A2000000000000000000001A /* LocalSecrets.plist */,
 				A20000000000000000000011 /* Info.plist */,
 			);
@@ -114,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000017 /* ArtifactPayload.swift */,
+				A20000000000000000000021 /* IdlePromptSuggestions.swift */,
 				A20000000000000000000003 /* LibraryModels.swift */,
 				A2000000000000000000001B /* LocalGalleryImports.swift */,
 				A2000000000000000000001C /* LibraryBundledPhotoMixer.swift */,
@@ -227,6 +251,13 @@
 			files = (
 				A10000000000000000000014 /* Assets.xcassets in Resources */,
 				A10000000000000000000016 /* Logo.mov in Resources */,
+				A1000000000000000000001F /* Final.mp4 in Resources */,
+				A10000000000000000000023 /* LogoAnimation.apng in Resources */,
+				A10000000000000000000024 /* LogoFrames in Resources */,
+				A10000000000000000000020 /* logo.mp4 in Resources */,
+				A10000000000000000000022 /* logo.mov in Resources */,
+				A10000000000000000000025 /* LogoLaunch.mp4 in Resources */,
+				A10000000000000000000026 /* FinalLogoVideo.mp4 in Resources */,
 				A10000000000000000000018 /* LocalSecrets.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -258,6 +289,7 @@
 				A1000000000000000000000E /* SettingsView.swift in Sources */,
 				A1000000000000000000000F /* Styles.swift in Sources */,
 				A10000000000000000000015 /* ArtifactPayload.swift in Sources */,
+				A10000000000000000000021 /* IdlePromptSuggestions.swift in Sources */,
 				A10000000000000000000017 /* LaunchLoadingOverlay.swift in Sources */,
 				A10000000000000000000019 /* LocalGalleryImports.swift in Sources */,
 				A1000000000000000000001D /* LibraryBundledPhotoMixer.swift in Sources */,

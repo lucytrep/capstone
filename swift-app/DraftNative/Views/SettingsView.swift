@@ -29,6 +29,7 @@ struct SettingsView: View {
             .padding(.bottom, 42)
         }
         .background(Color(hex: 0x141414).ignoresSafeArea())
+        .navigationBarHidden(false)
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
     }

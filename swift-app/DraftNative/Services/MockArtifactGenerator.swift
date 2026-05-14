@@ -233,20 +233,13 @@ struct MockArtifactGenerator: ArtifactGenerating {
     private let claudeSystemPrompt = """
     You are a design artifact generator. The user will describe a design idea. You must ALWAYS respond with only valid HTML and CSS - never text, never questions, never explanations. This app supports exactly 3 board types: UI boards, photo boards, and color boards. Always return a complete, beautiful, self-contained HTML document with embedded CSS. Never ask for clarification. Just build it. Start your response directly with <!DOCTYPE html> and nothing else.
 
-    When the user asks for a UI, app screen, interface, product concept, or visual design mock, you MUST follow this exact product-shell pattern:
-    - Background must be pure black: #000000
-    - Title area at top-left must always say "Draft" on line 1 and "UI" on line 2
-    - Top-right must include two circular action buttons with an "x" and a check mark
-    - Show exactly 3 swipeable screen options laid out horizontally
-    - The HTML itself must support horizontal swipe using CSS scroll snapping
-    - Each option must be sized for a single iPhone screen and fill the available width without shrinking
-    - Under the cards, show 3 pagination dots with the active dot elongated
-    - Do not include a bottom navigation bar; the app chrome is provided outside the generated UI
-    - The aesthetic should be bold, high-contrast, polished, and phone-mock presentation
-    - Use strong spacing, large rounded corners, and mobile-first sizing
-    - The result must be a complete self-contained HTML document with embedded CSS and optional inline SVG only
-    - Do not rely on external assets
-    - Label the three swipeable options using data-ui-option="1", data-ui-option="2", and data-ui-option="3"
+    UI layout is not rendered from your HTML in this app; ignore UI-specific HTML instructions in the user message when they conflict with the above.
+    """
+
+    /// Used only for structured UI concept generation. The native app renders from JSON (`draft-ui-options`), same as palette and photo artifacts.
+    private let claudeUIStructuredSystemPrompt = """
+    You are a product design writer. You respond with exactly one JSON object and nothing else: no markdown, no code fences, no explanations, no HTML.
+    The JSON must be valid UTF-8 and parseable by a strict JSON decoder.
     """
 
     private let paletteKeywords: [String: String] = [
@@ -461,8 +454,9 @@ struct MockArtifactGenerator: ArtifactGenerating {
     }
 
     private func generateUIArtifact(prompt: String) async throws -> String {
-        if let artifact = try await generateClaudeUIArtifact(prompt: prompt) {
-            return artifact
+        if !keys.anthropic.isEmpty,
+           let options = try? await generateClaudeStructuredUIOptions(prompt: prompt) {
+            return buildUIArtifactHTML(options: options)
         }
 
         return buildUIArtifactHTML(options: buildUIOptions(prompt: prompt))
@@ -1045,7 +1039,9 @@ struct MockArtifactGenerator: ArtifactGenerating {
     private func requestClaudeArtifact(
         transcript: String,
         extraInstruction: String? = nil,
-        maxTokens: Int = 2400
+        maxTokens: Int = 2400,
+        systemPrompt: String? = nil,
+        treatResponseAsHTML: Bool = true
     ) async throws -> String {
         guard !keys.anthropic.isEmpty else {
             throw ArtifactGenerationError.unavailableBackend
@@ -1055,10 +1051,12 @@ struct MockArtifactGenerator: ArtifactGenerating {
             "\(transcript)\n\nAdditional hard requirements:\n\($0)"
         } ?? transcript
 
+        let system = systemPrompt ?? claudeSystemPrompt
+
         let payload: [String: Any] = [
             "model": claudeModel,
             "max_tokens": maxTokens,
-            "system": claudeSystemPrompt,
+            "system": system,
             "messages": [
                 [
                     "role": "user",
@@ -1089,31 +1087,45 @@ struct MockArtifactGenerator: ArtifactGenerating {
             throw ArtifactGenerationError.unavailableBackend
         }
 
-        return cleanClaudeHTML(text)
+        return cleanClaudeHTML(text, extractHTMLFragment: treatResponseAsHTML)
     }
 
-    private func generateClaudeUIArtifact(prompt: String) async throws -> String? {
+    /// Asks Claude for three `UIOptionPayload` directions as JSON; merged with a local template for missing fields.
+    private func generateClaudeStructuredUIOptions(prompt: String) async throws -> [UIOptionPayload]? {
         guard !keys.anthropic.isEmpty else { return nil }
 
-        let uiInstructions = [
-            "Return exactly 3 swipeable UI options.",
-            "Each option container must include data-ui-option=\"1\", data-ui-option=\"2\", and data-ui-option=\"3\".",
-            "Make the 3 options genuinely distinct directions, not minor color tweaks.",
-            "The three directions must differ in layout, hierarchy, composition, and component structure.",
-            "Changing only color is invalid.",
-            "Use a clear trio such as editorial, minimal, and experimental, or another equally distinct set of directions.",
-            "Use horizontal scroll snapping so the user can land on one option at a time.",
-            "Keep the Draft / UI header, top-right action buttons, and pagination dots.",
-            "Do not include a bottom navigation bar; app chrome is already provided outside the generated UI."
-        ].joined(separator: "\n")
+        let uiInstructions = """
+        Return ONLY a single JSON object (no markdown code fences, no text before or after) with this shape:
+        { "kind": "ui-options", "options": [ { ... }, { ... }, { ... } ] }
 
-        let artifact = try await requestClaudeArtifact(
+        Include exactly 3 objects in "options". Each object MUST have these keys (all string values except featureItems):
+        "id", "direction", "label", "productName", "headline", "supportingText", "primaryCta", "secondaryCta",
+        "accent", "background", "surface", "mutedSurface", "text", "mutedText",
+        "featureKind", "featureTitle", "featureItems"
+
+        Rules:
+        - direction must be lowercase: editorial, minimal, or bold (use all three once, in that order).
+        - featureKind must be lowercase: toggles, buttons, picker, or cards.
+        - featureItems must be an array of exactly 3 short strings.
+        - Colors: use #RRGGBB for solid fills; mutedText may be rgba(...) if needed.
+        - The three options must be genuinely different creative directions for the user's request—not the same structure with only color changes.
+        """
+
+        let raw = try await requestClaudeArtifact(
             transcript: prompt,
             extraInstruction: uiInstructions,
-            maxTokens: 2600
+            maxTokens: 2800,
+            systemPrompt: claudeUIStructuredSystemPrompt,
+            treatResponseAsHTML: false
         )
 
-        return validateUIArtifact(artifact) ? artifact : nil
+        guard let data = extractJSONObjectData(from: raw) else { return nil }
+        let dto = try JSONDecoder().decode(ClaudeUIPayloadDTO.self, from: data)
+        guard dto.kind?.lowercased() == "ui-options", let optionDTOs = dto.options, optionDTOs.count == 3 else {
+            return nil
+        }
+
+        return uiOptionsFromClaudeDTOs(optionDTOs, prompt: prompt)
     }
 
     private func generateClaudePhotoArtifact(prompt: String, displayMode: PhotoDisplayMode) async throws -> String? {
@@ -1148,34 +1160,81 @@ struct MockArtifactGenerator: ArtifactGenerating {
         throw ArtifactGenerationError.unavailableImageGeneration
     }
 
-    private func cleanClaudeHTML(_ text: String) -> String {
+    private func cleanClaudeHTML(_ text: String, extractHTMLFragment: Bool = true) -> String {
         var cleaned = text
             .replacingOccurrences(of: #"^```html\s*"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"^```json\s*"#, with: "", options: .regularExpression)
             .replacingOccurrences(of: #"^```\s*"#, with: "", options: .regularExpression)
             .replacingOccurrences(of: #"\s*```$"#, with: "", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if let firstTag = cleaned.firstIndex(of: "<"), firstTag > cleaned.startIndex {
+        if extractHTMLFragment, let firstTag = cleaned.firstIndex(of: "<"), firstTag > cleaned.startIndex {
             cleaned = String(cleaned[firstTag...])
         }
 
         return cleaned
     }
 
-    private func validateUIArtifact(_ html: String) -> Bool {
-        let optionMatches = matches(for: #"data-ui-option="([123])""#, in: html).count
-        let hasScrollSnap =
-            contains(html, pattern: #"scroll-snap-type"#) ||
-            contains(html, pattern: #"snap-aligned"#) ||
-            contains(html, pattern: #"overflow-x:\s*(auto|scroll)"#)
-        let hasDraftUIHeader = contains(html, pattern: #"Draft"#) && contains(html, pattern: #">\s*UI\s*<"#)
-        let tagCount = matches(for: #"<div\b|<section\b|<button\b|<main\b|<article\b"#, in: html).count
-        let hasRichStructure =
-            contains(html, pattern: #"border-radius"#) &&
-            contains(html, pattern: #"display:\s*(flex|grid)"#) &&
-            tagCount >= 12
+    /// First balanced `{ ... }` slice as UTF-8 data (for Claude JSON replies).
+    private func extractJSONObjectData(from text: String) -> Data? {
+        let trimmed = cleanClaudeHTML(text, extractHTMLFragment: false)
+        guard let start = trimmed.firstIndex(of: "{"),
+              let end = trimmed.lastIndex(of: "}"),
+              start <= end else { return nil }
+        return String(trimmed[start...end]).data(using: .utf8)
+    }
 
-        return optionMatches >= 3 && hasScrollSnap && hasDraftUIHeader && hasRichStructure
+    private func uiOptionsFromClaudeDTOs(_ dtos: [ClaudeUIOptionDTO], prompt: String) -> [UIOptionPayload]? {
+        guard dtos.count == 3 else { return nil }
+        let template = buildUIOptions(prompt: prompt)
+
+        func pick(_ value: String?, fallback: String) -> String {
+            let v = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return v.isEmpty ? fallback : v
+        }
+
+        return (0..<3).map { index in
+            let c = dtos[index]
+            let t = template[index]
+
+            let dirRaw = c.direction?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+            let direction = UIDirection(rawValue: dirRaw) ?? t.direction
+
+            let fkRaw = c.featureKind?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+            let featureKind = UIFeatureKind(rawValue: fkRaw) ?? t.featureKind
+
+            let rawItems = (c.featureItems ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            let featureItems: [String] = {
+                if rawItems.count >= 3 { return Array(rawItems.prefix(3)) }
+                var merged = rawItems
+                var ti = 0
+                while merged.count < 3 {
+                    merged.append(ti < t.featureItems.count ? t.featureItems[ti] : "Module \(merged.count + 1)")
+                    ti += 1
+                }
+                return merged
+            }()
+
+            return UIOptionPayload(
+                id: pick(c.id, fallback: t.id),
+                direction: direction,
+                label: pick(c.label, fallback: t.label),
+                productName: pick(c.productName, fallback: t.productName),
+                headline: pick(c.headline, fallback: t.headline),
+                supportingText: pick(c.supportingText, fallback: t.supportingText),
+                primaryCta: pick(c.primaryCta, fallback: t.primaryCta),
+                secondaryCta: pick(c.secondaryCta, fallback: t.secondaryCta),
+                accent: pick(c.accent, fallback: t.accent),
+                background: pick(c.background, fallback: t.background),
+                surface: pick(c.surface, fallback: t.surface),
+                mutedSurface: pick(c.mutedSurface, fallback: t.mutedSurface),
+                text: pick(c.text, fallback: t.text),
+                mutedText: pick(c.mutedText, fallback: t.mutedText),
+                featureKind: featureKind,
+                featureTitle: pick(c.featureTitle, fallback: t.featureTitle),
+                featureItems: featureItems
+            )
+        }
     }
 
     private func buildUIConceptName(prompt: String) -> String {
@@ -1208,37 +1267,38 @@ struct MockArtifactGenerator: ArtifactGenerating {
     }
 
     private func buildLocalPaletteOptions(seedHex: String) -> [PaletteOptionPayload] {
-        let pastel = [
+        // Three clearly different directions (warm seed-led, cool shifted, deep contrast) — not three pale washes of the same hue.
+        let warmSpectrum = [
             PaletteSwatch(name: "Anchor", hex: seedHex),
-            PaletteSwatch(name: "Mist", hex: mixHex(seedHex, "#FFFFFF", 0.58)),
-            PaletteSwatch(name: "Glow", hex: mixHex(seedHex, "#FFF4E8", 0.42)),
-            PaletteSwatch(name: "Bloom", hex: mixHex(seedHex, "#FFD9E8", 0.34)),
-            PaletteSwatch(name: "Skywash", hex: mixHex(seedHex, "#DDF1FF", 0.4)),
-            PaletteSwatch(name: "Clay", hex: mixHex(seedHex, "#E7C6B1", 0.28))
+            PaletteSwatch(name: "Ember", hex: mixHex(seedHex, "#E85D4C", 0.40)),
+            PaletteSwatch(name: "Sand", hex: mixHex(seedHex, "#F4E4C1", 0.52)),
+            PaletteSwatch(name: "Cinnamon", hex: mixHex(seedHex, "#7D4B2A", 0.44)),
+            PaletteSwatch(name: "Blush", hex: mixHex(seedHex, "#F6A6A6", 0.42)),
+            PaletteSwatch(name: "Olive", hex: mixHex(seedHex, "#5C6F4A", 0.36)),
         ]
 
-        let airy = [
-            PaletteSwatch(name: "Petal", hex: mixHex(seedHex, "#FFE4EF", 0.5)),
-            PaletteSwatch(name: "Cloud", hex: mixHex(seedHex, "#FFFFFF", 0.7)),
-            PaletteSwatch(name: "Shell", hex: mixHex(seedHex, "#FFF4EC", 0.64)),
-            PaletteSwatch(name: "Haze", hex: mixHex(seedHex, "#E6F0FF", 0.5)),
-            PaletteSwatch(name: "Powder", hex: mixHex(seedHex, "#F2E9FF", 0.52)),
-            PaletteSwatch(name: "Petal Dust", hex: mixHex(seedHex, "#F7D8D0", 0.45))
+        let coolMoon = [
+            PaletteSwatch(name: "Beacon", hex: mixHex(seedHex, "#2DD4BF", 0.50)),
+            PaletteSwatch(name: "Ice", hex: mixHex(seedHex, "#E0F2FE", 0.68)),
+            PaletteSwatch(name: "Harbor", hex: mixHex(seedHex, "#1E3A5F", 0.46)),
+            PaletteSwatch(name: "Pigeon", hex: mixHex(seedHex, "#94A3B8", 0.38)),
+            PaletteSwatch(name: "Lavender", hex: mixHex(seedHex, "#DDD6FE", 0.48)),
+            PaletteSwatch(name: "Seafoam", hex: mixHex(seedHex, "#CCFBF1", 0.60)),
         ]
 
-        let contrast = [
-            PaletteSwatch(name: "Core", hex: mixHex(seedHex, "#000000", 0.06)),
-            PaletteSwatch(name: "Sunwash", hex: mixHex(seedHex, "#FFF3C4", 0.36)),
-            PaletteSwatch(name: "Rosewater", hex: mixHex(seedHex, "#FFD4E6", 0.32)),
-            PaletteSwatch(name: "Cool Air", hex: mixHex(seedHex, "#D7EAFF", 0.28)),
-            PaletteSwatch(name: "Blush", hex: mixHex(seedHex, "#F3C4C4", 0.24)),
-            PaletteSwatch(name: "Creamlight", hex: mixHex(seedHex, "#FFF8F0", 0.6))
+        let studioContrast = [
+            PaletteSwatch(name: "Obsidian", hex: mixHex(seedHex, "#0F172A", 0.74)),
+            PaletteSwatch(name: "Linen", hex: "#F8FAFC"),
+            PaletteSwatch(name: "Pulse", hex: mixHex(seedHex, "#EC4899", 0.58)),
+            PaletteSwatch(name: "Steel", hex: mixHex(seedHex, "#64748B", 0.42)),
+            PaletteSwatch(name: "Voltage", hex: mixHex(seedHex, "#EAB308", 0.48)),
+            PaletteSwatch(name: "Mist", hex: mixHex(seedHex, "#E2E8F0", 0.58)),
         ]
 
         return [
-            PaletteOptionPayload(id: "palette-local-1", swatches: withFixedPaletteBase(pastel)),
-            PaletteOptionPayload(id: "palette-local-2", swatches: withFixedPaletteBase(airy)),
-            PaletteOptionPayload(id: "palette-local-3", swatches: withFixedPaletteBase(contrast))
+            PaletteOptionPayload(id: "palette-local-1", swatches: withFixedPaletteBase(warmSpectrum)),
+            PaletteOptionPayload(id: "palette-local-2", swatches: withFixedPaletteBase(coolMoon)),
+            PaletteOptionPayload(id: "palette-local-3", swatches: withFixedPaletteBase(studioContrast)),
         ]
     }
 
@@ -1883,6 +1943,31 @@ struct MockArtifactGenerator: ArtifactGenerating {
     private func clamp(_ value: Int) -> Int {
         min(max(value, 0), 255)
     }
+}
+
+private struct ClaudeUIPayloadDTO: Decodable {
+    let kind: String?
+    let options: [ClaudeUIOptionDTO]?
+}
+
+private struct ClaudeUIOptionDTO: Decodable {
+    let id: String?
+    let direction: String?
+    let label: String?
+    let productName: String?
+    let headline: String?
+    let supportingText: String?
+    let primaryCta: String?
+    let secondaryCta: String?
+    let accent: String?
+    let background: String?
+    let surface: String?
+    let mutedSurface: String?
+    let text: String?
+    let mutedText: String?
+    let featureKind: String?
+    let featureTitle: String?
+    let featureItems: [String]?
 }
 
 private struct EmbeddedPayload<T: Encodable>: Encodable {

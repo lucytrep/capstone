@@ -10,10 +10,12 @@ struct HomeView: View {
     @State private var rippleVisualIntensity: CGFloat = 0
     @State private var autoGenerateTask: Task<Void, Never>?
     @State private var lastAutoSubmittedPrompt = ""
-    /// Rotating prompts (parity with Expo `SLOGANS` + crossfade to fixed dictate line).
-    @State private var sloganLine = Self.idleSlogans[0]
-    @State private var sloganOpacity: Double = 1
-    @State private var fixedTagOpacity: Double = 0
+    /// Rotating prompts: first visible line is always the dictate hint, then library suggestions.
+    @State private var sloganLine = ""
+    @State private var sloganOpacity: Double = 0
+    @State private var fixedTagOpacity: Double = 1
+    /// When the rotating suggestion is visually dominant, we record it so a matching generation can retire that line.
+    @State private var idlePromptPendingConsumption: String?
     let onSelectCreate: () -> Void
     let onSelectLibrary: () -> Void
     @AppStorage("draft.native.onboarding.seen") private var hasSeenOnboarding = false
@@ -23,38 +25,40 @@ struct HomeView: View {
     /// Lifts dictation copy away from the tab bar (~3rem at 16px).
     private static let instructionLiftFromNav: CGFloat = 48
 
-    /// Marketing lines + sample prompts — same list as `capstone/app/(tabs)/index.tsx` `SLOGANS`.
-    private static let idleSlogans: [String] = [
-        "Speak things into existence.",
-        "Warm, editorial, like a Sunday farmers market in autumn...",
-        "Think it. Say it. Save it.",
-        "Your ideas, instantly materialized.",
-        "Clean and minimal, muted greens, feels like Aesop or Muji",
-        "From thought to artifact in seconds.",
-        "Catch it before it disappears.",
-        "Dark and moody, deep purples, luxury streetwear brand",
-        "Say it once. Keep it forever.",
-        "Voice in. Design out.",
-        "Bright and chaotic, Y2K, lots of contrast and attitude",
-        "The best designs begin out loud.",
-        "Nothing is lost in translation.",
-        "Soft and dreamy, pastels, like a Pinterest board from 2014",
-        "Release your moodboard.",
-        "Make it real.",
-        "Say the thing.",
-        "Speak. Create. Save.",
-        "Say it into shape.",
-    ]
+    private static let pressAndHoldDictateLine = "Press and hold to dictate"
 
-    private static let sloganHoldNanoseconds: UInt64 = 3_500_000_000
-    private static let taglineFadeSeconds: Double = 0.6
-    private static let fixedFadeInSeconds: Double = 0.3
-    private static let fixedHoldNanoseconds: UInt64 = 1_000_000_000
+    private var idleSlogans: [String] {
+        IdlePromptSuggestions.makeLines(excluding: appModel.consumedIdlePromptLines)
+    }
+
+    private var idleTaglineTaskIdentity: String {
+        let consumedKey = appModel.consumedIdlePromptLines.sorted().joined(separator: "\u{1e}")
+        return "\(shouldRunIdleTaglineCycle)-\(consumedKey)"
+    }
+
+    /// Rotating slogan stays readable longer; dictate line holds before advancing.
+    private static let sloganHoldNanoseconds: UInt64 = 6_500_000_000
+    private static let taglineFadeSeconds: Double = 0.95
+    private static let fixedFadeInSeconds: Double = 0.55
+    private static let fixedHoldNanoseconds: UInt64 = 1_800_000_000
+
+    /// Shared SF Pro Rounded: hero title; prompts use a lighter weight for contrast.
+    private enum DraftScreenType {
+        /// ~1rem larger than prior 40pt headline.
+        static let title = Font.system(size: 52, weight: .bold, design: .rounded)
+        static let body = Font.system(size: 20, weight: .regular, design: .rounded)
+    }
+
+    /// ~1rem offset below safe area / stack top so “Draft” sits lower (16pt at default scale).
+    private static let titleTopInset: CGFloat = 16
+
+    private static var sloganFadeAnimation: Animation { .smooth(duration: taglineFadeSeconds) }
+    private static var fixedLineFadeAnimation: Animation { .smooth(duration: fixedFadeInSeconds) }
 
     private var centerDisplayText: String {
         let trimmed = appModel.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         if holdGestureActive || speechRecognizer.isListening {
-            return trimmed.isEmpty ? "Listening...." : trimmed
+            return trimmed.isEmpty ? "Listening" : trimmed
         }
         return ""
     }
@@ -135,7 +139,7 @@ struct HomeView: View {
             }
 
             lastAutoSubmittedPrompt = finalPrompt
-            appModel.startFlow()
+            appModel.startFlow(consumingIdlePromptLine: idlePromptPendingConsumption)
         }
         .onChange(of: appModel.transcript) { _, newValue in
             scheduleAutoGenerateIfNeeded(for: newValue)
@@ -150,31 +154,58 @@ struct HomeView: View {
             GenerationFlowView()
                 .environmentObject(appModel)
         }
-        .task(id: shouldRunIdleTaglineCycle) {
+        .task(id: idleTaglineTaskIdentity) {
             guard shouldRunIdleTaglineCycle else { return }
             await runIdleTaglineCycle()
+        }
+        .onChange(of: sloganOpacity) { _, _ in syncIdlePromptPendingConsumption() }
+        .onChange(of: fixedTagOpacity) { _, _ in syncIdlePromptPendingConsumption() }
+        .onChange(of: sloganLine) { _, _ in syncIdlePromptPendingConsumption() }
+    }
+
+    private func syncIdlePromptPendingConsumption() {
+        if sloganOpacity > fixedTagOpacity {
+            idlePromptPendingConsumption = sloganLine
+        } else {
+            idlePromptPendingConsumption = nil
         }
     }
 
     @MainActor
     private func runIdleTaglineCycle() async {
+        let lines = idleSlogans
+        guard !lines.isEmpty else { return }
         var sloganIdx = 0
-        sloganLine = Self.idleSlogans[sloganIdx]
-        sloganOpacity = 1
-        fixedTagOpacity = 0
+        sloganLine = lines[sloganIdx]
+
+        // First thing users see: fixed dictate line, then crossfade into rotating suggestions.
+        sloganOpacity = 0
+        fixedTagOpacity = 1
+
+        // Opening beat: "Press and hold to dictate" alone, then first suggestion.
+        try? await Task.sleep(nanoseconds: Self.fixedHoldNanoseconds)
+        guard !Task.isCancelled, shouldRunIdleTaglineCycle else { return }
+
+        withAnimation(Self.sloganFadeAnimation) {
+            fixedTagOpacity = 0
+            sloganOpacity = 1
+        }
+        try? await Task.sleep(for: .seconds(Self.taglineFadeSeconds))
+        guard !Task.isCancelled, shouldRunIdleTaglineCycle else { return }
 
         while !Task.isCancelled {
             guard shouldRunIdleTaglineCycle else { break }
+
             try? await Task.sleep(nanoseconds: Self.sloganHoldNanoseconds)
             guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
 
-            withAnimation(.easeInOut(duration: Self.taglineFadeSeconds)) {
+            withAnimation(Self.sloganFadeAnimation) {
                 sloganOpacity = 0
             }
             try? await Task.sleep(for: .seconds(Self.taglineFadeSeconds))
             guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
 
-            withAnimation(.easeInOut(duration: Self.fixedFadeInSeconds)) {
+            withAnimation(Self.fixedLineFadeAnimation) {
                 fixedTagOpacity = 1
             }
             try? await Task.sleep(for: .seconds(Self.fixedFadeInSeconds))
@@ -183,10 +214,12 @@ struct HomeView: View {
             try? await Task.sleep(nanoseconds: Self.fixedHoldNanoseconds)
             guard !Task.isCancelled, shouldRunIdleTaglineCycle else { break }
 
-            sloganIdx = (sloganIdx + 1) % Self.idleSlogans.count
-            sloganLine = Self.idleSlogans[sloganIdx]
+            let nextLines = idleSlogans
+            guard !nextLines.isEmpty else { break }
+            sloganIdx = (sloganIdx + 1) % nextLines.count
+            sloganLine = nextLines[sloganIdx]
 
-            withAnimation(.easeInOut(duration: Self.taglineFadeSeconds)) {
+            withAnimation(Self.sloganFadeAnimation) {
                 fixedTagOpacity = 0
                 sloganOpacity = 1
             }
@@ -218,7 +251,7 @@ struct HomeView: View {
                 let latest = appModel.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard latest == trimmed, !latest.isEmpty, !appModel.isFlowPresented else { return }
                 lastAutoSubmittedPrompt = latest
-                appModel.startFlow()
+                appModel.startFlow(consumingIdlePromptLine: idlePromptPendingConsumption)
             }
         }
     }
@@ -279,10 +312,10 @@ struct HomeView: View {
 
     private var titleHeader: some View {
         Text("Draft")
-            .font(.system(size: 40, weight: .bold, design: .rounded))
+            .font(DraftScreenType.title)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.top, 12)
+            .padding(.top, 12 + Self.titleTopInset)
             .accessibilityAddTraits(.isHeader)
     }
 
@@ -319,8 +352,8 @@ struct HomeView: View {
         VStack(spacing: 10) {
             if !centerTextIsPlaceholder {
                 Text(centerDisplayText)
-                    .font(.system(size: 20, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color.white.opacity(0.92))
+                    .font(DraftScreenType.body)
+                    .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)
                     .padding(.horizontal, 12)
@@ -343,26 +376,35 @@ struct HomeView: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Rotating line and dictate hint share one centered slot; each forced to a single line (scales down if needed).
     private var idleTaglineStack: some View {
-        VStack(alignment: .center, spacing: 10) {
+        ZStack {
             Text(sloganLine)
-                .font(.system(size: 17, weight: .light, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.6))
+                .font(DraftScreenType.body)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .allowsTightening(true)
                 .multilineTextAlignment(.center)
-                .lineSpacing(3)
+                .frame(maxWidth: .infinity)
                 .opacity(sloganOpacity)
+                .allowsHitTesting(false)
 
-            Text("Press & hold\nto dictate")
-                .font(.system(size: 20, weight: .medium, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.95))
+            Text(Self.pressAndHoldDictateLine)
+                .font(DraftScreenType.body)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .allowsTightening(true)
                 .multilineTextAlignment(.center)
-                .lineSpacing(3)
+                .frame(maxWidth: .infinity)
                 .opacity(fixedTagOpacity)
+                .allowsHitTesting(false)
         }
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
         .padding(.horizontal, 12)
-        .frame(minHeight: 88, alignment: .center)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(sloganLine) Press and hold to dictate")
+        .accessibilityLabel("\(Self.pressAndHoldDictateLine) \(sloganLine)")
     }
 
     private var typedFallbackSection: some View {
@@ -370,7 +412,7 @@ struct HomeView: View {
             composer
 
             Button {
-                appModel.startFlow()
+                appModel.startFlow(consumingIdlePromptLine: idlePromptPendingConsumption)
             } label: {
                 Text("Generate from text")
                     .padding(.horizontal, 18)

@@ -2,6 +2,9 @@ import SwiftUI
 import UIKit
 import WebKit
 
+/// Matches `PhotoArtifactPage.tileCorner` / `PhotoTile` so palette grids read as the same family as moodboards.
+private let artifactTileCornerRadius: CGFloat = 16
+
 struct OutputView: View {
     @EnvironmentObject private var appModel: AppModel
     @State private var selection = 0
@@ -84,7 +87,9 @@ struct OutputView: View {
                     showExportSheet = true
                 }
                 shellAction(systemName: "xmark", accessibilityLabel: "Discard") { appModel.resetSession() }
-                shellAction(systemName: "checkmark", accessibilityLabel: "Done") { appModel.dismissFlow() }
+                shellAction(systemName: "checkmark", accessibilityLabel: "Save to library") {
+                    appModel.saveGeneratedDraftToLibrary(directionIndex: selection)
+                }
             }
         }
         .padding(.bottom, 20)
@@ -164,6 +169,8 @@ private struct PaletteArtifactPager: View {
     let options: [PaletteOptionPayload]
     @Binding var selection: Int
 
+    private let itemPageHaptics = UISelectionFeedbackGenerator()
+
     var body: some View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
@@ -172,6 +179,11 @@ private struct PaletteArtifactPager: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .onAppear { itemPageHaptics.prepare() }
+        .onChange(of: selection) { _, _ in
+            itemPageHaptics.selectionChanged()
+            itemPageHaptics.prepare()
+        }
     }
 }
 
@@ -180,7 +192,7 @@ private struct PaletteArtifactPage: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let gap: CGFloat = 12
+            let gap: CGFloat = 10
             let contentWidth = geometry.size.width
             let contentHeight = geometry.size.height
             let largeWidth = contentWidth
@@ -244,11 +256,11 @@ private struct PaletteSwatchTile: View {
         let background = ArtifactColorParser.color(from: swatch.hex)
         let textColor = ArtifactColorParser.isLight(hex: swatch.hex) ? Color.black.opacity(0.92) : Color.white
 
-        RoundedRectangle(cornerRadius: 4, style: .continuous)
+        RoundedRectangle(cornerRadius: artifactTileCornerRadius, style: .continuous)
             .fill(background)
             .overlay(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(bordered ? Color.white.opacity(0.92) : .clear, lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: artifactTileCornerRadius, style: .continuous)
+                    .stroke(bordered ? Color.white.opacity(0.92) : Color.white.opacity(0.08), lineWidth: bordered ? 1.5 : 1)
             )
             .overlay(
                 VStack(alignment: .leading, spacing: 2) {
@@ -270,6 +282,8 @@ private struct PhotoArtifactPager: View {
     let options: [PhotoOptionPayload]
     @Binding var selection: Int
 
+    private let itemPageHaptics = UISelectionFeedbackGenerator()
+
     var body: some View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
@@ -279,6 +293,11 @@ private struct PhotoArtifactPager: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .onAppear { itemPageHaptics.prepare() }
+        .onChange(of: selection) { _, _ in
+            itemPageHaptics.selectionChanged()
+            itemPageHaptics.prepare()
+        }
     }
 }
 
@@ -286,7 +305,7 @@ private struct PhotoArtifactPage: View {
     let option: PhotoOptionPayload
 
     private let gap: CGFloat = 10
-    private let tileCorner: CGFloat = 16
+    private let tileCorner: CGFloat = artifactTileCornerRadius
 
     /// Matches `MockArtifactGenerator.swapLowResBundleAssetsTowardThirdDirection`.
     private static let lowResBundleLayoutThreshold = 1200
@@ -478,6 +497,8 @@ private struct UIArtifactPager: View {
     let options: [UIOptionPayload]
     @Binding var selection: Int
 
+    private let itemPageHaptics = UISelectionFeedbackGenerator()
+
     var body: some View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
@@ -486,6 +507,11 @@ private struct UIArtifactPager: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .onAppear { itemPageHaptics.prepare() }
+        .onChange(of: selection) { _, _ in
+            itemPageHaptics.selectionChanged()
+            itemPageHaptics.prepare()
+        }
     }
 }
 
@@ -725,7 +751,7 @@ private struct ArtifactImageView: View {
     }
 }
 
-private enum ArtifactColorParser {
+enum ArtifactColorParser {
     static func color(from value: String) -> Color {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 

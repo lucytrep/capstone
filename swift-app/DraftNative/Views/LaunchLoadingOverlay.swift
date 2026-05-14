@@ -1,149 +1,248 @@
 import AVFoundation
+import AVKit
 import SwiftUI
 import UIKit
 
+/// Launch experience: bundled `FinalLogoVideo.mp4` (capstone logo animation), then fades into the app shell (`#141414`).
 struct LaunchLoadingOverlay: View {
     let onComplete: () -> Void
 
+    @State private var videoOpacity: CGFloat = 1
+
     var body: some View {
         ZStack {
+            launchChromeBackground.ignoresSafeArea()
+
+            Group {
+                if launchVideoURL() != nil {
+                    FullBleedLaunchVideoPlayer(onPlaybackEnded: handlePlaybackEnded)
+                        .opacity(videoOpacity)
+                } else {
+                    legacyFrameFallback(onComplete: onComplete)
+                }
+            }
+        }
+    }
+
+    private var launchChromeBackground: some View {
+        ZStack {
+            Color(hex: 0x141414)
+            RadialGradient(
+                colors: [
+                    Color(hex: 0xFF9C40).opacity(0.08),
+                    Color(hex: 0xE07820).opacity(0.04),
+                    Color.clear
+                ],
+                center: .center,
+                startRadius: 40,
+                endRadius: 280
+            )
+            .allowsHitTesting(false)
+        }
+    }
+
+    private func handlePlaybackEnded() {
+        withAnimation(.easeInOut(duration: 0.55)) {
+            videoOpacity = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.58) {
+            onComplete()
+        }
+    }
+
+    @ViewBuilder
+    private func legacyFrameFallback(onComplete: @escaping () -> Void) -> some View {
+        ZStack {
             Color(hex: 0x141414).ignoresSafeArea()
-            IntroLogoVideo(onComplete: onComplete)
-                .frame(width: 280, height: 280)
+
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(hex: 0xFF9C40).opacity(0.26),
+                                Color(hex: 0xE07820).opacity(0.14),
+                                Color(hex: 0xC86820).opacity(0.06),
+                                Color(hex: 0x904010).opacity(0.02),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 4,
+                            endRadius: 124
+                        )
+                    )
+                    .frame(width: 248, height: 248)
+                    .blur(radius: 28)
+                    .allowsHitTesting(false)
+
+                LogoFramesAnimationView(onComplete: onComplete)
+                    .frame(width: 158, height: 158)
+            }
         }
     }
 }
 
-private struct IntroLogoVideo: UIViewRepresentable {
-    let onComplete: () -> Void
+private func launchVideoURL() -> URL? {
+    Bundle.main.url(forResource: "FinalLogoVideo", withExtension: "mp4")
+        ?? Bundle.main.url(forResource: "LogoLaunch", withExtension: "mp4")
+        ?? Bundle.main.url(forResource: "logo", withExtension: "mp4")
+}
+
+// MARK: - Full-bleed launch video
+
+private enum LaunchChrome {
+    static let background = UIColor(red: 20 / 255, green: 20 / 255, blue: 20 / 255, alpha: 1)
+}
+
+private struct FullBleedLaunchVideoPlayer: UIViewControllerRepresentable {
+    let onPlaybackEnded: () -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onComplete: onComplete)
+        Coordinator(onPlaybackEnded: onPlaybackEnded)
     }
 
-    func makeUIView(context: Context) -> PlayerContainerView {
-        let view = PlayerContainerView()
-        view.backgroundColor = .clear
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.showsPlaybackControls = false
+        controller.videoGravity = .resizeAspectFill
+        controller.view.backgroundColor = LaunchChrome.background
+        controller.contentOverlayView?.backgroundColor = LaunchChrome.background
+        controller.allowsPictureInPicturePlayback = false
 
-        guard let url = Bundle.main.url(forResource: "Logo", withExtension: "mov") else {
-            DispatchQueue.main.async { context.coordinator.finish() }
-            return view
+        guard let url = launchVideoURL() else {
+            DispatchQueue.main.async { context.coordinator.finishOnce() }
+            return controller
         }
 
         let player = AVPlayer(url: url)
         player.isMuted = true
-        player.actionAtItemEnd = .pause
-        context.coordinator.player = player
-        context.coordinator.observeEnd(for: player.currentItem)
-
-        // Fire haptic 0.5 s into the animation — feels synced to the motion
-        context.coordinator.observeHapticBoundary(player: player)
-
-        view.playerLayer.player = player
-        view.playerLayer.videoGravity = .resizeAspect
-
-        player.play()
-
-        return view
+        controller.player = player
+        context.coordinator.start(player: player)
+        return controller
     }
 
-    func updateUIView(_ uiView: PlayerContainerView, context: Context) {}
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
 
-    static func dismantleUIView(_ uiView: PlayerContainerView, coordinator: Coordinator) {
-        coordinator.stopObserving()
-        coordinator.player?.pause()
-        coordinator.player = nil
-        uiView.playerLayer.player = nil
-    }
-
-    final class Coordinator {
-        var player: AVPlayer?
-        var endObserver: NSObjectProtocol?
-        var hapticObserver1: Any?
-        var hapticObserver2: Any?
-        let softGenerator = UIImpactFeedbackGenerator(style: .light)
-        let mainGenerator = UIImpactFeedbackGenerator(style: .medium)
-        private let onComplete: () -> Void
+    final class Coordinator: NSObject {
+        private let onPlaybackEnded: () -> Void
+        private var endObserver: NSObjectProtocol?
+        private var launchPulseTimer: Timer?
         private var didFinish = false
+        private let launchPulseGenerator = UIImpactFeedbackGenerator(style: .heavy)
 
-        init(onComplete: @escaping () -> Void) {
-            self.onComplete = onComplete
+        init(onPlaybackEnded: @escaping () -> Void) {
+            self.onPlaybackEnded = onPlaybackEnded
         }
 
-        func observeEnd(for item: AVPlayerItem?) {
-            guard let item else { return }
+        func start(player: AVPlayer) {
+            launchPulseGenerator.prepare()
+
+            guard let item = player.currentItem else {
+                finishOnce()
+                return
+            }
+
             endObserver = NotificationCenter.default.addObserver(
                 forName: .AVPlayerItemDidPlayToEndTime,
                 object: item,
                 queue: .main
             ) { [weak self] _ in
-                self?.finish()
+                self?.finishOnce()
+            }
+
+            scheduleLaunchPulseHaptic()
+
+            player.play()
+        }
+
+        /// Tactile pulse at **0.5s** into the intro video (matches product “in the hand” beat).
+        private func scheduleLaunchPulseHaptic() {
+            launchPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    self?.launchPulseGenerator.impactOccurred(intensity: 1.0)
+                }
             }
         }
 
-        func observeHapticBoundary(player: AVPlayer) {
-            softGenerator.prepare()
-            mainGenerator.prepare()
-
-            // Soft anticipation tap
-            let time1 = CMTime(seconds: 0.78, preferredTimescale: 600)
-            hapticObserver1 = player.addBoundaryTimeObserver(
-                forTimes: [NSValue(time: time1)], queue: .main
-            ) { [weak self] in
-                self?.softGenerator.impactOccurred(intensity: 0.45)
-            }
-
-            // Main tap — slightly stronger, follows the motion beat
-            let time2 = CMTime(seconds: 1.08, preferredTimescale: 600)
-            hapticObserver2 = player.addBoundaryTimeObserver(
-                forTimes: [NSValue(time: time2)], queue: .main
-            ) { [weak self] in
-                self?.mainGenerator.impactOccurred(intensity: 0.8)
-            }
-        }
-
-        func finish() {
+        func finishOnce() {
             guard !didFinish else { return }
             didFinish = true
-            onComplete()
-        }
-
-        func stopObserving() {
             if let endObserver {
                 NotificationCenter.default.removeObserver(endObserver)
                 self.endObserver = nil
             }
-            if let hapticObserver1, let player {
-                player.removeTimeObserver(hapticObserver1)
-                self.hapticObserver1 = nil
-            }
-            if let hapticObserver2, let player {
-                player.removeTimeObserver(hapticObserver2)
-                self.hapticObserver2 = nil
-            }
+            launchPulseTimer?.invalidate()
+            launchPulseTimer = nil
+            onPlaybackEnded()
         }
 
         deinit {
-            stopObserving()
+            if let endObserver {
+                NotificationCenter.default.removeObserver(endObserver)
+            }
+            launchPulseTimer?.invalidate()
         }
     }
 }
 
-private final class PlayerContainerView: UIView {
-    let playerLayer = AVPlayerLayer()
+// MARK: - Legacy PNG sequence (only if no bundled MP4)
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        layer.addSublayer(playerLayer)
+private struct LogoFramesAnimationView: UIViewRepresentable {
+    let onComplete: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onComplete: onComplete) }
+
+    func makeUIView(context: Context) -> UIImageView {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.isOpaque = false
+        iv.backgroundColor = .clear
+        context.coordinator.load(into: iv)
+        return iv
     }
 
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
+    func updateUIView(_ uiView: UIImageView, context: Context) {}
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        playerLayer.frame = bounds
+    final class Coordinator {
+        private let onComplete: () -> Void
+        private var completionTimer: Timer?
+        private var launchPulseTimer: Timer?
+        private let launchPulseGenerator = UIImpactFeedbackGenerator(style: .heavy)
+
+        init(onComplete: @escaping () -> Void) { self.onComplete = onComplete }
+
+        func load(into iv: UIImageView) {
+            let urls = (Bundle.main.urls(forResourcesWithExtension: "png", subdirectory: "LogoFrames") ?? [])
+                .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            let frames = urls.compactMap { UIImage(contentsOfFile: $0.path) }
+
+            guard !frames.isEmpty else {
+                onComplete()
+                return
+            }
+
+            iv.animationImages = frames
+            iv.animationDuration = Double(frames.count) / 30.0
+            iv.animationRepeatCount = 1
+            iv.startAnimating()
+            launchPulseGenerator.prepare()
+            launchPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    self?.launchPulseGenerator.impactOccurred(intensity: 1.0)
+                }
+            }
+            scheduleCallbacks(duration: iv.animationDuration)
+        }
+
+        private func scheduleCallbacks(duration: TimeInterval) {
+            completionTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
+                self?.onComplete()
+            }
+        }
+
+        deinit {
+            launchPulseTimer?.invalidate()
+            completionTimer?.invalidate()
+        }
     }
 }
