@@ -112,11 +112,21 @@ struct HomeView: View {
             .padding(.horizontal, 28)
             .padding(.top, 18)
             .padding(.bottom, 24)
+            .opacity(appModel.isFlowPresented ? 0 : 1)
+            .animation(.easeInOut(duration: 0.45), value: appModel.isFlowPresented)
+            .allowsHitTesting(!appModel.isFlowPresented)
 
             if !hasSeenOnboarding {
                 onboardingOverlay
             }
+
+            if appModel.isFlowPresented {
+                GenerationFlowView()
+                    .environmentObject(appModel)
+                    .transition(.opacity)
+            }
         }
+        .animation(.easeInOut(duration: 0.5), value: appModel.isFlowPresented)
         .task {
             holdFeedback.prepare()
             await speechRecognizer.requestPermissions()
@@ -149,10 +159,6 @@ struct HomeView: View {
             withAnimation(.easeInOut(duration: holding ? 0.58 : 0.82)) {
                 rippleVisualIntensity = holding ? 1 : 0
             }
-        }
-        .fullScreenCover(isPresented: $appModel.isFlowPresented) {
-            GenerationFlowView()
-                .environmentObject(appModel)
         }
         .task(id: idleTaglineTaskIdentity) {
             guard shouldRunIdleTaglineCycle else { return }
@@ -270,7 +276,32 @@ struct HomeView: View {
         }
     }
 
-    /// Ring-shaped warm-orange glow — dark centre, orange halo, fades to black.
+    /// Smoothly interpolates through an ordered palette using a 0…1 phase.
+    private func glowCycleColor(phase: Double) -> Color {
+        // palette: orange → peach → sage → pale-sage → near-white → warm-peach → back
+        let stops: [(r: Double, g: Double, b: Double)] = [
+            (1.000, 0.482, 0.000), // FF7B00  orange
+            (1.000, 0.722, 0.384), // FFB862  soft peach
+            (0.737, 0.855, 0.761), // BCDAC2  sage
+            (0.847, 0.937, 0.878), // D8EFE0  pale sage
+            (0.996, 1.000, 1.000), // FEFFFE  near-white
+            (1.000, 0.898, 0.800), // FFE5CC  warm cream
+        ]
+        let n = Double(stops.count)
+        let scaled = phase * n
+        let i = Int(scaled) % stops.count
+        let j = (i + 1) % stops.count
+        let t = scaled - Double(Int(scaled))
+        let s = t * t * (3 - 2 * t) // smoothstep
+        let a = stops[i], b = stops[j]
+        return Color(
+            red:   a.r + (b.r - a.r) * s,
+            green: a.g + (b.g - a.g) * s,
+            blue:  a.b + (b.b - a.b) * s
+        )
+    }
+
+    /// Ring-shaped glow that slowly cycles through orange → sage → white.
     private var glowOval: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
@@ -278,25 +309,27 @@ struct HomeView: View {
             let listenPulse = CGFloat(0.5 + 0.5 * sin(t * 1.4))
             let p = rippleVisualIntensity
 
-            // Idle: dim + slow pulse. Active: blaze full at 1.3 with faster flicker.
-            let opacity = (1 - p) * (0.50 + 0.14 * idlePulse) + p * (1.15 + 0.12 * listenPulse)
-            // Scale: gentle idle swell → dramatic screen-fill on press (1.0 → 1.75)
+            let opacity = (1 - p) * (0.28 + 0.48 * idlePulse) + p * (1.15 + 0.12 * listenPulse)
             let pressScale: CGFloat = 1.0 + p * 0.75
-            // Blur softens when idle, sharpens/intensifies on press
             let blurRadius: CGFloat = 36 - p * 10
+
+            let cyclePhase = (t / 12.0).truncatingRemainder(dividingBy: 1.0)
+            let haloColor  = glowCycleColor(phase: cyclePhase)
+            let innerColor = glowCycleColor(phase: (cyclePhase + 0.08).truncatingRemainder(dividingBy: 1.0))
+            let outerColor = glowCycleColor(phase: (cyclePhase + 0.18).truncatingRemainder(dividingBy: 1.0))
 
             GeometryReader { geo in
                 let w = geo.size.width
                 let h = geo.size.height
                 EllipticalGradient(
                     stops: [
-                        .init(color: .clear,                                              location: 0),
-                        .init(color: .clear,                                              location: 0.14),
-                        .init(color: Color(hex: 0xC86820).opacity(0.35 + p * 0.40),      location: 0.30),
-                        .init(color: Color(hex: 0xE07820).opacity(0.80 + p * 0.20),      location: 0.50),
-                        .init(color: Color(hex: 0xC86820).opacity(0.50 + p * 0.30),      location: 0.66),
-                        .init(color: Color(hex: 0x904010).opacity(0.14 + p * 0.26),      location: 0.84),
-                        .init(color: .clear,                                              location: 1)
+                        .init(color: .clear,                                             location: 0),
+                        .init(color: .clear,                                             location: 0.14),
+                        .init(color: innerColor.opacity(0.35 + p * 0.40),                location: 0.30),
+                        .init(color: haloColor.opacity(0.80 + p * 0.20),                 location: 0.50),
+                        .init(color: innerColor.opacity(0.50 + p * 0.30),                location: 0.66),
+                        .init(color: outerColor.opacity(0.14 + p * 0.26),                location: 0.84),
+                        .init(color: .clear,                                             location: 1)
                     ]
                 )
                 .frame(width: w * 0.96, height: w * 0.92)
@@ -305,9 +338,10 @@ struct HomeView: View {
                 .scaleEffect(pressScale)
                 .position(x: w / 2, y: h * 0.46)
             }
-            .scaleEffect(glowIdlePulse ? 1.03 : 0.98)
-            .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: glowIdlePulse)
         }
+        // Pulse lives outside the TimelineView so SwiftUI's animation engine never resets it
+        .scaleEffect(glowIdlePulse ? 1.22 : 0.84)
+        .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: glowIdlePulse)
     }
 
     private var titleHeader: some View {
@@ -475,12 +509,12 @@ private struct OnboardingSwipeIntroView: View {
 
             RadialGradient(
                 gradient: Gradient(stops: [
-                    .init(color: Color(hex: 0xFF9C40), location: 0),
-                    .init(color: Color(hex: 0xFF9C40).opacity(0.92), location: 0.08),
-                    .init(color: Color(hex: 0xF09038).opacity(0.72), location: 0.22),
-                    .init(color: Color(hex: 0xE08030).opacity(0.48), location: 0.42),
-                    .init(color: Color(hex: 0xCC7228).opacity(0.26), location: 0.62),
-                    .init(color: Color(hex: 0xA85820).opacity(0.10), location: 0.82),
+                    .init(color: Color(hex: 0xFF6E00), location: 0),
+                    .init(color: Color(hex: 0xFF6E00).opacity(0.92), location: 0.08),
+                    .init(color: Color(hex: 0xF05500).opacity(0.72), location: 0.22),
+                    .init(color: Color(hex: 0xE04400).opacity(0.48), location: 0.42),
+                    .init(color: Color(hex: 0xC43200).opacity(0.26), location: 0.62),
+                    .init(color: Color(hex: 0x962200).opacity(0.10), location: 0.82),
                     .init(color: Color.black.opacity(0), location: 1)
                 ]),
                 center: UnitPoint(x: 0.34, y: 0.46),

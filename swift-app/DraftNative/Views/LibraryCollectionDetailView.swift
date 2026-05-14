@@ -8,12 +8,23 @@ struct LibraryCollectionDetailView: View {
         LibrarySeedData.collection(id: collectionID)
     }
 
+    /// UI-heavy boards whose image items appear at the tail of the Individual gallery.
+    private static let individualTailBoardIDs: Set<String> = [
+        "ui-controls-board",
+        "ui-metrics-board",
+        "ui-glass-board",
+        "ui-studies-2-board",
+    ]
+
     private var boardsForCollection: [LibraryBoard] {
         switch collectionID {
         case "latest":
             return appModel.boards
         case "individual":
-            return appModel.boards.filter { $0.items.contains(where: { $0.kind == .image }) }
+            let all = appModel.boards.filter { $0.items.contains(where: { $0.kind == .image }) }
+            let main = all.filter { !Self.individualTailBoardIDs.contains($0.id) }
+            let tail = all.filter {  Self.individualTailBoardIDs.contains($0.id) }
+            return main + tail
         default:
             guard let meta else { return [] }
             return meta.boardIDs.compactMap { bid in appModel.boards.first(where: { $0.id == bid }) }
@@ -27,12 +38,16 @@ struct LibraryCollectionDetailView: View {
         "ui-controls-spatial-3",
         "ui2-1",
         "ui2-3",
+        "ui2-6",
+        "ui-glass-4",
     ]
 
     private static let excludedIndividualImageBundles: Set<String> = [
         "soft-spatial-ui-1",
         "soft-spatial-ui-2",
         "soft-spatial-ui-3",
+        "soft-spatial-ui-4",
+        "ui-glass-commerce-orbit",
     ]
 
     private var individualImageItems: [LibraryItem] {

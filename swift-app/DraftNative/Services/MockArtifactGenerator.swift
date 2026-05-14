@@ -863,7 +863,12 @@ struct MockArtifactGenerator: ArtifactGenerating {
     private func buildUIOptions(prompt: String) -> [UIOptionPayload] {
         let productName = buildUIConceptName(prompt: prompt)
         let subject = inferUISubject(prompt: prompt)
-        let feature = inferUIFeature(prompt: prompt)
+        let primary = inferUIFeature(prompt: prompt)
+
+        // Rotate through all four kinds so each direction shows a different component type.
+        let allKinds: [UIFeatureKind] = [.cards, .toggles, .picker, .buttons]
+        let rotated = [primary.kind] + allKinds.filter { $0 != primary.kind }
+        let f = rotated.prefix(3).map { staticFeaturePayload(for: $0) }
 
         return [
             UIOptionPayload(
@@ -881,9 +886,9 @@ struct MockArtifactGenerator: ArtifactGenerating {
                 mutedSurface: "#EEDBC5",
                 text: "#1D120A",
                 mutedText: "rgba(29,18,10,0.62)",
-                featureKind: feature.kind,
-                featureTitle: feature.title,
-                featureItems: feature.items
+                featureKind: f[0].kind,
+                featureTitle: f[0].title,
+                featureItems: f[0].items
             ),
             UIOptionPayload(
                 id: "ui-2",
@@ -900,9 +905,9 @@ struct MockArtifactGenerator: ArtifactGenerating {
                 mutedSurface: "#E1E9FF",
                 text: "#111827",
                 mutedText: "rgba(17,24,39,0.62)",
-                featureKind: feature.kind,
-                featureTitle: feature.title,
-                featureItems: feature.items
+                featureKind: f[1].kind,
+                featureTitle: f[1].title,
+                featureItems: f[1].items
             ),
             UIOptionPayload(
                 id: "ui-3",
@@ -919,11 +924,20 @@ struct MockArtifactGenerator: ArtifactGenerating {
                 mutedSurface: "#2A2A2A",
                 text: "#FFFFFF",
                 mutedText: "rgba(255,255,255,0.62)",
-                featureKind: feature.kind,
-                featureTitle: feature.title,
-                featureItems: feature.items
+                featureKind: f[2].kind,
+                featureTitle: f[2].title,
+                featureItems: f[2].items
             )
         ]
+    }
+
+    private func staticFeaturePayload(for kind: UIFeatureKind) -> (kind: UIFeatureKind, title: String, items: [String]) {
+        switch kind {
+        case .toggles: return (.toggles, "Control States", ["Enabled", "Muted", "Focused"])
+        case .buttons:  return (.buttons, "Action Set", ["Primary", "Secondary", "Ghost"])
+        case .picker:   return (.picker, "Selection System", ["For You", "Popular", "Saved"])
+        case .cards:    return (.cards, "Feature Modules", ["Overview", "Details", "Saved"])
+        }
     }
 
     private func inferUIFeature(prompt: String) -> (kind: UIFeatureKind, title: String, items: [String]) {
@@ -1359,7 +1373,7 @@ struct MockArtifactGenerator: ArtifactGenerating {
     }
 
     private func localPhotoBoardScore(board: LibraryBoard, prompt: String) -> Int {
-        let promptTerms = normalizedTerms(prompt)
+        let promptTerms = expandPromptTerms(normalizedTerms(prompt))
         guard !promptTerms.isEmpty else { return 0 }
 
         let boardTerms = normalizedTerms(
@@ -1372,6 +1386,30 @@ struct MockArtifactGenerator: ArtifactGenerating {
                 score += term.count > 5 ? 3 : 2
             }
         }
+    }
+
+    /// Enriches a set of normalized prompt terms with synonyms so "sporty" finds athletic boards, etc.
+    private func expandPromptTerms(_ terms: Set<String>) -> Set<String> {
+        var expanded = terms
+        let semanticGroups: [[String]] = [
+            ["sporty", "sport", "sports", "athletic", "athlete", "fitness", "active", "track", "stadium", "running"],
+            ["motion", "dynamic", "action", "jump", "jumping", "orbit", "run", "running"],
+            ["energy", "energetic", "vivid", "vibrant"],
+            ["nature", "natural", "outdoor", "garden", "meadow", "field", "wildflower", "floral"],
+            ["floral", "flower", "flowers", "tulip", "bouquet", "bloom", "wildflower"],
+            ["editorial", "campaign", "fashion", "direction"],
+            ["warm", "orange", "amber", "desert", "melon"],
+            ["yellow", "lime", "electric", "golden", "butter"],
+            ["pink", "rose", "blush", "fuchsia"],
+            ["street", "urban", "city"],
+            ["interface", "app", "screen", "digital", "dashboard", "metrics"],
+        ]
+        for group in semanticGroups {
+            if terms.contains(where: { group.contains($0) }) {
+                expanded.formUnion(group)
+            }
+        }
+        return expanded
     }
 
     private func normalizedTerms(_ text: String) -> Set<String> {

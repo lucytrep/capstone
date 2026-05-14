@@ -462,9 +462,19 @@ struct LibraryView: View {
         GridItem(.flexible(), spacing: 20),
     ]
 
+    private static let draftsHiddenBoardIDs: Set<String> = ["nike-editorial-board"]
+    private static let draftsTailBoardIDs: Set<String>  = ["ui-controls-board"]
+
+    private var orderedDraftsBoards: [LibraryBoard] {
+        let visible = appModel.boards.filter { !Self.draftsHiddenBoardIDs.contains($0.id) }
+        let main = visible.filter { !Self.draftsTailBoardIDs.contains($0.id) }
+        let tail = visible.filter {  Self.draftsTailBoardIDs.contains($0.id) }
+        return main + tail
+    }
+
     private var draftsContent: some View {
         LazyVGrid(columns: draftColumns, spacing: 4) {
-            ForEach(appModel.boards) { board in
+            ForEach(orderedDraftsBoards) { board in
                 NavigationLink(value: LibraryRoute.board(board.id)) {
                     VStack(alignment: .leading, spacing: 6) {
                         BoardVCard(board: board)
@@ -617,10 +627,12 @@ struct PreviewGrid: View {
     let height: CGFloat
     /// Corner radius for mini tiles inside the preview (defaults to masonry/board card radius).
     var cellCornerRadius: CGFloat = LibraryVisualMetrics.itemContainerCornerRadius
+    /// Gap between cells.
+    var spacing: CGFloat = 6
 
     var body: some View {
         GeometryReader { proxy in
-            let gap: CGFloat = 6
+            let gap: CGFloat = spacing
             let fullWidth = proxy.size.width
             // Subtract the 2 gaps between 3 rows so tiles fill the full height exactly
             let tilePool = height - gap * 2
@@ -779,7 +791,7 @@ struct LibraryTile: View {
         .padding(.horizontal, swatchCaptionPadding)
         .padding(.bottom, swatchCaptionBottomInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .shadow(color: .black.opacity(0.55), radius: 8, x: 0, y: 2)
+        .shadow(color: .black.opacity(isLightColor(hex: item.previewColorHex) ? 0 : 0.55), radius: 8, x: 0, y: 2)
     }
 
     private var uiPickerPreview: some View {
@@ -864,7 +876,14 @@ struct LibraryTile: View {
         let green = Double((hex >> 8) & 0xff) / 255
         let blue = Double(hex & 0xff) / 255
         let brightness = (red * 299 + green * 587 + blue * 114) / 1000
-        return brightness > 0.72 ? Color.black.opacity(0.82) : .white
+        return brightness > 0.65 ? Color.black.opacity(0.75) : .white
+    }
+
+    private func isLightColor(hex: UInt) -> Bool {
+        let r = Double((hex >> 16) & 0xff) / 255
+        let g = Double((hex >> 8) & 0xff) / 255
+        let b = Double(hex & 0xff) / 255
+        return (r * 299 + g * 587 + b * 114) / 1000 > 0.65
     }
 }
 
@@ -1059,7 +1078,7 @@ struct LibraryItemDetailView: View {
 
             if !item.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(item.label)
-                    .font(.system(size: item.kind == .image ? 26 : 28, weight: .bold, design: .rounded))
+                    .font(.system(size: item.kind == .image ? 26 : 28, weight: .bold, design: .default))
                     .foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
                     .contentTransition(.interpolate)
@@ -1079,7 +1098,7 @@ struct LibraryItemDetailView: View {
 
             if let alt = item.alt, item.kind == .image {
                 Text(alt)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .font(.system(size: 17, weight: .regular, design: .default))
                     .foregroundStyle(.white.opacity(0.72))
                     .fixedSize(horizontal: false, vertical: true)
                     .contentTransition(.interpolate)

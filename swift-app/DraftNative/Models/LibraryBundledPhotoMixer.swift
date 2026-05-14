@@ -122,6 +122,44 @@ enum LibraryBundledPhotoMixer {
             return [t, "moodboard", "mood", "board"]
         case "editorial", "editorials":
             return [t, "editorial", "edit"]
+        // Sports & movement
+        case "sporty", "sport", "sports":
+            return [t, "sport", "sports", "sporty", "athletic", "athlete", "fitness", "active", "motion", "track", "stadium", "run", "running"]
+        case "athletic", "athlete":
+            return [t, "athletic", "athlete", "sport", "sporty", "fitness", "active", "run"]
+        case "fitness", "gym", "workout":
+            return [t, "fitness", "gym", "workout", "athletic", "sport", "active"]
+        case "motion", "dynamic", "action":
+            return [t, "motion", "dynamic", "action", "jump", "jumping", "orbit", "run"]
+        case "energy", "energetic":
+            return [t, "energy", "energetic", "active", "dynamic", "vivid", "vibrant"]
+        case "running", "run", "runner":
+            return [t, "running", "run", "runner", "athletic", "sport", "track"]
+        // Nature & environment
+        case "nature", "natural", "outdoor", "outdoors":
+            return [t, "nature", "natural", "outdoor", "garden", "meadow", "field", "forest", "wildflower", "landscape"]
+        case "floral", "flower", "flowers", "botanical":
+            return [t, "floral", "flower", "flowers", "tulip", "wildflower", "bouquet", "bloom", "meadow", "garden", "botanical"]
+        case "landscape", "scenic":
+            return [t, "landscape", "scenic", "meadow", "hills", "desert", "dune", "lake", "forest"]
+        // Color & mood
+        case "warm", "warmth":
+            return [t, "warm", "warmth", "orange", "amber", "desert", "melon", "peach", "golden"]
+        case "cool", "cold":
+            return [t, "cool", "cold", "blue", "teal", "aqua", "cobalt", "navy"]
+        case "vivid", "vibrant", "saturated":
+            return [t, "vivid", "vibrant", "saturated", "bold", "bright", "electric", "neon"]
+        case "yellow", "golden":
+            return [t, "yellow", "golden", "lime", "electric", "bright", "butter", "lemon"]
+        case "pink", "rose":
+            return [t, "pink", "rose", "blush", "fuchsia", "hot pink", "powder"]
+        case "street", "urban", "city":
+            return [t, "street", "urban", "city", "times square"]
+        // Style & fashion
+        case "fashion", "style", "styled":
+            return [t, "fashion", "style", "editorial", "campaign", "outfit", "portrait"]
+        case "campaign", "brand":
+            return [t, "campaign", "brand", "editorial", "nike", "wordmark"]
         default:
             return [t]
         }

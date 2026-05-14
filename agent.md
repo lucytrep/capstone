@@ -5,6 +5,14 @@
 - For iOS work, use `/Users/lucytrepanier/Code/capstone/swift-app` as the source of truth.
 - The Expo app in `/Users/lucytrepanier/Code/capstone/app` is reference-only unless the task is explicitly about migration or parity.
 
+## Draft marketing site (static)
+
+- **Source of truth (edit here only):** `/Users/lucytrepanier/Documents/GitHub/portfolio/draft/` — `index.html` + `assets/`. This is what ships to **`https://lucytrep.com/draft`** (one **p** in **lucytrep**) via GitHub Pages.
+- **Do not change** other portfolio paths (e.g. `case-studies/`, `index.html`, `ROUTING.md`, repo-root `robots.txt` / `sitemap.xml`, shared CSS) for Draft unless Lucy explicitly asks — keep the rest of the portfolio untouched.
+- **`capstone/draft/`:** optional mirror only; refresh **from** portfolio:  
+  `rsync -a --delete "/Users/lucytrepanier/Documents/GitHub/portfolio/draft/" "/Users/lucytrepanier/Code/capstone/draft/"`  
+- **Canonical URL:** `https://lucytrep.com/draft` — use in `<link rel="canonical">` and public links; not `…/draft/index.html`.
+
 ## Product
 
 `Draft` is a voice-first creative generation app. A user gives a prompt, the app generates three directions, and the result is reviewed in a designed output flow and later revisited in the library.

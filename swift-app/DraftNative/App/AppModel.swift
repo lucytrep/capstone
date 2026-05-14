@@ -81,10 +81,21 @@ final class AppModel: ObservableObject {
         }
 
         generationState = .generating
+        let startedAt = Date()
 
         do {
             let artifact = try await generator.generateArtifact(from: prompt)
             guard !Task.isCancelled else { return }
+
+            // Always show the generating animation for at least 2.4s so fast
+            // local generations feel as intentional as slow API ones.
+            let elapsed = Date().timeIntervalSince(startedAt)
+            let remaining = 2.4 - elapsed
+            if remaining > 0 {
+                try? await Task.sleep(for: .seconds(remaining))
+            }
+            guard !Task.isCancelled else { return }
+
             artifactHTML = artifact.html
             sessionStore.saveArtifactHTML(artifact.html)
             generationState = .ready

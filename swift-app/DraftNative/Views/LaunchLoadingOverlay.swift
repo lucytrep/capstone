@@ -6,16 +6,13 @@ import UIKit
 struct LaunchLoadingOverlay: View {
     let onComplete: () -> Void
 
-    @State private var videoOpacity: CGFloat = 1
-
     var body: some View {
         ZStack {
             launchChromeBackground.ignoresSafeArea()
 
             Group {
                 if launchVideoURL() != nil {
-                    FullBleedLaunchVideoPlayer(onPlaybackEnded: handlePlaybackEnded)
-                        .opacity(videoOpacity)
+                    FullBleedLaunchVideoPlayer(onPlaybackEnded: onComplete)
                 } else {
                     legacyFrameFallback(onComplete: onComplete)
                 }
@@ -28,8 +25,8 @@ struct LaunchLoadingOverlay: View {
             Color(hex: 0x141414)
             RadialGradient(
                 colors: [
-                    Color(hex: 0xFF9C40).opacity(0.08),
-                    Color(hex: 0xE07820).opacity(0.04),
+                    Color(hex: 0xFF6E00).opacity(0.08),
+                    Color(hex: 0xE85500).opacity(0.04),
                     Color.clear
                 ],
                 center: .center,
@@ -37,15 +34,6 @@ struct LaunchLoadingOverlay: View {
                 endRadius: 280
             )
             .allowsHitTesting(false)
-        }
-    }
-
-    private func handlePlaybackEnded() {
-        withAnimation(.easeInOut(duration: 0.55)) {
-            videoOpacity = 0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.58) {
-            onComplete()
         }
     }
 
@@ -59,10 +47,10 @@ struct LaunchLoadingOverlay: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color(hex: 0xFF9C40).opacity(0.26),
-                                Color(hex: 0xE07820).opacity(0.14),
-                                Color(hex: 0xC86820).opacity(0.06),
-                                Color(hex: 0x904010).opacity(0.02),
+                                Color(hex: 0xFF6E00).opacity(0.26),
+                                Color(hex: 0xE85500).opacity(0.14),
+                                Color(hex: 0xC44200).opacity(0.06),
+                                Color(hex: 0x8C2A00).opacity(0.02),
                                 Color.clear
                             ],
                             center: .center,
@@ -184,7 +172,7 @@ private struct FullBleedLaunchVideoPlayer: UIViewRepresentable {
         }
 
         private func schedulePulse() {
-            launchPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            launchPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     self?.launchPulseGenerator.impactOccurred(intensity: 1.0)
                 }

@@ -4,21 +4,27 @@ struct GenerationFlowView: View {
     @EnvironmentObject private var appModel: AppModel
     @State private var dragOffset: CGFloat = 0
 
+    private var isReady: Bool {
+        if case .ready = appModel.generationState { return true }
+        return false
+    }
+
     var body: some View {
-        Group {
-            switch appModel.generationState {
-            case .idle, .generating, .failed:
-                GeneratingView()
-            case .ready:
+        ZStack {
+            if isReady {
                 OutputView()
+                    .transition(.scale(scale: 0.93).combined(with: .opacity))
+            } else {
+                GeneratingView()
+                    .transition(.opacity)
             }
         }
+        .animation(.spring(response: 0.52, dampingFraction: 0.84), value: isReady)
         .offset(y: max(0, dragOffset))
         .gesture(
             DragGesture(minimumDistance: 20)
                 .onChanged { value in
                     guard value.translation.height > 0 else { return }
-                    // Rubber-band: resistance increases as you drag further
                     let raw = value.translation.height
                     dragOffset = raw * (1 - log10(1 + raw / 120) * 0.5)
                 }

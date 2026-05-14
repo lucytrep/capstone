@@ -201,11 +201,11 @@ struct LibraryBoardDetailView: View {
             LibraryTile(item: item, width: w, height: h, compactPreview: false)
                 .overlay(
                     RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous)
-                        .stroke(Color.accentColor, lineWidth: isSelectMode && isSelected ? 3 : 0)
+                        .stroke(Color.white, lineWidth: isSelectMode && isSelected ? 2.5 : 0)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: LibraryVisualMetrics.itemContainerCornerRadius, style: .continuous)
-                        .fill(isSelectMode && isSelected ? Color.accentColor.opacity(0.14) : .clear)
+                        .fill(isSelectMode && isSelected ? Color.white.opacity(0.10) : .clear)
                 )
                 .scaleEffect(isSelectMode && isSelected ? 0.97 : 1.0)
 
@@ -236,16 +236,16 @@ struct LibraryBoardDetailView: View {
     private func selectionBadge(isSelected: Bool) -> some View {
         ZStack {
             Circle()
-                .fill(isSelected ? Color.accentColor : Color.black.opacity(0.45))
+                .fill(isSelected ? Color.white : Color.black.opacity(0.45))
                 .frame(width: 26, height: 26)
                 .overlay(
-                    Circle().stroke(Color.white.opacity(isSelected ? 0 : 0.85), lineWidth: 1.5)
+                    Circle().stroke(Color.white.opacity(isSelected ? 0 : 0.75), lineWidth: 1.5)
                 )
 
             if isSelected {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.black)
             }
         }
         .padding(12)
@@ -255,35 +255,47 @@ struct LibraryBoardDetailView: View {
     private var selectionToolbar: some View {
         VStack(spacing: 0) {
             Rectangle()
-                .fill(.white.opacity(0.08))
-                .frame(height: 1)
+                .fill(.white.opacity(0.1))
+                .frame(height: 0.5)
 
-            HStack {
-                Text(
-                    selectedItemIDs.isEmpty
-                        ? "Tap items to select"
-                        : "\(selectedItemIDs.count) item\(selectedItemIDs.count == 1 ? "" : "s") selected"
-                )
-                .font(.system(size: 14, weight: .medium, design: .default))
-                .foregroundStyle(selectedItemIDs.isEmpty ? .white.opacity(0.45) : .white)
-                .contentTransition(.numericText())
-                .animation(.default, value: selectedItemIDs.count)
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(
+                        selectedItemIDs.isEmpty
+                            ? "Tap items to select"
+                            : "\(selectedItemIDs.count) item\(selectedItemIDs.count == 1 ? "" : "s") selected"
+                    )
+                    .font(.system(size: 17, weight: .semibold, design: .default))
+                    .foregroundStyle(selectedItemIDs.isEmpty ? .white.opacity(0.38) : .white)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: selectedItemIDs.count)
+                }
 
                 Spacer()
 
                 Button {
                     showActionSheet = true
                 } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(selectedItemIDs.isEmpty ? .white.opacity(0.28) : .white)
-                        .frame(width: 44, height: 44)
+                    HStack(spacing: 7) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Share")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundStyle(selectedItemIDs.isEmpty ? Color.white.opacity(0.25) : Color.black)
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 13)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(selectedItemIDs.isEmpty ? Color.white.opacity(0.08) : Color.white)
+                    )
                 }
                 .disabled(selectedItemIDs.isEmpty)
+                .animation(.snappy, value: selectedItemIDs.isEmpty)
             }
             .padding(.horizontal, 24)
-            .padding(.vertical, 10)
-            .padding(.bottom, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 28)
             .background(.ultraThinMaterial)
         }
     }
@@ -363,8 +375,8 @@ private struct BoardActionSheet: View {
             VStack(spacing: 10) {
                 actionRow(
                     icon: "arrow.right.square.fill",
-                    label: "Move to Board",
-                    subtitle: "Remove from here and add to another board"
+                    label: "Move to Draft",
+                    subtitle: "Remove from here and add to another Draft"
                 ) {
                     actionMode = .move
                     showBoardPicker = true
@@ -372,8 +384,8 @@ private struct BoardActionSheet: View {
 
                 actionRow(
                     icon: "plus.square.on.square.fill",
-                    label: "Copy to Board",
-                    subtitle: "Keep here and duplicate into another board"
+                    label: "Copy to Draft",
+                    subtitle: "Keep here and duplicate into another Draft"
                 ) {
                     actionMode = .copy
                     showBoardPicker = true
@@ -381,8 +393,8 @@ private struct BoardActionSheet: View {
 
                 actionRow(
                     icon: "trash.fill",
-                    label: "Remove from Board",
-                    subtitle: "Delete selected items from this board",
+                    label: "Remove from Draft",
+                    subtitle: "Delete selected items from this Draft",
                     destructive: true
                 ) {
                     appModel.removeItems(itemIDs: selectedItemIDs, from: boardID)
@@ -404,13 +416,13 @@ private struct BoardActionSheet: View {
 
     private var boardPickerView: some View {
         VStack(spacing: 0) {
-            Text(actionMode == .move ? "Move to Board" : "Copy to Board")
+            Text(actionMode == .move ? "Move to Draft" : "Copy to Draft")
                 .font(.system(size: 20, weight: .bold, design: .default))
                 .foregroundStyle(.white)
                 .padding(.top, 8)
                 .padding(.bottom, 4)
 
-            Text(actionMode == .move ? "Items will be removed from this board" : "Items will remain in this board")
+            Text(actionMode == .move ? "Items will be removed from this Draft" : "Items will remain in this Draft")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white.opacity(0.48))
                 .padding(.bottom, 24)
@@ -427,9 +439,9 @@ private struct BoardActionSheet: View {
                             onComplete()
                         } label: {
                             HStack(spacing: 14) {
-                                PreviewGrid(items: board.previewItems, height: 60)
+                                PreviewGrid(items: board.previewItems, height: 60, cellCornerRadius: 4, spacing: 2)
                                     .frame(width: 60)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                     .allowsHitTesting(false)
 
                                 VStack(alignment: .leading, spacing: 4) {

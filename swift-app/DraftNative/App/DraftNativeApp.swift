@@ -14,7 +14,7 @@ struct DraftNativeApp: App {
 
                 if showLaunchOverlay {
                     LaunchLoadingOverlay {
-                        withAnimation(.easeOut(duration: 0.5)) {
+                        withAnimation(.easeInOut(duration: 0.7)) {
                             showLaunchOverlay = false
                         }
                     }

@@ -146,19 +146,19 @@ enum LibrarySeedData {
             ]
         ),
         LibraryBoard(
-            id: "calm-bedroom-board",
-            promptTitle: "Open Court Energy",
+            id: "warm-vivid-board",
+            promptTitle: "Warm & Vivid",
             itemCount: 7,
             updatedAtLabel: "Saved today",
-            generationID: "gen-open-court-energy",
+            generationID: "gen-warm-vivid",
             items: [
-                .init(id: "open-court-1", kind: .image, label: "Sky sole", previewColorHex: 0x5DB7EA, secondaryColorHex: 0x97D8F6, generationID: "gen-open-court-energy", bundleImageName: "open-court-1", alt: "Low-angle fashion image with oversized shoes against a bright sky", source: nil, author: "Direction 2"),
-                .init(id: "open-court-2", kind: .image, label: "Parking lot chrome", previewColorHex: 0x88B8D7, secondaryColorHex: 0xCFDFEA, generationID: "gen-open-court-energy", bundleImageName: "open-court-2", alt: "Sporty outdoor portrait with metallic sneakers and a parking lot backdrop", source: nil, author: "Direction 2"),
-                .init(id: "open-court-3", kind: .image, label: "Baseline chic", previewColorHex: 0x2A5E9A, secondaryColorHex: 0x75B4FF, generationID: "gen-open-court-energy", bundleImageName: "open-court-3", alt: "Editorial tennis fashion on a bright blue court", source: nil, author: "Direction 2"),
-                .init(id: "open-court-4", kind: .image, label: "Sun visor serve", previewColorHex: 0x8EB53F, secondaryColorHex: 0xD6E86C, generationID: "gen-open-court-energy", bundleImageName: "open-court-4", alt: "Outdoor tennis scene with lime court tones and sunlit styling", source: nil, author: "Direction 2"),
-                .init(id: "open-court-5", kind: .image, label: "Club colors", previewColorHex: 0xE0D58B, secondaryColorHex: 0xF7F0B7, generationID: "gen-open-court-energy", bundleImageName: "open-court-5", alt: "Group portrait featuring colorful football-inspired streetwear", source: nil, author: "Direction 2"),
-                .init(id: "open-court-6", kind: .image, label: "Court edge", previewColorHex: 0x3A6EA8, secondaryColorHex: 0x6FA8DC, generationID: "gen-open-court-energy", bundleImageName: "open-court-6", alt: "Outdoor court fashion editorial", source: nil, author: "Direction 2"),
-                .init(id: "open-court-7", kind: .image, label: "Drop serve", previewColorHex: 0x5A8CC2, secondaryColorHex: 0x9DC0E8, generationID: "gen-open-court-energy", bundleImageName: "open-court-7", alt: "Dynamic sportswear editorial", source: nil, author: "Direction 2"),
+                .init(id: "warm-vivid-1", kind: .image,   label: "Melon burst",     previewColorHex: 0xFF6B2B, secondaryColorHex: 0xFFAA70, generationID: "gen-warm-vivid", bundleImageName: "home-aura-orange",   alt: "Warm orange aura glow",                        source: nil, author: "Direction 1"),
+                .init(id: "warm-vivid-2", kind: .palette, label: "Melon orange",    previewColorHex: 0xFF7A3C, secondaryColorHex: 0xFFB27A, generationID: "gen-warm-vivid", bundleImageName: "color_melon_orange", alt: "Melon orange palette swatch",                  source: nil, author: "Direction 1"),
+                .init(id: "warm-vivid-3", kind: .image,   label: "Golden field",    previewColorHex: 0xF5C842, secondaryColorHex: 0xFFE080, generationID: "gen-warm-vivid", bundleImageName: "home-daffodil",      alt: "Sunlit daffodil field in golden yellow",       source: nil, author: "Direction 2"),
+                .init(id: "warm-vivid-4", kind: .palette, label: "Apricot wash",    previewColorHex: 0xFFAA70, secondaryColorHex: 0xFFD4B0, generationID: "gen-warm-vivid", bundleImageName: "color_apricot_wash", alt: "Soft apricot wash palette swatch",             source: nil, author: "Direction 2"),
+                .init(id: "warm-vivid-5", kind: .palette, label: "Punch red",       previewColorHex: 0xE8302A, secondaryColorHex: 0xFF6B60, generationID: "gen-warm-vivid", bundleImageName: "color_punch_red",    alt: "Vivid punch red palette swatch",               source: nil, author: "Direction 3"),
+                .init(id: "warm-vivid-6", kind: .image,   label: "Tulip bloom",     previewColorHex: 0xE84060, secondaryColorHex: 0xFF8090, generationID: "gen-warm-vivid", bundleImageName: "home-tulips",        alt: "Close-up of vivid warm-toned tulips in bloom", source: nil, author: "Direction 3"),
+                .init(id: "warm-vivid-7", kind: .palette, label: "Electric yellow", previewColorHex: 0xF5D800, secondaryColorHex: 0xFFEE60, generationID: "gen-warm-vivid", bundleImageName: "color_electric_yellow", alt: "Electric yellow palette swatch",            source: nil, author: "Direction 3"),
             ]
         ),
         LibraryBoard(
@@ -174,6 +174,32 @@ enum LibrarySeedData {
                 .init(id: "field-4", kind: .image, label: "Stadium lone", previewColorHex: 0x3A9E3A, secondaryColorHex: 0x60B860, generationID: "gen-field-energy", bundleImageName: "home-stadium", alt: "Single figure in an empty stadium", source: nil, author: "Saved"),
                 .init(id: "field-5", kind: .palette, label: "Sky blue", previewColorHex: 0x4A90D9, secondaryColorHex: 0x7ABCE8, generationID: "gen-field-energy"),
                 .init(id: "field-6", kind: .image, label: "Open run", previewColorHex: 0x5BA8D8, secondaryColorHex: 0x8ACBE8, generationID: "gen-field-energy", bundleImageName: "home-running", alt: "Figures running across an open field", source: nil, author: "Saved"),
+            ]
+        ),
+        LibraryBoard(
+            id: "warm-signals-board",
+            promptTitle: "Warm Signals",
+            itemCount: 4,
+            updatedAtLabel: "Saved today",
+            generationID: "gen-warm-signals",
+            items: [
+                .init(id: "ws-1", kind: .palette, label: "Vivid orange",  previewColorHex: 0xFF6E00, secondaryColorHex: 0xFFAA60, generationID: "gen-warm-signals"),
+                .init(id: "ws-2", kind: .palette, label: "Rust",          previewColorHex: 0x8C3800, secondaryColorHex: 0xC46030, generationID: "gen-warm-signals"),
+                .init(id: "ws-3", kind: .image,   label: "Soft charts",   previewColorHex: 0xD684D0, secondaryColorHex: 0x1F47E5, generationID: "gen-warm-signals", bundleImageName: "ui-metrics-soft-charts",   alt: "Abstract data visualization with fluid area, line, and bubble charts", source: nil, author: "Saved"),
+                .init(id: "ws-4", kind: .image,   label: "Confetti eye",  previewColorHex: 0xE85038, secondaryColorHex: 0xFF98B0, generationID: "gen-warm-signals", bundleImageName: "home-moma-eye",           alt: "Close-up eye with multicolour confetti dots — MoMA campaign", source: nil, author: "Saved"),
+            ]
+        ),
+        LibraryBoard(
+            id: "human-algorithm-board",
+            promptTitle: "Human Algorithm",
+            itemCount: 4,
+            updatedAtLabel: "Saved today",
+            generationID: "gen-human-algorithm",
+            items: [
+                .init(id: "ha-1", kind: .palette, label: "Deep maroon",   previewColorHex: 0x380810, secondaryColorHex: 0x701828, generationID: "gen-human-algorithm"),
+                .init(id: "ha-2", kind: .palette, label: "Field olive",   previewColorHex: 0x587040, secondaryColorHex: 0x88A860, generationID: "gen-human-algorithm"),
+                .init(id: "ha-3", kind: .image,   label: "Algorithm",     previewColorHex: 0xF08060, secondaryColorHex: 0xA0D8A0, generationID: "gen-human-algorithm", bundleImageName: "home-silhouettes",        alt: "Grid of colourful gradient human silhouettes — Algorithm series by @magdiellop", source: nil, author: "Saved"),
+                .init(id: "ha-4", kind: .image,   label: "Bold analytics",previewColorHex: 0xFF7A3D, secondaryColorHex: 0xD8FF40, generationID: "gen-human-algorithm", bundleImageName: "ui-metrics-analytics-cards", alt: "Bold analytics dashboard with lime, orange, and yellow metric cards", source: nil, author: "Saved"),
             ]
         ),
         LibraryBoard(
@@ -195,14 +221,13 @@ enum LibrarySeedData {
         LibraryBoard(
             id: "recipe-app-concept",
             promptTitle: "Recipe App Concept",
-            itemCount: 4,
+            itemCount: 3,
             updatedAtLabel: "Saved today",
             generationID: "gen-recipe-app-concept",
             items: [
                 .init(id: "recipe-app-concept-2", kind: .image, label: "Pop orbit", previewColorHex: 0xFF7A1A, secondaryColorHex: 0xA86DFF, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-2", alt: "Playful campaign collage with objects orbiting around bold copy", source: nil, author: "Direction 4"),
                 .init(id: "recipe-app-concept-3", kind: .image, label: "Tree scene", previewColorHex: 0x7BBE4E, secondaryColorHex: 0xB8D97D, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-3", alt: "Stylized outdoor tableau with figures perched in a tree", source: nil, author: "Direction 4"),
                 .init(id: "recipe-app-concept-4", kind: .image, label: "Air motion", previewColorHex: 0x7198FF, secondaryColorHex: 0xF49AE1, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-4", alt: "Dynamic fashion figures suspended mid-air against a gradient sky", source: nil, author: "Direction 4"),
-                .init(id: "recipe-app-concept-5", kind: .image, label: "Frisbee crew", previewColorHex: 0x7088D8, secondaryColorHex: 0xA8B8F0, generationID: "gen-recipe-app-concept", bundleImageName: "recipe-app-concept-5", alt: "Group of friends jumping for a frisbee at sunset", source: nil, author: "Direction 4"),
             ]
         ),
         LibraryBoard(
@@ -218,6 +243,19 @@ enum LibrarySeedData {
                 .init(id: "vivid-4", kind: .palette, label: "Lime", previewColorHex: 0x88D040, secondaryColorHex: 0xB8E878, generationID: "gen-vivid-summer"),
                 .init(id: "vivid-5", kind: .palette, label: "Violet pop", previewColorHex: 0x9A10F8, secondaryColorHex: 0xC060FF, generationID: "gen-vivid-summer"),
                 .init(id: "vivid-6", kind: .palette, label: "Deep magenta", previewColorHex: 0xB83268, secondaryColorHex: 0xE05898, generationID: "gen-vivid-summer"),
+            ]
+        ),
+        LibraryBoard(
+            id: "motion-product-board",
+            promptTitle: "Motion & Product",
+            itemCount: 4,
+            updatedAtLabel: "Saved today",
+            generationID: "gen-motion-product",
+            items: [
+                .init(id: "mprod-1", kind: .image,   label: "Rhythm",      previewColorHex: 0x905010, secondaryColorHex: 0xC07830, generationID: "gen-motion-product", bundleImageName: "home-nike-rhythm",  alt: "Nike Find Your Rhythm editorial triptych on dark ground", source: nil, author: "Saved"),
+                .init(id: "mprod-2", kind: .palette, label: "Dark sienna",  previewColorHex: 0x704028, secondaryColorHex: 0xA86040, generationID: "gen-motion-product"),
+                .init(id: "mprod-3", kind: .image,   label: "Scripts",      previewColorHex: 0xE06848, secondaryColorHex: 0xFFAA88, generationID: "gen-motion-product", bundleImageName: "ui-scripts-icon",   alt: "Scripts orange folder app icon for notes and journalism", source: nil, author: "Saved"),
+                .init(id: "mprod-4", kind: .image,   label: "Observatory",  previewColorHex: 0x304878, secondaryColorHex: 0x8860D0, generationID: "gen-motion-product", bundleImageName: "ui-observatory",    alt: "Observatory dark app with teal and purple gradient widget cards", source: nil, author: "Saved"),
             ]
         ),
         LibraryBoard(
@@ -244,20 +282,6 @@ enum LibrarySeedData {
                 .init(id: "ui-metrics-3", kind: .image, label: "Charge bar", previewColorHex: 0xF24A53, secondaryColorHex: 0x111111, generationID: "gen-ui-metrics-lab", bundleImageName: "ui-metrics-energy-bar", alt: "Minimal energy progress bar interface on white and black surfaces", source: nil, author: "Saved"),
                 .init(id: "ui-metrics-4", kind: .image, label: "Soft charts", previewColorHex: 0xD684D0, secondaryColorHex: 0x1F47E5, generationID: "gen-ui-metrics-lab", bundleImageName: "ui-metrics-soft-charts", alt: "Dark analytics layout with rounded line, bar, area, and bubble charts", source: nil, author: "Saved"),
                 .init(id: "ui-metrics-5", kind: .image, label: "Analytics cards", previewColorHex: 0xFF7A3D, secondaryColorHex: 0xD8FF40, generationID: "gen-ui-metrics-lab", bundleImageName: "ui-metrics-analytics-cards", alt: "Grid of analytics cards with lime, powder blue, yellow, and orange panels", source: nil, author: "Saved"),
-            ]
-        ),
-        LibraryBoard(
-            id: "ui-glass-board",
-            promptTitle: "Icon & Glass Studies",
-            itemCount: 5,
-            updatedAtLabel: "Saved today",
-            generationID: "gen-ui-glass-studies",
-            items: [
-                .init(id: "ui-glass-1", kind: .image, label: "Home tab", previewColorHex: 0xD9DDF1, secondaryColorHex: 0x2E5BFF, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-home-tab", alt: "Soft glassmorphism travel interface with a floating tab bar and blue home icon", source: nil, author: "Saved"),
-                .init(id: "ui-glass-2", kind: .image, label: "Selector rail", previewColorHex: 0xE6E7EE, secondaryColorHex: 0x111111, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-selector-rail", alt: "Rounded selector rail with monochrome icon tiles on a light grid background", source: nil, author: "Saved"),
-                .init(id: "ui-glass-3", kind: .image, label: "Subtitly icon", previewColorHex: 0xF0ECDD, secondaryColorHex: 0x222222, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-subtitly-icon", alt: "Minimal app icon presentation for a Subtitly wordmark on a warm cream background", source: nil, author: "Saved"),
-                .init(id: "ui-glass-4", kind: .image, label: "Commerce orbit", previewColorHex: 0xF2F2F0, secondaryColorHex: 0x0E0E10, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-commerce-orbit", alt: "Editorial commerce UI with profile photos connected by a rounded black control", source: nil, author: "Saved"),
-                .init(id: "ui-glass-5", kind: .image, label: "Message composer", previewColorHex: 0xEDF0F8, secondaryColorHex: 0x66D7FF, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-message-composer", alt: "Translucent message composer with line icons and a glowing blue send button", source: nil, author: "Saved"),
             ]
         ),
         LibraryBoard(
@@ -349,6 +373,20 @@ enum LibrarySeedData {
                 .init(id: "fw-4", kind: .image, label: "Tulip text", previewColorHex: 0xD87090, secondaryColorHex: 0xF0A0B8, generationID: "gen-found-works", bundleImageName: "home-tulips", alt: "Pink tulips with typography text overlay", source: nil, author: "Saved"),
                 .init(id: "fw-5", kind: .image, label: "Algorithm", previewColorHex: 0xC0A080, secondaryColorHex: 0xE0C8A8, generationID: "gen-found-works", bundleImageName: "home-silhouettes", alt: "Colorful illustrated algorithmic silhouettes poster", source: nil, author: "Saved"),
                 .init(id: "fw-6", kind: .palette, label: "Sage mist", previewColorHex: 0x88A898, secondaryColorHex: 0xB0C8B8, generationID: "gen-found-works"),
+            ]
+        ),
+        LibraryBoard(
+            id: "ui-glass-board",
+            promptTitle: "Icon & Glass Studies",
+            itemCount: 5,
+            updatedAtLabel: "Saved today",
+            generationID: "gen-ui-glass-studies",
+            items: [
+                .init(id: "ui-glass-1", kind: .image, label: "Home tab", previewColorHex: 0xD9DDF1, secondaryColorHex: 0x2E5BFF, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-home-tab", alt: "Soft glassmorphism travel interface with a floating tab bar and blue home icon", source: nil, author: "Saved"),
+                .init(id: "ui-glass-2", kind: .image, label: "Selector rail", previewColorHex: 0xE6E7EE, secondaryColorHex: 0x111111, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-selector-rail", alt: "Rounded selector rail with monochrome icon tiles on a light grid background", source: nil, author: "Saved"),
+                .init(id: "ui-glass-3", kind: .image, label: "Subtitly icon", previewColorHex: 0xF0ECDD, secondaryColorHex: 0x222222, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-subtitly-icon", alt: "Minimal app icon presentation for a Subtitly wordmark on a warm cream background", source: nil, author: "Saved"),
+                .init(id: "ui-glass-4", kind: .image, label: "Commerce orbit", previewColorHex: 0xF2F2F0, secondaryColorHex: 0x0E0E10, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-commerce-orbit", alt: "Editorial commerce UI with profile photos connected by a rounded black control", source: nil, author: "Saved"),
+                .init(id: "ui-glass-5", kind: .image, label: "Message composer", previewColorHex: 0xEDF0F8, secondaryColorHex: 0x66D7FF, generationID: "gen-ui-glass-studies", bundleImageName: "ui-glass-message-composer", alt: "Translucent message composer with line icons and a glowing blue send button", source: nil, author: "Saved"),
             ]
         ),
         LibraryBoard(

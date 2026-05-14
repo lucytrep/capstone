@@ -44,11 +44,13 @@ struct OutputView: View {
     private var artifactShell: some View {
         VStack(spacing: 0) {
             shellHeader
+                .padding(.horizontal, 20)
             shellBody
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if showsDirectionIndicator {
                 directionIndicator
                     .padding(.top, 16)
+                    .padding(.horizontal, 20)
             }
             Spacer(minLength: 18)
             AppBottomNav(
@@ -60,7 +62,6 @@ struct OutputView: View {
             .frame(width: 236)
             .padding(.bottom, 18)
         }
-        .padding(.horizontal, 20)
         .padding(.top, 22)
         .padding(.bottom, 6)
         .frame(maxHeight: .infinity)
@@ -131,6 +132,7 @@ struct OutputView: View {
             UIArtifactPager(options: options, selection: $selection)
         case .web(let html):
             WebArtifactView(html: html)
+                .padding(.horizontal, 20)
                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         }
     }
@@ -175,6 +177,7 @@ private struct PaletteArtifactPager: View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 PaletteArtifactPage(option: option)
+                    .padding(.horizontal, 20)
                     .tag(index)
             }
         }
@@ -288,6 +291,7 @@ private struct PhotoArtifactPager: View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 PhotoArtifactPage(option: option)
+                    .padding(.horizontal, 20)
                     .id(option.id)
                     .tag(index)
             }
@@ -309,22 +313,33 @@ private struct PhotoArtifactPage: View {
 
     /// Matches `MockArtifactGenerator.swapLowResBundleAssetsTowardThirdDirection`.
     private static let lowResBundleLayoutThreshold = 1200
+    /// In moodboard mode, these grid slots are replaced by palette swatch tiles (swatch index = order in array).
+    private static let moodboardSwatchSlotOrder = [1, 4]
 
     /// For each grid slot 0…5, the index into `option.photos` shown there (nil = placeholder).
     private var slotOriginalIndices: [Int?] {
         Self.slotOriginalIndices(for: option.photos)
     }
 
+    private var moodboardSwatchSlots: [Int: PaletteSwatch] {
+        guard option.displayMode == .moodboard, let swatches = option.swatches, !swatches.isEmpty else { return [:] }
+        var map: [Int: PaletteSwatch] = [:]
+        for (i, slot) in Self.moodboardSwatchSlotOrder.enumerated() {
+            guard i < swatches.count else { break }
+            map[slot] = swatches[i]
+        }
+        return map
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let contentWidth = geometry.size.width
             let contentHeight = geometry.size.height
-            let gridHeight = contentHeight
             let baseHeights: [CGFloat] = [210, 148, 168]
             let rowGaps = gap * 2
-            let heightBudget = max(0, gridHeight - rowGaps)
+            let heightBudget = max(0, contentHeight - rowGaps)
             let baseSum = baseHeights.reduce(0, +)
-            let heightScale = baseSum > 0 ? min(1, heightBudget / baseSum) : 0
+            let heightScale = baseSum > 0 ? heightBudget / baseSum : 0
             let heroHeight = baseHeights[0] * heightScale
             let midHeight = baseHeights[1] * heightScale
             let bottomHeight = baseHeights[2] * heightScale
@@ -332,27 +347,27 @@ private struct PhotoArtifactPage: View {
             let bottomCellWidth = floor((contentWidth - 2 * gap) / 3)
 
             VStack(spacing: gap) {
-                photoCell(index: 0, swatch: swatchForLayoutSlot(0))
+                photoCell(index: 0)
                     .frame(width: contentWidth, height: heroHeight)
                     .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
 
                 HStack(spacing: gap) {
-                    photoCell(index: 1, swatch: swatchForLayoutSlot(1))
+                    photoCell(index: 1)
                         .frame(width: midCellWidth, height: midHeight)
                         .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
-                    photoCell(index: 2, swatch: swatchForLayoutSlot(2))
+                    photoCell(index: 2)
                         .frame(width: midCellWidth, height: midHeight)
                         .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
                 }
 
                 HStack(spacing: gap) {
-                    photoCell(index: 3, swatch: swatchForLayoutSlot(3))
+                    photoCell(index: 3)
                         .frame(width: bottomCellWidth, height: bottomHeight)
                         .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
-                    photoCell(index: 4, swatch: swatchForLayoutSlot(4))
+                    photoCell(index: 4)
                         .frame(width: bottomCellWidth, height: bottomHeight)
                         .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
-                    photoCell(index: 5, swatch: swatchForLayoutSlot(5))
+                    photoCell(index: 5)
                         .frame(width: bottomCellWidth, height: bottomHeight)
                         .clipShape(RoundedRectangle(cornerRadius: tileCorner, style: .continuous))
                 }
@@ -362,19 +377,14 @@ private struct PhotoArtifactPage: View {
     }
 
     @ViewBuilder
-    private func photoCell(index: Int, swatch: PaletteSwatch?) -> some View {
-        Group {
-            if let oi = slotOriginalIndices[index], option.photos.indices.contains(oi) {
-                PhotoTile(photo: option.photos[oi])
-            } else {
-                PlaceholderTile(swatch: swatch)
-            }
+    private func photoCell(index: Int) -> some View {
+        if let moodSwatch = moodboardSwatchSlots[index] {
+            PaletteSwatchTile(swatch: moodSwatch)
+        } else if let oi = slotOriginalIndices[index], option.photos.indices.contains(oi) {
+            PhotoTile(photo: option.photos[oi])
+        } else {
+            PlaceholderTile()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func swatchForLayoutSlot(_ slot: Int) -> PaletteSwatch? {
-        slotOriginalIndices[slot].flatMap { option.swatches?[safe: $0] }
     }
 
     /// Puts small bundled assets in the bottom row first, then mid/hero, so large slots show sharp images.
@@ -503,6 +513,7 @@ private struct UIArtifactPager: View {
         TabView(selection: $selection) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 NativeUIOptionCard(option: option)
+                    .padding(.horizontal, 20)
                     .tag(index)
             }
         }
@@ -518,172 +529,168 @@ private struct UIArtifactPager: View {
 private struct NativeUIOptionCard: View {
     let option: UIOptionPayload
 
+    private let corner: CGFloat = artifactTileCornerRadius
+    private let gap: CGFloat = 10
+
+    private var accent: Color { ArtifactColorParser.color(from: option.accent) }
+    private var onAccent: Color { ArtifactColorParser.isLight(hex: option.accent) ? .black.opacity(0.88) : .white }
+
     var body: some View {
-        let background = ArtifactColorParser.color(from: option.background)
-        let surface = ArtifactColorParser.color(from: option.surface)
-        let accent = ArtifactColorParser.color(from: option.accent)
-        let muted = ArtifactColorParser.color(from: option.mutedSurface)
-        let text = ArtifactColorParser.color(from: option.text)
-        let mutedText = ArtifactColorParser.color(from: option.mutedText)
+        GeometryReader { geometry in
+            let w = geometry.size.width
+            let h = geometry.size.height
+            let baseHeights: [CGFloat] = [200, 164, 92]
+            let budget = max(0, h - gap * 2)
+            let hs = budget / max(1, baseHeights.reduce(0, +))
+            let heroH   = baseHeights[0] * hs
+            let midH    = baseHeights[1] * hs
+            let bottomH = baseHeights[2] * hs
+            let halfW   = floor((w - gap) / 2)
 
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(option.productName)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(text)
+            VStack(spacing: gap) {
+                heroTile(width: w, height: heroH)
 
-                Text(option.supportingText)
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(mutedText)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: gap) {
+                    componentTile(width: halfW, height: midH)
+                    descriptionTile(width: halfW, height: midH)
+                }
 
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(surface)
-                    .frame(height: 360)
-                    .overlay(uiMock(surface: surface, accent: accent, muted: muted, text: text))
-
-                HStack(spacing: 10) {
-                    capsuleLabel(option.primaryCta, background: accent, foreground: .black)
-                    capsuleLabel(option.secondaryCta, background: .clear, foreground: text, border: muted)
+                HStack(spacing: gap) {
+                    ctaTile(title: option.primaryCta, width: halfW, height: bottomH, primary: true)
+                    ctaTile(title: option.secondaryCta, width: halfW, height: bottomH, primary: false)
                 }
             }
-            .padding(18)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .scrollIndicators(.hidden)
-        .background(
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .fill(background)
-        )
     }
 
-    private func capsuleLabel(_ title: String, background: Color, foreground: Color, border: Color? = nil) -> some View {
-        Text(title)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(foreground)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(background)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(border ?? .clear, lineWidth: 1)
-                    )
-            )
-    }
-
-    private func uiMock(surface: Color, accent: Color, muted: Color, text: Color) -> some View {
-        VStack(spacing: 16) {
-            HStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(muted).frame(width: 96, height: 14)
-                Spacer()
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(muted.opacity(0.82)).frame(width: 54, height: 14)
-            }
-
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
+    private func heroTile(width: CGFloat, height: CGFloat) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
                 .fill(accent)
-                .frame(height: 156)
-                .overlay(
-                    VStack(alignment: .leading, spacing: 10) {
-                        Spacer()
-                        Text(option.headline)
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(text)
-                        Text(option.featureTitle)
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundStyle(text.opacity(0.75))
-                    }
-                    .padding(24),
-                    alignment: .bottomLeading
-                )
-
-            featurePreview(accent: accent, muted: muted, text: text)
+            LinearGradient(
+                colors: [Color.black.opacity(0), Color.black.opacity(0.28)],
+                startPoint: .top, endPoint: .bottom
+            )
+            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            VStack(alignment: .leading, spacing: 5) {
+                Text(option.label.uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(onAccent.opacity(0.55))
+                    .kerning(1.2)
+                Text(option.productName)
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(onAccent)
+                    .lineLimit(1)
+                Text(option.headline)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(onAccent.opacity(0.72))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
         }
-        .padding(18)
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+    }
+
+    private func componentTile(width: CGFloat, height: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .fill(Color(hex: 0x1C1C1E))
+                .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(Color.white.opacity(0.07), lineWidth: 1))
+            VStack(alignment: .leading, spacing: 9) {
+                Text(option.featureTitle)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.4))
+                featurePreview()
+            }
+            .padding(13)
+        }
+        .frame(width: width, height: height)
+    }
+
+    private func descriptionTile(width: CGFloat, height: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .fill(Color(hex: 0x1C1C1E))
+                .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(accent.opacity(0.3), lineWidth: 1))
+            VStack(alignment: .leading, spacing: 8) {
+                accent.frame(width: 24, height: 3).clipShape(Capsule())
+                Text(option.supportingText)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.5))
+                    .lineLimit(7)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(13)
+        }
+        .frame(width: width, height: height)
+    }
+
+    private func ctaTile(title: String, width: CGFloat, height: CGFloat, primary: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .fill(primary ? accent : Color(hex: 0x1C1C1E))
+                .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(primary ? Color.clear : Color.white.opacity(0.1), lineWidth: 1))
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(primary ? onAccent : Color.white.opacity(0.8))
+                .lineLimit(1)
+        }
+        .frame(width: width, height: height)
     }
 
     @ViewBuilder
-    private func featurePreview(accent: Color, muted: Color, text: Color) -> some View {
+    private func featurePreview() -> some View {
         switch option.featureKind {
         case .toggles:
-            VStack(spacing: 12) {
-                ForEach(Array(option.featureItems.prefix(3).enumerated()), id: \.offset) { index, item in
+            VStack(spacing: 6) {
+                ForEach(Array(option.featureItems.prefix(2).enumerated()), id: \.offset) { i, item in
                     HStack {
-                        Text(item)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(text)
+                        Text(item).font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.72))
                         Spacer()
-                        ZStack(alignment: index == 1 ? .leading : .trailing) {
-                            Capsule(style: .continuous)
-                                .fill(index == 1 ? muted.opacity(0.8) : accent.opacity(0.9))
-                                .frame(width: 54, height: 32)
-                            Circle()
-                                .fill(.white)
-                                .frame(width: 26, height: 26)
-                                .padding(3)
+                        ZStack(alignment: i == 1 ? .leading : .trailing) {
+                            Capsule().fill(i == 1 ? Color.white.opacity(0.12) : accent).frame(width: 38, height: 22)
+                            Circle().fill(.white).frame(width: 16).padding(3)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .frame(height: 58)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(muted.opacity(0.42))
-                    )
+                    .padding(.horizontal, 9).frame(height: 34)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.04)))
                 }
             }
 
         case .buttons:
-            VStack(spacing: 12) {
-                ForEach(Array(option.featureItems.prefix(3).enumerated()), id: \.offset) { index, item in
+            VStack(spacing: 6) {
+                ForEach(Array(option.featureItems.prefix(2).enumerated()), id: \.offset) { i, item in
                     Text(item)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(index == 1 ? text : Color.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(index == 1 ? muted.opacity(0.58) : accent)
-                        )
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(i == 0 ? onAccent : .white.opacity(0.78))
+                        .frame(maxWidth: .infinity).frame(height: 34)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(i == 0 ? accent : Color.white.opacity(0.07)))
                 }
             }
 
         case .picker:
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 8) {
-                    ForEach(Array(option.featureItems.prefix(3).enumerated()), id: \.offset) { index, item in
-                        Text(item)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(index == 0 ? Color.black : text)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(index == 0 ? accent : muted.opacity(0.48))
-                            )
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 5) {
+                    ForEach(Array(option.featureItems.prefix(3).enumerated()), id: \.offset) { i, item in
+                        Text(item).font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(i == 0 ? onAccent : .white.opacity(0.55))
+                            .padding(.horizontal, 8).padding(.vertical, 5)
+                            .background(Capsule().fill(i == 0 ? accent : Color.white.opacity(0.07)))
                     }
                 }
-
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous).fill(muted.opacity(0.84))
-                    RoundedRectangle(cornerRadius: 24, style: .continuous).fill(muted.opacity(0.56))
-                }
-                .frame(height: 112)
+                RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.05)).frame(maxWidth: .infinity).frame(height: 46)
             }
 
         case .cards:
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous).fill(muted.opacity(0.84))
-                    RoundedRectangle(cornerRadius: 24, style: .continuous).fill(muted.opacity(0.56))
+            VStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 10).fill(accent.opacity(0.3)).frame(height: 42)
+                    RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.05)).frame(height: 42)
                 }
-                .frame(height: 112)
-
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous).fill(muted.opacity(0.62))
-                    RoundedRectangle(cornerRadius: 22, style: .continuous).fill(muted.opacity(0.76))
-                    RoundedRectangle(cornerRadius: 22, style: .continuous).fill(accent.opacity(0.32))
-                }
-                .frame(height: 84)
+                RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.04)).frame(maxWidth: .infinity).frame(height: 30)
             }
         }
     }

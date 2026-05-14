@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="canonical" href="https://lucytrep.com/draft">
   <meta name="description" content="Draft — AI-powered creative brief tool for iOS">
   <title>Draft — AI-powered creative brief tool</title>
   <link rel="icon" type="image/png" href="assets/favicon-64.png">
@@ -17,6 +18,9 @@
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; overflow-x: hidden; }
+    @media (max-width: 767px) {
+      html { scroll-behavior: auto; }
+    }
     body {
       background: #000;
       color: #fff;
@@ -25,15 +29,16 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Nav ── */
-    nav {
+    main {
       position: relative;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px 24px;
-      padding-top: calc(40px + env(safe-area-inset-top));
+      z-index: 1;
+      width: 100%;
+      max-width: 1080px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      box-sizing: border-box;
     }
 
     .nav-logo {
@@ -119,12 +124,13 @@
     }
 
     /* ── Carousel ── */
+    /* overflow-x: clip forces overflow-y → auto (CSS overflow pairing), which clips scaled cards */
     .carousel-section {
       position: relative;
+      z-index: 0;
       margin-top: clamp(-44px, -12vw, -22px);
       padding: 0 0 44px;
-      overflow-x: clip;
-      overflow-y: visible;
+      overflow: visible;
     }
 
     .carousel-section::before {
@@ -137,7 +143,8 @@
 
     .carousel-viewport {
       width: 100%;
-      padding: 0 0 8px;
+      /* Room for .carousel-card.is-center transform:scale — layout height ignores transform */
+      padding: clamp(20px, 4.5vw, 40px) 0 clamp(28px, 5.5vw, 52px);
     }
 
     .carousel-track {
@@ -181,13 +188,15 @@
       object-position: top left;
     }
 
-    /* ── Above-fold: everything that fits on one screen ── */
+    /* ── Above-fold: hero + intro copy; min-height (not fixed height) avoids iOS gap + flex dead-zone under hero ── */
     .above-fold {
-      height: 100svh;
+      min-height: 100svh;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      overflow: hidden;
+      overflow: visible;
+      position: relative;
+      z-index: 2;
     }
 
     /* ── Hero wrapper ── */
@@ -197,8 +206,10 @@
       flex-direction: column;
       flex: 1;
       min-height: 0;
-      max-height: 60svh;
-      overflow: hidden;
+      /* No max-height on narrow viewports — a cap here left empty flex space above .hero-desc (read as a “band”). Tablet+ caps in the 768px block. */
+      max-height: none;
+      overflow-x: hidden;
+      overflow-y: visible;
       /* Above .hero-desc-section (z-index 10) so its ::before fade cannot paint over the phone on iOS Safari */
       z-index: 11;
     }
@@ -316,6 +327,32 @@
       display: block;
     }
 
+    /*
+      Hero seam gradient lives on .hero-wrapper::after at z-index 1, under the phone (z-index 2).
+      .hero-desc-section::before cannot paint over the phone because the whole wrapper stacks above it (z-index 11 vs 10).
+      This overlay sits inside the phone stack so it always blends the mockup into #000 — every viewport width / Safari.
+    */
+    .phone-hero::after {
+      content: '';
+      position: absolute;
+      left: -5%;
+      right: -5%;
+      top: 36%;
+      bottom: clamp(-20px, -5vw, -48px);
+      pointer-events: none;
+      z-index: 5;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.06) 14%,
+        rgba(0, 0, 0, 0.22) 30%,
+        rgba(0, 0, 0, 0.48) 48%,
+        rgba(0, 0, 0, 0.74) 66%,
+        rgba(0, 0, 0, 0.92) 84%,
+        #000 100%
+      );
+    }
+
     /* second screen layered on top — JS drives opacity; top matches .phone-hero padding so both PNGs share the same origin (inset:0 + height:100% misaligned vs first img) */
     .phone-img-2 {
       position: absolute;
@@ -410,16 +447,7 @@
       color: #fff;
     }
     .hero-desc .char {
-      opacity: 0.15;
-    }
-
-    /* ── Tagline section (below carousel) ── */
-    .tagline-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 64px 28px 72px;
+      opacity: 0.34;
     }
 
     .phone-hero-frame {
@@ -559,10 +587,13 @@
       }
     }
 
-    /* ── Reel video ── */
+    /* ── Reel video (full-bleed: break out of main max-width + padding at every breakpoint) ── */
     .reel-section {
       position: relative;
-      width: 100%;
+      width: 100vw;
+      max-width: none;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
       overflow: hidden;
       margin-bottom: clamp(40px, 7vw, 88px);
     }
@@ -646,21 +677,24 @@
       font-family: inherit;
       text-wrap: balance;
       font-feature-settings: 'kern' 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.08em;
+      text-align: center;
     }
 
     .problem-statement__line {
       display: block;
       text-wrap: balance;
+      text-align: center;
+      align-self: center;
+      width: fit-content;
+      max-width: 100%;
     }
 
     .problem-statement__line + .problem-statement__line {
-      margin-top: 0.08em;
-    }
-
-    @media (min-width: 900px) {
-      .problem-statement__line {
-        white-space: nowrap;
-      }
+      margin-top: 0;
     }
 
     /* ── Section headings (unified large titles — Product Video, What it does, etc.) ── */
@@ -724,8 +758,20 @@
     }
 
     .section-heading--about {
-      margin: 0;
-      padding: 0 clamp(8px, 3vw, 16px);
+      margin: 0 auto;
+      padding: 0 0 clamp(20px, 4vw, 28px);
+      max-width: 540px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Match opening .hero-desc paragraph (size + weight), not other section titles */
+    .section-heading--about .section-heading__title {
+      font-size: clamp(18px, 4.5vw, 32px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      color: rgba(255, 255, 255, 0.85);
     }
 
     /* ── Features — iOS grouped cards ── */
@@ -768,7 +814,7 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      padding: 56px 28px 60px;
+      padding: clamp(56px, 8vw, 72px) max(20px, 4vw) clamp(60px, 9vw, 88px);
       gap: 20px;
     }
 
@@ -861,6 +907,224 @@
 
     footer p { font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 0.02em; font-weight: 400; }
 
+    /* ── Tablet / small desktop (768px+): release fold clip + blend hero → copy (no harsh seam) ── */
+    @media (min-width: 768px) {
+      .above-fold {
+        height: auto;
+        min-height: 100svh;
+        overflow: visible;
+      }
+
+      .phone-hero::after {
+        top: 34%;
+        bottom: clamp(-36px, -6vw, -72px);
+      }
+
+      .hero-wrapper {
+        max-height: min(72svh, 720px);
+        overflow-x: hidden;
+        overflow-y: visible;
+      }
+
+      .hero-wrapper::after {
+        bottom: clamp(-28px, -5vw, -12px);
+        height: clamp(300px, 50vh, 620px);
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          transparent 6%,
+          rgba(8, 1, 3, 0.06) 14%,
+          rgba(22, 8, 12, 0.22) 30%,
+          rgba(14, 4, 8, 0.5) 44%,
+          rgba(8, 2, 4, 0.72) 58%,
+          rgba(3, 0, 1, 0.9) 74%,
+          rgba(0, 0, 0, 0.98) 88%,
+          #000 100%
+        );
+      }
+
+      .hero-desc-section {
+        padding: calc(26px + 1rem) max(24px, 5vw) 0;
+        background: linear-gradient(
+          to bottom,
+          #150509 0%,
+          #0a0306 min(30%, 150px),
+          #000 min(54%, 280px)
+        );
+      }
+
+      .hero-desc-section::before {
+        height: clamp(100px, 18svh, 220px);
+      }
+    }
+
+    /* ── 800px+: built-with one row (larger tiles) + about two columns (photo left, name + bio right) ── */
+    @media (min-width: 800px) {
+      .accordion-section,
+      .built-section,
+      .about-section {
+        max-width: 1080px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: max(28px, env(safe-area-inset-left, 0px));
+        padding-right: max(28px, env(safe-area-inset-right, 0px));
+        box-sizing: border-box;
+      }
+
+      .accordion-section {
+        padding-bottom: 80px;
+      }
+
+      .built-section {
+        padding: 72px max(28px, 4vw) 80px;
+      }
+
+      .built-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(4, auto);
+        grid-auto-flow: column;
+        gap: clamp(22px, 3.5vw, 40px) clamp(36px, 7vw, 88px);
+        max-width: min(560px, 100%);
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        justify-items: center;
+        align-items: start;
+      }
+
+      .built-card {
+        flex: unset;
+        gap: clamp(12px, 1.4vw, 18px);
+      }
+
+      .built-icon {
+        width: clamp(84px, 10vw, 132px);
+        height: clamp(84px, 10vw, 132px);
+        border-radius: clamp(20px, 2.4vw, 28px);
+      }
+
+      .built-icon img {
+        border-radius: clamp(20px, 2.4vw, 28px);
+      }
+
+      .built-name {
+        font-size: clamp(12px, 1.25vw, 16px);
+      }
+
+      .built-eyebrow {
+        margin-bottom: clamp(40px, 4.5vw, 52px);
+      }
+    }
+
+    /* ── Desktop (900px+): calmer headline scale, aligned rails, hero breathes ── */
+    @media (min-width: 900px) {
+      nav {
+        padding: 20px max(24px, 4vw);
+        padding-top: calc(24px + env(safe-area-inset-top));
+      }
+
+      .phone-hero::after {
+        top: 32%;
+        bottom: clamp(-44px, -7vw, -88px);
+      }
+
+      .hero-wrapper::after {
+        bottom: clamp(-40px, -6vw, -16px);
+        height: clamp(360px, 54vh, 720px);
+      }
+
+      .hero-desc-section {
+        padding: calc(28px + 1rem) max(32px, 4vw) 0;
+        background: linear-gradient(
+          to bottom,
+          #120407 0%,
+          #080204 min(26%, 160px),
+          #000 min(50%, 320px)
+        );
+      }
+
+      .hero-desc-section::before {
+        height: clamp(112px, 20svh, 260px);
+      }
+
+      .hero {
+        padding: 20px max(24px, 3vw) 0;
+      }
+
+      .hero-headline {
+        font-size: clamp(52px, 6.2vw, 108px);
+        letter-spacing: -0.042em;
+      }
+
+      .features {
+        max-width: 960px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 0 64px;
+      }
+
+      .section-heading--features {
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .section-heading--reel .section-heading__title {
+        font-size: clamp(36px, 3.6vw, 52px);
+        letter-spacing: -0.035em;
+      }
+
+      .problem-statement {
+        padding-top: clamp(88px, 11vw, 120px);
+        padding-bottom: clamp(88px, 11vw, 120px);
+        padding-left: 0;
+        padding-right: 0;
+        text-align: center;
+      }
+
+      .problem-statement__label {
+        font-size: clamp(15px, 1.35vw, 18px);
+        letter-spacing: 0.08em;
+        margin-bottom: clamp(14px, 1.6vw, 20px);
+      }
+
+      .problem-statement__quote {
+        max-width: min(42rem, calc(100% - 8px));
+      }
+
+      .accordion-list {
+        max-width: 640px;
+      }
+
+      footer {
+        max-width: 1080px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: max(28px, env(safe-area-inset-left, 0px));
+        padding-right: max(28px, env(safe-area-inset-right, 0px));
+      }
+
+      main {
+        padding-left: max(28px, env(safe-area-inset-left, 0px));
+        padding-right: max(28px, env(safe-area-inset-right, 0px));
+      }
+
+      .hero-desc {
+        max-width: 620px;
+      }
+
+      .tagline-section {
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .problem-statement__line {
+        white-space: nowrap;
+      }
+    }
+
     /* ── Tablet+ ── */
     @media (min-width: 540px) {
       .nav-logo { height: 26px; }
@@ -868,7 +1132,9 @@
       .hero-sub { font-size: 16px; max-width: 380px; }
       .hero-desc-section { padding: calc(28px + 1rem) 40px 0; gap: 32px; }
       .carousel-section { margin-top: clamp(-52px, -11vw, -28px); padding: 0 0 52px; }
-      .carousel-viewport { padding: 0 0 8px; }
+      .carousel-viewport {
+        padding: clamp(24px, 4vw, 44px) 0 clamp(32px, 5vw, 56px);
+      }
       .carousel-track { gap: 10px; }
       .carousel-card {
         height: min(40svh, 284px);
@@ -1024,7 +1290,30 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
+      gap: 0;
+    }
+
+    .about-columns {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       gap: 28px;
+      width: 100%;
+    }
+
+    .about-visual {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    .about-copy {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      max-width: min(34em, 520px);
     }
 
     .about-photo-scene {
@@ -1032,16 +1321,18 @@
       width: 148px;
       height: 148px;
       overflow: visible;
+      isolation: isolate;
     }
 
+    /* Portrait sits on the bottom of the stack; stars + pills follow in DOM and use higher z-index. */
     .about-photo-ring {
-      width: 148px;
-      height: 148px;
+      width: 100%;
+      height: 100%;
       border-radius: 50%;
       padding: 3px;
       background: conic-gradient(from 0deg, #FF8C6B, #D4945A, #C2E8C0, #A9A9FF, #C3B1A0, #FF8C6B);
       position: relative;
-      z-index: 1;
+      z-index: 0;
     }
 
     .about-photo-ring img {
@@ -1051,25 +1342,36 @@
       object-fit: cover;
       object-position: center 18%;
       display: block;
+      position: relative;
+      z-index: 0;
     }
 
     .about-sticker {
       position: absolute;
+      display: block;
+      height: auto;
+      aspect-ratio: 1;
+      object-fit: contain;
       pointer-events: none;
       user-select: none;
-      z-index: 3;
+      z-index: 2;
     }
 
+    /* Percent of .about-photo-scene so stars stay on the rim at every breakpoint (no “floating” vs scaled photo). */
     .about-sticker-blob {
-      width: 50px;
-      top: -8px;
-      left: -16px;
+      width: 36%;
+      top: -6%;
+      left: -10%;
+      transform: rotate(-11deg);
+      transform-origin: 82% 86%;
     }
 
     .about-sticker-star {
-      width: 48px;
-      bottom: -8px;
-      right: -14px;
+      width: 40%;
+      bottom: -7%;
+      right: -9%;
+      transform: rotate(7deg);
+      transform-origin: 18% 24%;
     }
 
     .about-tag {
@@ -1081,15 +1383,15 @@
       border-radius: 100px;
       letter-spacing: -0.01em;
       white-space: nowrap;
-      z-index: 2;
+      z-index: 3;
     }
 
     .about-tag-amber {
       background: linear-gradient(135deg, #E8A050 0%, #A85F10 100%);
       color: #fff;
-      top: 14px;
-      right: -48px;
-      transform: rotate(-5deg);
+      top: 10px;
+      right: -12px;
+      transform: rotate(-6deg);
       box-shadow: 0 2px 12px rgba(168, 95, 16, 0.4);
     }
 
@@ -1097,9 +1399,9 @@
       background: linear-gradient(135deg, #3E6B4E 0%, #1A3828 100%);
       border: 0.5px solid rgba(255, 255, 255, 0.15);
       color: rgba(255, 255, 255, 0.9);
-      bottom: 22px;
-      left: -68px;
-      transform: rotate(3deg);
+      bottom: 18px;
+      left: -20px;
+      transform: rotate(4deg);
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
     }
 
@@ -1110,24 +1412,129 @@
       color: #fff;
       line-height: 1;
       margin: 0;
-      padding: 0 clamp(8px, 3vw, 16px);
+      padding: 0;
+      text-align: center;
     }
 
     .about-bio {
-      font-size: clamp(16px, 3.8vw, 22px);
+      font-size: 13px;
+      line-height: 1.6;
       font-weight: 400;
-      letter-spacing: -0.02em;
-      line-height: 1.55;
-      color: rgba(255, 255, 255, 0.62);
-      max-width: min(34em, 520px);
-      margin: 0 auto;
-      padding: 0 clamp(24px, 7vw, 56px);
+      font-family: inherit;
+      color: rgba(255, 255, 255, 0.45);
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      text-align: center;
       text-wrap: pretty;
     }
 
     .about-bio strong {
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.92);
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    /* Wide About layout must follow base .about-columns (column); otherwise base wins and stays single-column. */
+    @media (min-width: 800px) {
+      .about-section {
+        padding: clamp(72px, 8vw, 104px) max(28px, 4vw) clamp(88px, 10vw, 120px);
+        align-items: stretch;
+      }
+
+      .section-heading--about {
+        align-self: stretch;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        text-align: center;
+        padding: 0 0 clamp(28px, 4vw, 52px);
+      }
+
+      .section-heading--about .section-heading__title {
+        font-size: clamp(22px, 2.35vw, 30px);
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        color: rgba(255, 255, 255, 0.94);
+      }
+
+      .about-columns {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(40px, 6.5vw, 96px);
+        width: 100%;
+        max-width: 920px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .about-visual {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: clamp(220px, 30vw, 300px);
+        min-width: 0;
+      }
+
+      .about-photo-scene {
+        width: clamp(176px, 23vw, 220px);
+        height: clamp(176px, 23vw, 220px);
+        margin: 0 clamp(8px, 1.5vw, 20px);
+      }
+
+      .about-photo-ring {
+        padding: 3.5px;
+      }
+
+      .about-tag {
+        font-size: clamp(13px, 1.15vw, 15px);
+        padding: 8px 18px;
+      }
+
+      .about-tag-amber {
+        top: clamp(8px, 1.2vw, 14px);
+        right: clamp(-8px, -0.8vw, 4px);
+        transform: rotate(-5deg);
+      }
+
+      .about-tag-glass {
+        bottom: clamp(14px, 2vw, 24px);
+        left: clamp(-28px, -2.5vw, -12px);
+        transform: rotate(3.5deg);
+      }
+
+      .about-copy {
+        flex: 1;
+        min-width: 0;
+        align-items: flex-start;
+        justify-content: center;
+        text-align: left;
+        max-width: min(38em, 100%);
+        gap: 0;
+        padding: clamp(0px, 0.8vw, 6px) 0;
+      }
+
+      /* Bio already opens with full name — desktop matches comp (single refined column of copy). */
+      .about-name {
+        display: none;
+      }
+
+      .about-bio {
+        max-width: none;
+        font-size: clamp(16px, 1.45vw, 19px);
+        line-height: 1.68;
+        letter-spacing: -0.014em;
+        color: rgba(255, 255, 255, 0.82);
+        text-align: left;
+        text-wrap: pretty;
+      }
+
+      .about-bio strong {
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.98);
+      }
     }
 
     /* ── Accordion section ── */
@@ -1473,17 +1880,23 @@
     <header class="section-heading section-heading--about">
       <h2 class="section-heading__title">About the designer</h2>
     </header>
-    <div class="about-photo-scene">
-      <img src="assets/sticker-blob.png" class="about-sticker about-sticker-blob" alt="">
-      <img src="assets/sticker-star.png" class="about-sticker about-sticker-star" alt="">
-      <div class="about-photo-ring">
-        <img src="assets/about-photo.jpg" alt="Lucy Trepanier">
+    <div class="about-columns">
+      <div class="about-visual">
+        <div class="about-photo-scene">
+          <div class="about-photo-ring">
+            <img src="assets/about-photo.jpg" alt="Lucy Trepanier">
+          </div>
+          <img src="assets/about-star-top.svg" class="about-sticker about-sticker-blob" alt="" loading="lazy" decoding="async">
+          <img src="assets/about-star-bottom.svg" class="about-sticker about-sticker-star" alt="" loading="lazy" decoding="async">
+          <span class="about-tag about-tag-amber">MPS '26</span>
+          <span class="about-tag about-tag-glass">Product Designer</span>
+        </div>
       </div>
-      <span class="about-tag about-tag-amber">MPS '26</span>
-      <span class="about-tag about-tag-glass">Product Designer</span>
+      <div class="about-copy">
+        <p class="about-name">Lucy Trepanier</p>
+        <p class="about-bio">Lucy Trepanier is a Communication Design student at Parsons School of Design in NYC. Dyslexic by nature, she's always thought in images and feelings before words. <strong>Draft</strong> is the tool she wished had existed all along.</p>
+      </div>
     </div>
-    <p class="about-name">Lucy Trepanier</p>
-    <p class="about-bio">Lucy Trepanier is a Communication Design student at Parsons School of Design in NYC. Dyslexic by nature, she's always thought in images and feelings before words. <strong>Draft</strong> is the tool she wished had existed all along.</p>
   </section>
 
   <footer>
@@ -1630,9 +2043,19 @@
   </script>
 
   <script>
-    // ── Nav scroll blur ──
+    // ── Nav scroll blur (tablet/desktop only — on phones it reads like a “scroll moment” on tiny deltas) ──
     const navEl = document.querySelector('nav');
-    window.addEventListener('scroll', () => {
+    const navBlurMq = window.matchMedia('(min-width: 768px)');
+    function navScrollBlur() {
+      if (!navEl || !navBlurMq.matches) {
+        if (navEl) {
+          navEl.style.background = '';
+          navEl.style.backdropFilter = '';
+          navEl.style.webkitBackdropFilter = '';
+          navEl.style.borderBottom = '';
+        }
+        return;
+      }
       if (window.scrollY > 10) {
         navEl.style.background = 'rgba(0,0,0,0.6)';
         navEl.style.backdropFilter = 'blur(20px)';
@@ -1644,7 +2067,14 @@
         navEl.style.webkitBackdropFilter = '';
         navEl.style.borderBottom = '';
       }
-    }, { passive: true });
+    }
+    window.addEventListener('scroll', navScrollBlur, { passive: true });
+    if (typeof navBlurMq.addEventListener === 'function') {
+      navBlurMq.addEventListener('change', navScrollBlur);
+    } else if (typeof navBlurMq.addListener === 'function') {
+      navBlurMq.addListener(navScrollBlur);
+    }
+    navScrollBlur();
   </script>
 
   <script>
