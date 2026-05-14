@@ -1,5 +1,4 @@
 import AVFoundation
-import AVKit
 import SwiftUI
 import UIKit
 
@@ -94,38 +93,52 @@ private enum LaunchChrome {
     static let background = UIColor(red: 20 / 255, green: 20 / 255, blue: 20 / 255, alpha: 1)
 }
 
-private struct FullBleedLaunchVideoPlayer: UIViewControllerRepresentable {
+private final class PlayerContainerView: UIView {
+    var playerLayer: AVPlayerLayer?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer?.frame = bounds
+    }
+}
+
+private struct FullBleedLaunchVideoPlayer: UIViewRepresentable {
     let onPlaybackEnded: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onPlaybackEnded: onPlaybackEnded)
     }
 
-    func makeUIViewController(context: Context) -> AVPlayerViewController {
-        let controller = AVPlayerViewController()
-        controller.showsPlaybackControls = false
-        controller.videoGravity = .resizeAspectFill
-        controller.view.backgroundColor = LaunchChrome.background
-        controller.contentOverlayView?.backgroundColor = LaunchChrome.background
-        controller.allowsPictureInPicturePlayback = false
+    func makeUIView(context: Context) -> PlayerContainerView {
+        let view = PlayerContainerView()
+        view.backgroundColor = LaunchChrome.background
 
         guard let url = launchVideoURL() else {
             DispatchQueue.main.async { context.coordinator.finishOnce() }
-            return controller
+            return view
         }
 
         let player = AVPlayer(url: url)
         player.isMuted = true
-        controller.player = player
+
+        let layer = AVPlayerLayer(player: player)
+        layer.videoGravity = .resizeAspectFill
+        layer.backgroundColor = LaunchChrome.background.cgColor
+        view.playerLayer = layer
+        view.layer.addSublayer(layer)
+
         context.coordinator.start(player: player)
-        return controller
+        return view
     }
 
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+    func updateUIView(_ uiView: PlayerContainerView, context: Context) {}
 
     final class Coordinator: NSObject {
         private let onPlaybackEnded: () -> Void
+        private var player: AVPlayer?
+        private var statusObservation: NSKeyValueObservation?
         private var endObserver: NSObjectProtocol?
+        private var fallbackTimer: Timer?
         private var launchPulseTimer: Timer?
         private var didFinish = false
         private let launchPulseGenerator = UIImpactFeedbackGenerator(style: .heavy)
@@ -135,7 +148,9 @@ private struct FullBleedLaunchVideoPlayer: UIViewControllerRepresentable {
         }
 
         func start(player: AVPlayer) {
+            self.player = player
             launchPulseGenerator.prepare()
+            player.automaticallyWaitsToMinimizeStalling = false
 
             guard let item = player.currentItem else {
                 finishOnce()
@@ -150,13 +165,25 @@ private struct FullBleedLaunchVideoPlayer: UIViewControllerRepresentable {
                 self?.finishOnce()
             }
 
-            scheduleLaunchPulseHaptic()
+            // Fallback: dismiss after 8s in case the video never fires end notification
+            fallbackTimer = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { [weak self] _ in
+                self?.finishOnce()
+            }
 
-            player.play()
+            // Wait for item to be ready before playing so first frame isn't frozen
+            statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+                guard item.status == .readyToPlay else { return }
+                self?.statusObservation?.invalidate()
+                self?.statusObservation = nil
+                Task { @MainActor in
+                    player.seek(to: .zero)
+                    player.play()
+                    self?.schedulePulse()
+                }
+            }
         }
 
-        /// Tactile pulse at **0.5s** into the intro video (matches product “in the hand” beat).
-        private func scheduleLaunchPulseHaptic() {
+        private func schedulePulse() {
             launchPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     self?.launchPulseGenerator.impactOccurred(intensity: 1.0)
@@ -167,19 +194,23 @@ private struct FullBleedLaunchVideoPlayer: UIViewControllerRepresentable {
         func finishOnce() {
             guard !didFinish else { return }
             didFinish = true
+            statusObservation?.invalidate()
+            statusObservation = nil
             if let endObserver {
                 NotificationCenter.default.removeObserver(endObserver)
                 self.endObserver = nil
             }
+            fallbackTimer?.invalidate()
+            fallbackTimer = nil
             launchPulseTimer?.invalidate()
             launchPulseTimer = nil
             onPlaybackEnded()
         }
 
         deinit {
-            if let endObserver {
-                NotificationCenter.default.removeObserver(endObserver)
-            }
+            statusObservation?.invalidate()
+            if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+            fallbackTimer?.invalidate()
             launchPulseTimer?.invalidate()
         }
     }
